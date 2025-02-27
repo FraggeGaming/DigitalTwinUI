@@ -9,7 +9,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "Imaging",
-        state = rememberWindowState(width = 1920.dp, height = 1080.dp)
+        state = rememberWindowState(width = 1200.dp, height = 800.dp)
 
     ) {
         App()

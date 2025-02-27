@@ -42,8 +42,8 @@ fun MainPanelLayout(
     minPanelWidth: Float = 0.1f, // Minimum 10% width
     maxPanelWidth: Float = 0.4f // Maximum 40% width
 ) {
-    var leftPanelWidth by remember { mutableStateOf(0.2f) } // 20% width initially
-    var rightPanelWidth by remember { mutableStateOf(0.2f) } // 20% width initially
+    var leftPanelWidth by remember { mutableStateOf(0.3f) } // 20% width initially
+    var rightPanelWidth by remember { mutableStateOf(0.3f) } // 20% width initially
 
     var leftPanelExpanded by remember { mutableStateOf(true) }
     var rightPanelExpanded by remember { mutableStateOf(true) }
