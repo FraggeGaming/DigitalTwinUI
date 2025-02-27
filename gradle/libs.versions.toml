@@ -6,6 +6,8 @@ kotlin = "2.1.0"
 kotlinx-coroutines = "1.10.1"
 ui-graphics-android = "1.7.8"
 foundation-android = "1.7.8"
+ui-unit-android = "1.7.8"
+compose-testing = "1.0.0-alpha03"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -16,6 +18,8 @@ androidx-lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle
 kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 androidx-ui-graphics-android = { group = "androidx.compose.ui", name = "ui-graphics-android", version.ref = "ui-graphics-android" }
 androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundation-android" }
+androidx-ui-unit-android = { group = "androidx.compose.ui", name = "ui-unit-android", version.ref = "ui-unit-android" }
+androidx-compose-testing = { group = "androidx.xr.compose", name = "compose-testing", version.ref = "compose-testing" }
 
 [plugins]
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }

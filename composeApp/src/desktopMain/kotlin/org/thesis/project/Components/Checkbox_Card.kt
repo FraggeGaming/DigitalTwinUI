@@ -1,6 +1,5 @@
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -10,24 +9,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 
 
 @Composable
 fun CardWithCheckboxes(
+    selectedData: Set<String>,
     items: List<String>,
     onCheckboxChanged: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val checkStates = remember { mutableStateMapOf<String, Boolean>().apply {
-        items.forEach { this[it] = false }
-    } }
+    val checkStates = remember(items, selectedData) {
+        mutableStateMapOf<String, Boolean>().apply {
+            items.forEach { item ->
+                this[item] = selectedData.contains(item)
+            }
+        }
+    }
 
     Card(
         modifier = modifier,
@@ -37,21 +38,20 @@ fun CardWithCheckboxes(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
-            if (maxWidth > 300.dp){
+            if (maxWidth > 300.dp) {
                 Column(
                     verticalArrangement = Arrangement.SpaceEvenly,
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    Row{
+                    Row {
                         Text(text = "Select Districts")
                     }
                     //Align in a 2 column grid
                     items.chunked(2).forEach { rowItems ->
                         Row(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                             //.border(1.dp, Color.Red)
-                            ,
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
 
@@ -61,6 +61,11 @@ fun CardWithCheckboxes(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Start,
                                     modifier = Modifier.weight(1f)
+                                        .clickable {
+                                            val currentState = checkStates[label] ?: false
+                                            checkStates[label] = !currentState
+                                            onCheckboxChanged(label, !currentState)
+                                        }
                                     //.border(1.dp, Color.Blue)
                                 ) {
                                     Checkbox(
@@ -75,21 +80,20 @@ fun CardWithCheckboxes(
                                 }
                             }
 
-                            //So that the last checkbox (if odd number) does not gets centered
+                            //So that the last checkbox (if odd number) does not get centered
                             if (rowItems.size == 1) {
                                 Spacer(modifier = Modifier.weight(1f))
                             }
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(16.dp).border(1.dp, Color.Red)
                 ) {
-                    Row{
+                    Row {
                         Text(text = "Select Districts")
                     }
                     //Align in a 2 column grid
@@ -120,38 +124,33 @@ fun CardWithCheckboxes(
 
 @Composable
 fun CardWithNestedCheckboxes(
+    selectedData: Set<String>,
     items: List<Pair<String, List<String>>>,
     onCheckboxChanged: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val checkStates = remember { mutableStateMapOf<String, Boolean>().apply {
-        items.forEach { (main, subs) ->
-            this[main] = false
-            subs.forEach { this[it] = false }
+    val checkStates = remember(items, selectedData) {
+        mutableStateMapOf<String, Boolean>().apply {
+            items.forEach { (main, subs) ->
+                this[main] = selectedData.contains(main)
+                subs.forEach { sub ->
+                    this[sub] = selectedData.contains(sub)
+                }
+            }
         }
-    } }
+    }
 
-//    var canvasGlobalOffset by remember { mutableStateOf(Offset.Zero) }
-//    var mainRowRightCenter by remember { mutableStateOf(Offset.Zero) }
-//    var subLabelRowLeftCenter by remember { mutableStateOf(Offset.Zero) }
-//
-//    val connections = remember { mutableStateListOf<Connection>() }
 
     Card(
         modifier = modifier,
         elevation = 8.dp
     ) {
         BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth(),//.onGloballyPositioned { coords ->
-//                // Capture the global offset of the root Box (which will be used for conversion)
-//                canvasGlobalOffset = coords.positionInRoot()
-//            },
+            modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
 
             if (maxWidth > 300.dp) {
-
-
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -176,10 +175,6 @@ fun CardWithNestedCheckboxes(
                             textAlign = TextAlign.End
                         )
                     }
-
-
-
-//                    connections.clear()
                     items.forEach { (mainLabel, subLabels) ->
 
                         Row(
@@ -189,13 +184,6 @@ fun CardWithNestedCheckboxes(
                         ) {
 
                             Row(
-//                                modifier = Modifier.border(1.dp, Color.Yellow)
-//                                    .onGloballyPositioned { coordinates ->
-//                                        val pos = coordinates.positionInRoot()
-//                                        val size = coordinates.size
-//                                        // Right center of this row
-//                                        mainRowRightCenter = Offset(pos.x + size.width, pos.y + size.height / 2f)
-//                                    },
                                 horizontalArrangement = Arrangement.Start,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -213,18 +201,11 @@ fun CardWithNestedCheckboxes(
 
 
                             Column(
-                                //modifier = Modifier.border(1.dp, Color.Black),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 subLabels.forEach { subLabel ->
                                     Row(
-//                                       modifier = Modifier.onGloballyPositioned { coordinates ->
-//                                           val pos = coordinates.positionInRoot()
-//                                           val size = coordinates.size
-//                                           // Left center of this row
-//                                           subLabelRowLeftCenter = Offset(pos.x, pos.y + size.height / 2f)
-//                                       },
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.Start,
                                     ) {
@@ -240,32 +221,13 @@ fun CardWithNestedCheckboxes(
 
 
                                     }
-
-//                                    connections.add(
-//                                        Connection(
-//                                            start = mainRowRightCenter - canvasGlobalOffset,
-//                                            end   = subLabelRowLeftCenter - canvasGlobalOffset
-//                                        )
-//                                    )
-
-
-
                                 }
-
-
                             }
-
-
                         }
                         Divider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray)
                     }
-
-
                 }
-
-
-            }
-            else {
+            } else {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -343,58 +305,242 @@ fun CardWithNestedCheckboxes(
                     }
                 }
             }
-
-
         }
     }
-
-    //MyCanvas(connections)
 }
-
-data class Connection(val start: Offset, val end: Offset)
 
 
 @Composable
-fun MyCanvas(connections: List<Connection>) {
-    // Each time `connections` changes, the Canvas is recomposed and drawn from scratch.
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        connections.forEach { connection ->
-            val path = Path().apply {
-                moveTo(connection.start.x, connection.start.y)
-                quadraticBezierTo(
-                    (connection.start.x + connection.end.x) / 2,
-                    connection.start.y - 50, // control point (adjust as needed)
-                    connection.end.x,
-                    connection.end.y
-                )
+fun CardMenu(
+    selectedData: Set<String>,
+    items: List<Pair<String, List<String>>>,
+    onCheckboxChanged: (String, Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+
+    val checkStates = remember(items, selectedData) {
+        mutableStateMapOf<String, Boolean>().apply {
+            items.forEach { (main, subs) ->
+                this[main] = selectedData.contains(main)
+                subs.forEach { sub ->
+                    this[sub] = selectedData.contains(sub)
+                }
             }
-            drawPath(path = path, color = Color.Black, style = Stroke(width = 4.dp.toPx()))
+        }
+    }
+
+    Card(
+        modifier = modifier,
+        elevation = 8.dp
+    ) {
+        Box(
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(16.dp)//.border(1.dp, Color.Red)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Input",
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp) // Adds spacing between buttons
+                ) {
+
+                    items.forEach { (mainLabel, subLabels) ->
+                        var isMenuExpanded by remember { mutableStateOf(false) }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp), // Optional padding between items
+                            verticalAlignment = Alignment.CenterVertically, // Align content vertically
+                            horizontalArrangement = Arrangement.Start // Align content horizontally
+                        ) {
+                            // Button
+                            TextButton(
+                                onClick = { isMenuExpanded = true },
+                                modifier = Modifier.weight(1f) // Adjusts button size for flexible layout
+                            ) {
+                                Text(
+                                    text = mainLabel.substringAfter("_"),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+
+
+                            //Dropdown Menu for each item
+                            DropdownMenu(
+                                expanded = isMenuExpanded,
+                                onDismissRequest = { isMenuExpanded = false },
+                            ) {
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = "Input",
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                DropdownMenuItem(onClick = {
+                                    // Handle submenu item click
+                                    val currentState = checkStates[mainLabel] ?: false
+                                    checkStates[mainLabel] = !currentState
+                                    onCheckboxChanged(mainLabel, !currentState)
+
+                                    //isMenuExpanded = false
+                                }) {
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Start,
+                                    ) {
+                                        Checkbox(
+                                            checked = checkStates[mainLabel] ?: false,
+                                            onCheckedChange = { isChecked ->
+                                                checkStates[mainLabel] = isChecked
+                                                onCheckboxChanged(mainLabel, isChecked)
+                                            }
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(text = mainLabel)
+                                    }
+
+                                }
+
+                                Divider(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    color = Color.Gray,
+                                    thickness = 1.dp
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
+                                ) {
+                                    Text(
+                                        text = "Synthetic output",
+                                        modifier = Modifier.weight(1f),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                subLabels.forEach { subLabel ->
+                                    DropdownMenuItem(onClick = {
+                                        val currentState = checkStates[subLabel] ?: false
+                                        checkStates[subLabel] = !currentState
+                                        onCheckboxChanged(subLabel, !currentState)
+
+                                        //isMenuExpanded = false
+                                    }) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Start,
+                                        ) {
+                                            Checkbox(
+                                                checked = checkStates[subLabel] ?: false,
+                                                onCheckedChange = { isChecked ->
+                                                    checkStates[subLabel] = isChecked
+                                                    onCheckboxChanged(subLabel, isChecked)
+                                                }
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(text = subLabel)
+
+
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                    val rows = selectedData.toList().chunked(2)
+                    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        rows.forEach { rowItems ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                rowItems.forEach { label ->
+                                    TextButton(
+                                        onClick = {
+                                            val currentState = checkStates[label] ?: false
+                                            checkStates[label] = !currentState
+                                            onCheckboxChanged(label, !currentState)
+                                        },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            backgroundColor = Color.LightGray,
+                                            contentColor = Color.Black
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(text = label)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            contentDescription = "Exit"
+                                        )
+                                    }
+                                }
+                                // If the row has only one element, add a Spacer to take up the remaining space.
+                                if (rowItems.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
+
 @Composable
 fun menuCard(
     modifier: Modifier = Modifier,
     content: List<@Composable () -> Unit>
-){
+) {
 
     Card(
         modifier = modifier,
         elevation = 8.dp,
 
-    ) {
+        ) {
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
 
-        ){
+        ) {
             content.forEach { composable ->
-                Column(  horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                    ){
+                    ) {
                         composable()
                     }
 
@@ -406,50 +552,6 @@ fun menuCard(
     }
 }
 
-@Composable
-fun DrawTreePath(start: Offset, end: Offset) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val path = Path().apply {
-            moveTo(start.x, start.y)
-            // Example using a quadratic Bézier curve:
-            quadraticBezierTo(
-                (start.x + end.x) / 2, start.y - 50, // control point (adjust as needed)
-                end.x, end.y
-            )
-        }
-        drawPath(path, color = Color.Black, style = Stroke(width = 4.dp.toPx()))
-    }
-}
-
-@Composable
-fun TreeConnections() {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        // Example positions; adjust these based on your layout
-        val inputPos = Offset(100f, size.height / 2)
-        val topOutputPos = Offset(300f, size.height / 3)
-        val bottomOutputPos = Offset(300f, 2 * size.height / 3)
-
-        // Draw curve from input to top output
-        val topPath = Path().apply {
-            moveTo(inputPos.x, inputPos.y)
-            quadraticTo(
-                (inputPos.x + topOutputPos.x) / 2, inputPos.y - 50,  // control point
-                topOutputPos.x, topOutputPos.y
-            )
-        }
-        drawPath(path = topPath, color = Color.Black, style = Stroke(width = 4.dp.toPx()))
-
-        // Draw curve from input to bottom output
-        val bottomPath = Path().apply {
-            moveTo(inputPos.x, inputPos.y)
-            quadraticTo(
-                (inputPos.x + bottomOutputPos.x) / 2, inputPos.y + 50,  // control point
-                bottomOutputPos.x, bottomOutputPos.y
-            )
-        }
-        drawPath(path = bottomPath, color = Color.Black, style = Stroke(width = 4.dp.toPx()))
-    }
-}
 
 
 
