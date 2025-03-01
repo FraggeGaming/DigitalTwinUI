@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -23,47 +24,16 @@ import imaging.composeapp.generated.resources.Res
 import imaging.composeapp.generated.resources.compose_multiplatform
 import menuCard
 
-class FakeViewModel {
-    val nestedData: List<Pair<String, List<String>>> = listOf(
-        "CT_Patient1" to listOf("PET_Patient1", "MRI_Patient1"),
-        "CT_Patient2" to listOf("PET_Patient2", "MRI_Patient2")
-    )
-    val organs: List<String> = listOf("Liver", "Heart", "Lung", "Kidney", "Brain")
-
-    var selectedDistricts: Set<String> by mutableStateOf(setOf())
-    var selectedData: Set<String> by mutableStateOf(setOf())
-    var selectedSettings: Set<String> by mutableStateOf(setOf())
-
-    fun updateSelectedData(label: String, isSelected: Boolean) {
-        selectedData = if (isSelected) {
-            selectedData + label
-        } else {
-            selectedData - label
-        }
-    }
-
-    fun updateSelectedSettings(label: String, isSelected: Boolean) {
-        selectedSettings = if (isSelected) {
-            selectedSettings + label
-        } else {
-            selectedSettings - label
-        }
-    }
-
-    fun updateSelectedDistrict(label: String, isSelected: Boolean) {
-        selectedDistricts = if (isSelected) {
-            selectedDistricts + label
-        } else {
-            selectedDistricts - label
-        }
-    }
-}
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
-        val model = FakeViewModel()
+        val interfaceModel: InterfaceModel = viewModel()
+        val selectedData by interfaceModel.selectedData.collectAsState()
+        val nestedData by interfaceModel.nestedData.collectAsState()
+        val selectedDistricts by interfaceModel.selectedDistricts.collectAsState()
+        val organs by interfaceModel.organs.collectAsState()
         MainPanelLayout(
 
             leftContent = {
@@ -80,20 +50,20 @@ fun App() {
 
                         CardMenu(
                             //onShowPopup = { showPopup = !showPopup },
-                            model.selectedData,
-                            items = model.nestedData,
+                            selectedData = selectedData,
+                            items = nestedData,
                             onCheckboxChanged = { label, isChecked ->
-                                model.updateSelectedData(label, isChecked)
+                                interfaceModel.updateSelectedData(label, isChecked)
 
                                 println("$label is ${if (isChecked) "selected" else "deselected"}")
                             }
                         )
 
                         CardWithCheckboxes(
-                            model.selectedDistricts,
-                            items = model.organs,
+                            selectedDistricts,
+                            items = organs,
                             onCheckboxChanged = { organ, isChecked ->
-                                model.updateSelectedDistrict(organ, isChecked)
+                                interfaceModel.updateSelectedDistrict(organ, isChecked)
                                 println("$organ is ${if (isChecked) "selected" else "deselected"}")
                             }
                         )
@@ -124,7 +94,7 @@ fun App() {
                         horizontalArrangement = Arrangement.Center
                     )
                     {
-                        model.selectedData.forEach { selected ->
+                        selectedData.forEach { selected ->
                             Text(text = selected)
                             Spacer(modifier = Modifier.width(8.dp))
                         }
@@ -135,7 +105,7 @@ fun App() {
                         horizontalArrangement = Arrangement.Center
                     )
                     {
-                        model.selectedDistricts.forEach { selected ->
+                        selectedDistricts.forEach { selected ->
                             Text(text = selected)
                             Spacer(modifier = Modifier.width(8.dp))
                         }
