@@ -1,6 +1,4 @@
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -701,45 +699,99 @@ fun CardMenu(
             }
 
 
+            activeSelected(
+                selectedData = selectedData,
+                onCheckboxChanged = onCheckboxChanged
+            )
 
-            val rows = selectedData.toList().chunked(2)
-            Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                rows.forEach { rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        rowItems.forEach { label ->
-                            TextButton(
-                                onClick = {
-                                    val isCurrentlyChecked = selectedData.contains(label)
-                                    onCheckboxChanged(label, !isCurrentlyChecked)
-                                },
-                                colors = ButtonDefaults.textButtonColors(
-                                    backgroundColor = Color.LightGray,
-                                    contentColor = Color.Black
-                                ),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(text = label)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    contentDescription = "Exit"
-                                )
+
+        }
+    }
+}
+
+@Composable
+fun activeSelected(
+    selectedData: Set<String>,
+    onCheckboxChanged: (String, Boolean) -> Unit
+) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Dynamically determine the chunk size based on available width
+        val chunkSize = if (maxWidth < 300.dp) 1 else 2 // Use 1 if width < 300.dp, otherwise 2
+
+        val rows = selectedData.toList().chunked(chunkSize) // Dynamically chunk the data
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            rows.forEach { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rowItems.forEach { label ->
+                        selectedButtonRemove(
+                            modifier = Modifier,
+                            text = label,
+                            onclick = {
+                                val isCurrentlyChecked = selectedData.contains(label)
+                                onCheckboxChanged(label, !isCurrentlyChecked)
                             }
-                        }
-                        // If the row has only one element, add a Spacer to take up the remaining space.
-                        if (rowItems.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
+                        )
+                    }
+                    // Add Spacer if the current row doesn't fill up the entire row
+                    if (rowItems.size < chunkSize) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
         }
     }
 }
+
+
+
+
+
+@Composable
+fun selectedButtonRemove(modifier: Modifier = Modifier, text: String, onclick: () -> Unit) {
+    TextButton(
+        onClick = {
+            onclick()
+        },
+        colors = ButtonDefaults.textButtonColors(
+            backgroundColor = Color.LightGray,
+            contentColor = Color.Black
+        ),
+        shape = RoundedCornerShape(12.dp),
+        // Constrain the button size
+        modifier = Modifier
+            .size(150.dp, 50.dp) // Set the width and height of the button
+            .then(modifier) // Use any additional modifiers passed externally
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth() // Ensure contents are properly placed
+        ) {
+            Text(
+                text = text,
+                modifier = Modifier.weight(1f), // Allow Text and Icon to share space proportionally
+                textAlign = TextAlign.Start // Text remains visible always
+            )
+            Spacer(modifier = Modifier.width(8.dp)) // Space between Text and Icon
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Exit",
+                modifier = Modifier
+                    .size(24.dp) // Fixed Icon size
+            )
+        }
+    }
+}
+
 
 
 @Composable

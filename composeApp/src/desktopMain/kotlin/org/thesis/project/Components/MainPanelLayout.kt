@@ -34,30 +34,33 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 
 
+
 @Composable
 fun MainPanelLayout(
     leftContent: @Composable () -> Unit,
     centerContent: @Composable () -> Unit,
     rightContent: @Composable () -> Unit,
-    minPanelWidth: Float = 0.1f, // Minimum 10% width
-    maxPanelWidth: Float = 0.4f // Maximum 40% width
+    minPanelWidth: Dp = 200.dp, // Minimum width in dp for left/right panels
+    maxPanelWidth: Dp = 600.dp, // Maximum width in dp for left/right panels
+    initialLeftPanelWidth: Dp = 400.dp, // Initial left panel width
+    initialRightPanelWidth: Dp = 300.dp // Initial right panel width
 ) {
-    var leftPanelWidth by remember { mutableStateOf(0.3f) } // 20% width initially
-    var rightPanelWidth by remember { mutableStateOf(0.3f) } // 20% width initially
-
+    // Track panel widths (in dp) and expansion states
+    var leftPanelWidth by remember { mutableStateOf(initialLeftPanelWidth) }
+    var rightPanelWidth by remember { mutableStateOf(initialRightPanelWidth) }
     var leftPanelExpanded by remember { mutableStateOf(true) }
     var rightPanelExpanded by remember { mutableStateOf(true) }
 
     Row(modifier = Modifier.fillMaxSize()) {
-        // Left Panel
         val leftScrollState = rememberScrollState()
         val rightScrollState = rememberScrollState()
 
+        // Left Panel
         if (leftPanelExpanded) {
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .weight(leftPanelWidth)
+                    .width(leftPanelWidth.coerceIn(minPanelWidth, maxPanelWidth)) // Constrain width
                     .verticalScroll(leftScrollState)
                     .background(Color.LightGray),
                 contentAlignment = Alignment.Center
@@ -75,7 +78,7 @@ fun MainPanelLayout(
                 }
             }
 
-            //Left Resizer
+            // Left Resizer
             Box(
                 modifier = Modifier.fillMaxHeight(),
                 contentAlignment = Alignment.CenterEnd
@@ -93,7 +96,7 @@ fun MainPanelLayout(
                 contentAlignment = Alignment.TopStart
             ) {
                 IconButton(onClick = { leftPanelExpanded = true }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Expand Right", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Expand Left", tint = Color.White)
                 }
             }
         }
@@ -102,15 +105,16 @@ fun MainPanelLayout(
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .weight(1f - (if (leftPanelExpanded) leftPanelWidth else 0f) - (if (rightPanelExpanded) rightPanelWidth else 0f))
+                .weight(1f) // Center panel takes the remaining space
                 .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
             centerContent()
         }
 
+        // Right Panel
         if (rightPanelExpanded) {
-            // Right Resizer (Overlayed)
+            // Right Resizer
             Box(
                 modifier = Modifier.fillMaxHeight(),
                 contentAlignment = Alignment.CenterStart
@@ -120,13 +124,11 @@ fun MainPanelLayout(
                 }
             }
 
-            // Right Panel
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .weight(rightPanelWidth)
+                    .width(rightPanelWidth.coerceIn(minPanelWidth, maxPanelWidth)) // Constrain width
                     .verticalScroll(rightScrollState)
-
                     .background(Color.LightGray),
                 contentAlignment = Alignment.Center
             ) {
@@ -159,7 +161,8 @@ fun MainPanelLayout(
 }
 
 @Composable
-fun HorizontalResizer(onResize: (Float) -> Unit) {
+fun HorizontalResizer(onResize: (Dp) -> Unit) {
+    val density = LocalDensity.current // Obtain within a proper @Composable function
     Box(
         modifier = Modifier
             .width(5.dp)
@@ -168,31 +171,32 @@ fun HorizontalResizer(onResize: (Float) -> Unit) {
             .pointerHoverIcon(PointerIcon(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)))
             .pointerInput(Unit) {
                 detectHorizontalDragGestures { _, dragAmount ->
-                    onResize(dragAmount / 1000f)
+                    val dragDp = with(density) { dragAmount.toDp() } // Convert dragAmount to Dp within the gesture block
+                    onResize(dragDp) // Pass the detected drag delta as Dp
                 }
             }
     )
 }
 
+
 @Composable
 fun calculateIntrinsicWidth(content: @Composable () -> Unit): Dp {
-    var intrinsicWidth by remember { mutableStateOf(0.dp) } // Store result in Dp
-    val density = LocalDensity.current // Access system density for pixel-to-Dp conversion
+    var widthPx by remember { mutableStateOf(0f) }
 
-    BoxWithConstraints {
-        Box(
-            modifier = Modifier
-                .onGloballyPositioned { layoutCoordinates ->
-                    // Convert pixel width to Dp value
-                    intrinsicWidth = with(density) { layoutCoordinates.size.width.toDp() }
-                }
-        ) {
-            content()
+    // Measure content width
+    Box(
+        modifier = Modifier.onGloballyPositioned { coordinates ->
+            widthPx = coordinates.size.width.toFloat()
         }
+    ) {
+        content()
     }
 
-    return intrinsicWidth
+    // Convert pixel width to Dp using current screen density
+    val density = LocalDensity.current
+    return with(density) { widthPx.toDp() }
 }
+
 
 
 
