@@ -40,7 +40,7 @@ fun MainPanelLayout(
     leftContent: @Composable () -> Unit,
     centerContent: @Composable () -> Unit,
     rightContent: @Composable () -> Unit,
-    minPanelWidth: Dp = 200.dp, // Minimum width in dp for left/right panels
+    minPanelWidth: Dp = 300.dp, // Minimum width in dp for left/right panels
     maxPanelWidth: Dp = 600.dp, // Maximum width in dp for left/right panels
     initialLeftPanelWidth: Dp = 400.dp, // Initial left panel width
     initialRightPanelWidth: Dp = 300.dp // Initial right panel width
@@ -73,7 +73,7 @@ fun MainPanelLayout(
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(onClick = { leftPanelExpanded = false }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Collapse Left")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Collapse Left")
                     }
                 }
             }
@@ -140,7 +140,7 @@ fun MainPanelLayout(
                     contentAlignment = Alignment.Center
                 ) {
                     IconButton(onClick = { rightPanelExpanded = false }) {
-                        Icon(Icons.Filled.ArrowForward, contentDescription = "Collapse Right")
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Collapse Right")
                     }
                 }
             }

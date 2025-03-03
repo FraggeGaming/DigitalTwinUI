@@ -81,9 +81,9 @@ fun CardWithCheckboxes(
                 }
             } else {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp).border(1.dp, Color.Red)
+                    modifier = Modifier.padding(16.dp)//.border(1.dp, Color.Red)
                 ) {
                     Row {
                         Text(text = "Select Districts")
@@ -689,6 +689,7 @@ fun CardMenu(
                     }
 
                     if (isMenuExpanded) {
+
                         modalities(
                             selectedData = selectedData,
                             mainLabel = mainLabel,

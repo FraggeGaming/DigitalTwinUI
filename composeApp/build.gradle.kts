@@ -23,6 +23,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(compose.materialIconsExtended)
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
+            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
