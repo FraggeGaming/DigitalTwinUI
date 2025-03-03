@@ -121,23 +121,51 @@ fun CardWithCheckboxes(
     }
 }
 
+@Composable
+fun buttonWithCheckbox(
+    selectedData: Set<String>,
+    label: String,
+    onCheckboxChanged: (String, Boolean) -> Unit,
+    ){
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextButton(
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.textButtonColors(
+                backgroundColor = Color.Transparent,
+                contentColor = LocalContentColor.current
+            ),
+            onClick = {
+                val isCurrentlyChecked = selectedData.contains(label)
+                onCheckboxChanged(label, !isCurrentlyChecked)
+            }
+        ) {
+            Checkbox(
+                checked = selectedData.contains(label),
+                onCheckedChange = { isChecked ->
+                    onCheckboxChanged(label, isChecked)
+                }
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text = label)
+        }
+    }
+}
 
 @Composable
 fun modalities(
     selectedData: Set<String>,
     mainLabel: String,
     subLabels: List<String>,
-    onCheckboxChanged: (String, Boolean) -> Unit
+    onCheckboxChanged: (String, Boolean) -> Unit,
+    shape: Shape = RoundedCornerShape(8.dp)
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(shape)
             .background(Color.LightGray)
-
-            .padding(8.dp),
-
-        ) {
+            .padding(8.dp)
+    ) {
         Text(
             text = "Input",
             textAlign = TextAlign.Center,
@@ -145,34 +173,9 @@ fun modalities(
                 .fillMaxWidth()
                 .padding(bottom = 4.dp)
         )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-
-            TextButton(
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = Color.Transparent,
-                    contentColor = LocalContentColor.current
-                ),
-                onClick = {
-                    val isCurrentlyChecked = selectedData.contains(mainLabel)
-                    onCheckboxChanged(mainLabel, !isCurrentlyChecked)
-
-                    //isMenuExpanded = false
-                }) {
-                Checkbox(
-                    checked = selectedData.contains(mainLabel),
-                    onCheckedChange = { isChecked ->
-                        onCheckboxChanged(mainLabel, isChecked)
-                    }
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(text = mainLabel)
-            }
-
-        }
+        buttonWithCheckbox(selectedData, mainLabel, onCheckboxChanged)
 
         Divider(modifier = Modifier.padding(vertical = 8.dp))
-
         Text(
             text = "Synthetic output",
             textAlign = TextAlign.Center,
@@ -181,33 +184,10 @@ fun modalities(
                 .padding(bottom = 4.dp)
         )
         subLabels.forEach { subLabel ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColors(
-                        backgroundColor = Color.Transparent,
-                        contentColor = LocalContentColor.current
-                    ),
-                    onClick = {
-                        val isCurrentlyChecked = selectedData.contains(subLabel)
-                        onCheckboxChanged(subLabel, !isCurrentlyChecked)
-
-                    }) {
-                    Checkbox(
-                        checked = selectedData.contains(subLabel),
-                        onCheckedChange = { isChecked ->
-                            onCheckboxChanged(subLabel, isChecked)
-                        }
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = subLabel)
-                }
-
-            }
+            buttonWithCheckbox(selectedData, subLabel, onCheckboxChanged)
         }
     }
 }
-
 
 
 @Composable
@@ -217,7 +197,7 @@ fun CardMenu(
     onCheckboxChanged: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    //tracking which menu is expanded
+
     var expandedMenu by remember { mutableStateOf<String?>(null) }
 
     Card(
@@ -234,13 +214,13 @@ fun CardMenu(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "Input",
+                    text = "Select files to view",
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
 
-                //show a vertical list
                 if (boxMaxWidth < 300.dp) {
+                    //vertical list of menu items,
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -250,33 +230,43 @@ fun CardMenu(
                             val isSelected = expandedMenu == mainLabel
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp), // No gap between button and modalities
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 MenuButton(
                                     mainLabel = mainLabel,
                                     isSelected = isSelected,
-                                    onClick = {
-                                        expandedMenu = if (isSelected) null else mainLabel
-                                    },
+                                    onClick = { expandedMenu = if (isSelected) null else mainLabel },
                                     widthFraction = 1f,
-                                    shapeSelected = RoundedCornerShape(8.dp)
+                                    shapeSelected = RoundedCornerShape(
+                                        topStart = 8.dp,
+                                        bottomStart = 0.dp,
+                                        topEnd = 8.dp,
+                                        bottomEnd = 0.dp
+                                    )
                                 )
                                 if (isSelected) {
                                     modalities(
                                         selectedData = selectedData,
                                         mainLabel = mainLabel,
                                         subLabels = subLabels,
-                                        onCheckboxChanged = onCheckboxChanged
+                                        onCheckboxChanged = onCheckboxChanged,
+                                        shape = RoundedCornerShape(
+                                            topStart = 0.dp,
+                                            bottomStart = 8.dp,
+                                            topEnd = 0.dp,
+                                            bottomEnd = 8.dp
+                                        )
                                     )
                                 }
                             }
                         }
                     }
-                } else {
+                }
+                else {
                     //Wide layout
                     if (expandedMenu == null) {
-                        //show all buttons in a vertical column.
+                        //Show all buttons in a vertical column.
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -288,18 +278,16 @@ fun CardMenu(
                                     isSelected = false,
                                     onClick = { expandedMenu = mainLabel },
                                     widthFraction = 1f,
-                                    shapeSelected = RoundedCornerShape(8.dp),
+                                    shapeSelected = RoundedCornerShape(8.dp)
                                 )
                             }
                         }
-                    } else {
-                        //show a two-column layout:
-                        Row(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                    }
+                    else {
+                        //Use a two-column layout:
+                        Row(modifier = Modifier.fillMaxWidth()) {
                             Column(
-                                modifier = Modifier
-                                    .weight(0.4f),
+                                modifier = Modifier.weight(0.4f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
@@ -309,7 +297,6 @@ fun CardMenu(
                                         mainLabel = mainLabel,
                                         isSelected = isSelected,
                                         onClick = { expandedMenu = if (isSelected) null else mainLabel },
-                                        // When not selected, use a slightly smaller width.
                                         widthFraction = if (isSelected) 1f else 0.8f,
                                         shapeSelected = RoundedCornerShape(
                                             topStart = 8.dp,
@@ -321,18 +308,7 @@ fun CardMenu(
                                 }
                             }
                             Column(
-                                modifier = Modifier
-                                    .weight(0.6f)
-                                    .background(
-                                        color = Color.LightGray,
-                                        shape = RoundedCornerShape(
-                                            topStart = 0.dp,
-                                            bottomStart = 0.dp,
-                                            topEnd = 8.dp,
-                                            bottomEnd = 8.dp
-                                        )
-                                    )
-                                    .padding(8.dp),
+                                modifier = Modifier.weight(0.6f),
                                 verticalArrangement = Arrangement.Top,
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
@@ -343,7 +319,13 @@ fun CardMenu(
                                             selectedData = selectedData,
                                             mainLabel = mainLabel,
                                             subLabels = subLabels,
-                                            onCheckboxChanged = onCheckboxChanged
+                                            onCheckboxChanged = onCheckboxChanged,
+                                            shape = RoundedCornerShape(
+                                                topStart = 0.dp,
+                                                bottomStart = 0.dp,
+                                                topEnd = 8.dp,
+                                                bottomEnd = 8.dp
+                                            )
                                         )
                                     }
                                 }
@@ -354,7 +336,7 @@ fun CardMenu(
 
                 activeSelected(
                     selectedData = selectedData,
-                    onCheckboxChanged = onCheckboxChanged
+                    onCheckboxChanged = onCheckboxChanged,
                 )
             }
         }
