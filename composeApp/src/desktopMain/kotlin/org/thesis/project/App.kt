@@ -2,7 +2,6 @@ package org.thesis.project
 
 import CardMenu
 import CardWithCheckboxes
-import CardWithNestedCheckboxes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -70,6 +69,10 @@ fun NavigationButtons(navController: NavController) {
         Button(
             onClick = { navController.navigate("upload") },
             shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = Color(0xFF2196F3), // Blue background
+                contentColor = Color.White            // White text
+            ),
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
@@ -79,6 +82,10 @@ fun NavigationButtons(navController: NavController) {
         Button(
             onClick = { navController.navigate("modelSelect") },
             shape = RectangleShape,
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = Color(0xFF2196F3), // Blue background
+                contentColor = Color.White            // White text
+            ),
             // Center button can remain with default shape (or you can also set a shape if needed)
             modifier = Modifier
                 .weight(1f)
@@ -89,6 +96,10 @@ fun NavigationButtons(navController: NavController) {
         Button(
             onClick = { navController.navigate("main") },
             shape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = Color(0xFF2196F3), // Blue background
+                contentColor = Color.White            // White text
+            ),
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 
 
 @Composable
@@ -92,9 +93,16 @@ fun CardWithCheckboxes(
 
                     items.forEach { label ->
                         Row(
-                            modifier = Modifier.fillMaxWidth(),//.border(1.dp, Color.Blue),
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                val isCurrentlyChecked = selectedData.contains(label)
+                                // Toggle the checkbox state
+                                onCheckboxChanged(label, !isCurrentlyChecked)
+                            },//.border(1.dp, Color.Blue),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Start,
+
+
+                            //.border(1.dp, Color.Blue)
                         ) {
                             Checkbox(
                                 checked = selectedData.contains(label),
@@ -113,462 +121,14 @@ fun CardWithCheckboxes(
     }
 }
 
+
 @Composable
-fun CardWithNestedCheckboxes(
+fun modalities(
     selectedData: Set<String>,
-    items: List<Pair<String, List<String>>>,
-    onCheckboxChanged: (String, Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    mainLabel: String,
+    subLabels: List<String>,
+    onCheckboxChanged: (String, Boolean) -> Unit
 ) {
-    val checkStates = remember(items, selectedData) {
-        mutableStateMapOf<String, Boolean>().apply {
-            items.forEach { (main, subs) ->
-                this[main] = selectedData.contains(main)
-                subs.forEach { sub ->
-                    this[sub] = selectedData.contains(sub)
-                }
-            }
-        }
-    }
-
-
-    Card(
-        modifier = modifier,
-        elevation = 8.dp
-    ) {
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-
-            if (maxWidth > 300.dp) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp)//.border(1.dp, Color.Red)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Input",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Start
-                        )
-
-                        Text(
-                            text = "Output",
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.End
-                        )
-                    }
-                    items.forEach { (mainLabel, subLabels) ->
-
-                        Row(
-                            horizontalArrangement = Arrangement.Start,
-
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-
-                            Row(
-                                horizontalArrangement = Arrangement.Start,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = checkStates[mainLabel] ?: false,
-                                    onCheckedChange = { isChecked ->
-                                        checkStates[mainLabel] = isChecked
-                                        onCheckboxChanged(mainLabel, isChecked)
-                                    }
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = mainLabel)
-                            }
-
-
-
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                subLabels.forEach { subLabel ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Start,
-                                    ) {
-                                        Checkbox(
-                                            checked = checkStates[subLabel] ?: false,
-                                            onCheckedChange = { isChecked ->
-                                                checkStates[subLabel] = isChecked
-                                                onCheckboxChanged(subLabel, isChecked)
-                                            }
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = subLabel)
-
-
-                                    }
-                                }
-                            }
-                        }
-                        Divider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray)
-                    }
-                }
-            } else {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp).border(1.dp, Color.Red)
-                ) {
-
-
-                    items.forEach { (mainLabel, subLabels) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start,
-                        ) {
-                            Text(
-                                text = "Input",
-                                modifier = Modifier.weight(1f),
-                                textAlign = TextAlign.Start
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),//.border(1.dp, Color.Blue),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start,
-                        ) {
-
-                            Checkbox(
-                                checked = checkStates[mainLabel] ?: false,
-                                onCheckedChange = { isChecked ->
-                                    checkStates[mainLabel] = isChecked
-                                    onCheckboxChanged(mainLabel, isChecked)
-                                }
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = mainLabel)
-
-                        }
-
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-
-                            Text(
-                                text = "Output",
-                                modifier = Modifier.weight(1f),
-                                textAlign = TextAlign.Start
-                            )
-                        }
-                        subLabels.forEach { subLabel ->
-                            Row(
-                                modifier = Modifier.border(1.dp, Color.Yellow).fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Start,
-                            ) {
-                                Checkbox(
-                                    checked = checkStates[subLabel] ?: false,
-                                    onCheckedChange = { isChecked ->
-                                        checkStates[subLabel] = isChecked
-                                        onCheckboxChanged(subLabel, isChecked)
-                                    }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = subLabel)
-                            }
-                        }
-
-
-                        Divider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray)
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun CardMenu1(
-    selectedData: Set<String>,
-    items: List<Pair<String, List<String>>>,
-    onCheckboxChanged: (String, Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-
-    Card(
-        modifier = modifier,
-        elevation = 8.dp
-    ) {
-        Box(
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(16.dp)//.border(1.dp, Color.Red)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "Input",
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center
-                    )
-                }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp) // Adds spacing between buttons
-                ) {
-
-                    items.forEach { (mainLabel, subLabels) ->
-                        var isMenuExpanded by remember { mutableStateOf(false) }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp), // Optional padding between items
-                            verticalAlignment = Alignment.CenterVertically, // Align content vertically
-                            horizontalArrangement = Arrangement.Start // Align content horizontally
-                        ) {
-                            // Button
-                            TextButton(
-                                onClick = { isMenuExpanded = true },
-                                modifier = Modifier.weight(1f) // Adjusts button size for flexible layout
-                            ) {
-                                Text(
-                                    text = mainLabel.substringAfter("_"),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-
-
-                            Box() {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = "Input",
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Start,
-                                ) {
-                                    Checkbox(
-                                        checked = selectedData.contains(mainLabel),
-                                        onCheckedChange = { isChecked ->
-                                            onCheckboxChanged(mainLabel, isChecked)
-                                        }
-                                    )
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = mainLabel)
-                                }
-
-                                Divider(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    color = Color.Gray,
-                                    thickness = 1.dp
-                                )
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                            ) {
-                                Text(
-                                    text = "Synthetic output",
-                                    modifier = Modifier.weight(1f),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                            subLabels.forEach { subLabel ->
-                                TextButton(onClick = {
-                                    val isCurrentlyChecked = selectedData.contains(subLabel)
-                                    onCheckboxChanged(subLabel, !isCurrentlyChecked)
-
-                                    //isMenuExpanded = false
-                                }) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Start,
-                                    ) {
-                                        Checkbox(
-                                            checked = selectedData.contains(subLabel),
-                                            onCheckedChange = { isChecked ->
-                                                onCheckboxChanged(subLabel, isChecked)
-                                            }
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(text = subLabel)
-
-
-                                    }
-                                }
-                            }
-
-
-                            //Dropdown Menu for each item
-//                            DropdownMenu(
-//                                expanded = isMenuExpanded,
-//                                onDismissRequest = { isMenuExpanded = false },
-//                            ) {
-//
-//                                Row(
-//                                    modifier = Modifier.fillMaxWidth(),
-//                                    verticalAlignment = Alignment.CenterVertically,
-//                                    horizontalArrangement = Arrangement.Center
-//                                ) {
-//                                    Text(
-//                                        text = "Input",
-//                                        textAlign = TextAlign.Center
-//                                    )
-//                                }
-//                                DropdownMenuItem(onClick = {
-//                                    // Handle submenu item click
-//                                    val isCurrentlyChecked = selectedData.contains(mainLabel)
-//                                    // Toggle the checkbox state
-//                                    onCheckboxChanged(mainLabel, !isCurrentlyChecked)
-//
-//                                    //isMenuExpanded = false
-//                                }) {
-//
-//                                    Row(
-//                                        modifier = Modifier.fillMaxWidth(),
-//                                        verticalAlignment = Alignment.CenterVertically,
-//                                        horizontalArrangement = Arrangement.Start,
-//                                    ) {
-//                                        Checkbox(
-//                                            checked = selectedData.contains(mainLabel),
-//                                            onCheckedChange = { isChecked ->
-//                                                onCheckboxChanged(mainLabel, isChecked)
-//                                            }
-//                                        )
-//                                        Spacer(modifier = Modifier.height(4.dp))
-//                                        Text(text = mainLabel)
-//                                    }
-//
-//                                }
-//
-//                                Divider(
-//                                    modifier = Modifier
-//                                        .fillMaxWidth()
-//                                        .padding(vertical = 8.dp),
-//                                    color = Color.Gray,
-//                                    thickness = 1.dp
-//                                )
-//
-//                                Row(
-//                                    modifier = Modifier.fillMaxWidth(),
-//                                    verticalAlignment = Alignment.CenterVertically,
-//                                    horizontalArrangement = Arrangement.Center,
-//                                ) {
-//                                    Text(
-//                                        text = "Synthetic output",
-//                                        modifier = Modifier.weight(1f),
-//                                        textAlign = TextAlign.Center
-//                                    )
-//                                }
-//                                subLabels.forEach { subLabel ->
-//                                    DropdownMenuItem(onClick = {
-//                                        val isCurrentlyChecked = selectedData.contains(subLabel)
-//                                        onCheckboxChanged(subLabel, !isCurrentlyChecked)
-//
-//                                        //isMenuExpanded = false
-//                                    }) {
-//                                        Row(
-//                                            modifier = Modifier.fillMaxWidth(),
-//                                            verticalAlignment = Alignment.CenterVertically,
-//                                            horizontalArrangement = Arrangement.Start,
-//                                        ) {
-//                                            Checkbox(
-//                                                checked = selectedData.contains(subLabel),
-//                                                onCheckedChange = { isChecked ->
-//                                                    onCheckboxChanged(subLabel, isChecked)
-//                                                }
-//                                            )
-//                                            Spacer(modifier = Modifier.width(4.dp))
-//                                            Text(text = subLabel)
-//
-//
-//                                        }
-//                                    }
-//                                }
-//                            }
-
-                        }
-                    }
-                    val rows = selectedData.toList().chunked(2)
-                    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        rows.forEach { rowItems ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                rowItems.forEach { label ->
-                                    TextButton(
-                                        onClick = {
-                                            val isCurrentlyChecked = selectedData.contains(label)
-                                            onCheckboxChanged(label, !isCurrentlyChecked)
-                                        },
-                                        colors = ButtonDefaults.textButtonColors(
-                                            backgroundColor = Color.LightGray,
-                                            contentColor = Color.Black
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(text = label)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Icon(
-                                            imageVector = Icons.Filled.Close,
-                                            contentDescription = "Exit"
-                                        )
-                                    }
-                                }
-                                // If the row has only one element, add a Spacer to take up the remaining space.
-                                if (rowItems.size == 1) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun modalities(selectedData: Set<String>, mainLabel: String, subLabels: List<String>, onCheckboxChanged: (String, Boolean) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -594,11 +154,11 @@ fun modalities(selectedData: Set<String>, mainLabel: String, subLabels: List<Str
                     contentColor = LocalContentColor.current
                 ),
                 onClick = {
-                val isCurrentlyChecked = selectedData.contains(mainLabel)
-                onCheckboxChanged(mainLabel, !isCurrentlyChecked)
+                    val isCurrentlyChecked = selectedData.contains(mainLabel)
+                    onCheckboxChanged(mainLabel, !isCurrentlyChecked)
 
-                //isMenuExpanded = false
-            }) {
+                    //isMenuExpanded = false
+                }) {
                 Checkbox(
                     checked = selectedData.contains(mainLabel),
                     onCheckedChange = { isChecked ->
@@ -629,10 +189,10 @@ fun modalities(selectedData: Set<String>, mainLabel: String, subLabels: List<Str
                         contentColor = LocalContentColor.current
                     ),
                     onClick = {
-                    val isCurrentlyChecked = selectedData.contains(subLabel)
-                    onCheckboxChanged(subLabel, !isCurrentlyChecked)
+                        val isCurrentlyChecked = selectedData.contains(subLabel)
+                        onCheckboxChanged(subLabel, !isCurrentlyChecked)
 
-                }) {
+                    }) {
                     Checkbox(
                         checked = selectedData.contains(subLabel),
                         onCheckedChange = { isChecked ->
@@ -648,6 +208,8 @@ fun modalities(selectedData: Set<String>, mainLabel: String, subLabels: List<Str
     }
 }
 
+
+
 @Composable
 fun CardMenu(
     selectedData: Set<String>,
@@ -655,60 +217,175 @@ fun CardMenu(
     onCheckboxChanged: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    //tracking which menu is expanded
+    var expandedMenu by remember { mutableStateOf<String?>(null) }
+
     Card(
         modifier = modifier,
-        elevation = 8.dp
+        elevation = 8.dp,
+        shape = RoundedCornerShape(8.dp)
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Input",
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val boxMaxWidth = maxWidth
 
-            items.forEach { (mainLabel, subLabels) ->
-                var isMenuExpanded by remember { mutableStateOf(false) }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Input",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-
-                ) {
-                    TextButton(
-                        onClick = { isMenuExpanded = !isMenuExpanded },
+                //show a vertical list
+                if (boxMaxWidth < 300.dp) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = mainLabel.substringAfter("_"),
-                            textAlign = TextAlign.Center
-                        )
+                        items.forEach { (mainLabel, subLabels) ->
+                            val isSelected = expandedMenu == mainLabel
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                MenuButton(
+                                    mainLabel = mainLabel,
+                                    isSelected = isSelected,
+                                    onClick = {
+                                        expandedMenu = if (isSelected) null else mainLabel
+                                    },
+                                    widthFraction = 1f,
+                                    shapeSelected = RoundedCornerShape(8.dp)
+                                )
+                                if (isSelected) {
+                                    modalities(
+                                        selectedData = selectedData,
+                                        mainLabel = mainLabel,
+                                        subLabels = subLabels,
+                                        onCheckboxChanged = onCheckboxChanged
+                                    )
+                                }
+                            }
+                        }
                     }
-
-                    if (isMenuExpanded) {
-
-                        modalities(
-                            selectedData = selectedData,
-                            mainLabel = mainLabel,
-                            subLabels = subLabels,
-                            onCheckboxChanged = onCheckboxChanged)
+                } else {
+                    //Wide layout
+                    if (expandedMenu == null) {
+                        //show all buttons in a vertical column.
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items.forEach { (mainLabel, _) ->
+                                MenuButton(
+                                    mainLabel = mainLabel,
+                                    isSelected = false,
+                                    onClick = { expandedMenu = mainLabel },
+                                    widthFraction = 1f,
+                                    shapeSelected = RoundedCornerShape(8.dp),
+                                )
+                            }
+                        }
+                    } else {
+                        //show a two-column layout:
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(0.4f),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                items.forEach { (mainLabel, _) ->
+                                    val isSelected = expandedMenu == mainLabel
+                                    MenuButton(
+                                        mainLabel = mainLabel,
+                                        isSelected = isSelected,
+                                        onClick = { expandedMenu = if (isSelected) null else mainLabel },
+                                        // When not selected, use a slightly smaller width.
+                                        widthFraction = if (isSelected) 1f else 0.8f,
+                                        shapeSelected = RoundedCornerShape(
+                                            topStart = 8.dp,
+                                            bottomStart = 8.dp,
+                                            topEnd = 0.dp,
+                                            bottomEnd = 0.dp
+                                        )
+                                    )
+                                }
+                            }
+                            Column(
+                                modifier = Modifier
+                                    .weight(0.6f)
+                                    .background(
+                                        color = Color.LightGray,
+                                        shape = RoundedCornerShape(
+                                            topStart = 0.dp,
+                                            bottomStart = 0.dp,
+                                            topEnd = 8.dp,
+                                            bottomEnd = 8.dp
+                                        )
+                                    )
+                                    .padding(8.dp),
+                                verticalArrangement = Arrangement.Top,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                expandedMenu?.let { selectedMainLabel ->
+                                    val selectedItem = items.find { it.first == selectedMainLabel }
+                                    selectedItem?.let { (mainLabel, subLabels) ->
+                                        modalities(
+                                            selectedData = selectedData,
+                                            mainLabel = mainLabel,
+                                            subLabels = subLabels,
+                                            onCheckboxChanged = onCheckboxChanged
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+
+                activeSelected(
+                    selectedData = selectedData,
+                    onCheckboxChanged = onCheckboxChanged
+                )
             }
-
-
-            activeSelected(
-                selectedData = selectedData,
-                onCheckboxChanged = onCheckboxChanged
-            )
-
-
         }
     }
 }
+
+@Composable
+fun MenuButton(
+    mainLabel: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    widthFraction: Float,
+    shapeSelected: Shape
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth(widthFraction)
+            .background(
+                color = Color.LightGray,
+                shape = if (isSelected) { shapeSelected } else { RoundedCornerShape(8.dp) }
+            )
+    ) {
+        Text(
+            text = mainLabel.substringAfter("_"),
+            textAlign = TextAlign.Center,
+            color = Color.Black
+        )
+    }
+}
+
 
 @Composable
 fun activeSelected(
@@ -723,37 +400,87 @@ fun activeSelected(
 
         val rows = selectedData.toList().chunked(chunkSize) // Dynamically chunk the data
 
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            rows.forEach { rowItems ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    rowItems.forEach { label ->
-                        selectedButtonRemove(
-                            modifier = Modifier,
-                            text = label,
-                            onclick = {
-                                val isCurrentlyChecked = selectedData.contains(label)
-                                onCheckboxChanged(label, !isCurrentlyChecked)
+
+
+
+        if (chunkSize == 2) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rows.forEach { rowItems ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // First column (always present)
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (rowItems.size >= 1) {
+                                selectedButtonRemove(
+                                    modifier = Modifier,
+                                    text = rowItems[0],
+                                    onclick = {
+                                        val isCurrentlyChecked = selectedData.contains(rowItems[0])
+                                        onCheckboxChanged(rowItems[0], !isCurrentlyChecked)
+                                    }
+                                )
                             }
-                        )
+                        }
+                        // Second column (empty if not available)
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (rowItems.size >= 2) {
+                                selectedButtonRemove(
+                                    modifier = Modifier,
+                                    text = rowItems[1],
+                                    onclick = {
+                                        val isCurrentlyChecked = selectedData.contains(rowItems[1])
+                                        onCheckboxChanged(rowItems[1], !isCurrentlyChecked)
+                                    }
+                                )
+                            }
+                        }
+
                     }
-                    // Add Spacer if the current row doesn't fill up the entire row
-                    if (rowItems.size < chunkSize) {
-                        Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+
+                ) {
+                rows.forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+
+                    ) {
+                        rowItems.forEach { label ->
+                            selectedButtonRemove(
+                                modifier = Modifier,
+                                text = label,
+                                onclick = {
+                                    val isCurrentlyChecked = selectedData.contains(label)
+                                    onCheckboxChanged(label, !isCurrentlyChecked)
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
+
+
     }
 }
-
-
-
 
 
 @Composable
@@ -792,7 +519,6 @@ fun selectedButtonRemove(modifier: Modifier = Modifier, text: String, onclick: (
         }
     }
 }
-
 
 
 @Composable
