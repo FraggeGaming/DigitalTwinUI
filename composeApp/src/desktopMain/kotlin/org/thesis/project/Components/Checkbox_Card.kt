@@ -377,10 +377,9 @@ fun activeSelected(
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Dynamically determine the chunk size based on available width
         val chunkSize = if (maxWidth < 300.dp) 1 else 2 // Use 1 if width < 300.dp, otherwise 2
 
-        val rows = selectedData.toList().chunked(chunkSize) // Dynamically chunk the data
+        val rows = selectedData.toList().chunked(chunkSize)
 
 
 
@@ -396,7 +395,6 @@ fun activeSelected(
                             .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // First column (always present)
                         Box(
                             modifier = Modifier.weight(1f),
                             contentAlignment = Alignment.Center
@@ -412,7 +410,6 @@ fun activeSelected(
                                 )
                             }
                         }
-                        // Second column (empty if not available)
                         Box(
                             modifier = Modifier.weight(1f),
                             contentAlignment = Alignment.Center
@@ -476,27 +473,26 @@ fun selectedButtonRemove(modifier: Modifier = Modifier, text: String, onclick: (
             contentColor = Color.Black
         ),
         shape = RoundedCornerShape(12.dp),
-        // Constrain the button size
         modifier = Modifier
-            .size(150.dp, 50.dp) // Set the width and height of the button
-            .then(modifier) // Use any additional modifiers passed externally
+            .size(150.dp, 50.dp)
+            .then(modifier)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth() // Ensure contents are properly placed
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text(
                 text = text,
-                modifier = Modifier.weight(1f), // Allow Text and Icon to share space proportionally
-                textAlign = TextAlign.Start // Text remains visible always
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Start
             )
-            Spacer(modifier = Modifier.width(8.dp)) // Space between Text and Icon
+            Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 imageVector = Icons.Filled.Close,
                 contentDescription = "Exit",
                 modifier = Modifier
-                    .size(24.dp) // Fixed Icon size
+                    .size(24.dp)
             )
         }
     }
