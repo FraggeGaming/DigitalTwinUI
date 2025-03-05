@@ -155,14 +155,24 @@ fun modelSelect(interfaceModel: InterfaceModel,
 }
 
 fun runNiftiParser(niftiPath: String): String {
-    val exePath = File("src/desktopMain/resources/executables/nifti_visualize.exe").absolutePath
+    val exePath = "G:/Coding/Imaging/composeApp/src/desktopMain/resources/executables/nifti_visualize.exe"
+
+    val exeFile = File(exePath)
+    if (!exeFile.exists()) {
+        throw RuntimeException("Executable not found at: $exePath")
+    }
 
     val process = ProcessBuilder(exePath, niftiPath)
         .redirectErrorStream(true)
         .start()
 
     val output = process.inputStream.bufferedReader().readText()
+    val errorOutput = process.errorStream.bufferedReader().readText()
     process.waitFor()
+
+    if (errorOutput.isNotEmpty()) {
+        println("Error running NIfTI parser:\n$errorOutput")
+    }
 
     return output
 }
@@ -197,6 +207,20 @@ fun parseNiftiImages(jsonData: String): Triple<List<BufferedImage>, List<Buffere
 }
 
 @Composable
+fun ImageProcessorUI(niftiPath: String) {
+    var output by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(niftiPath) { // Ensures execution runs once per path change
+        output = runNiftiParser(niftiPath)
+    }
+
+    output?.let {
+        Text("Processing complete: ${it.take(100)}") // Display first 100 chars of output
+    }
+}
+
+
+@Composable
 fun imageViewer(
     interfaceModel: InterfaceModel,
     navMenu: @Composable () -> Unit
@@ -223,10 +247,29 @@ fun imageViewer(
 //    ImageIO.write(sagittal.first(), "png", File("sagittal_slice.png"))
 
     val niftiFile = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
-    val result = runNiftiParser(niftiFile)
+    //val result = runNiftiParser(niftiFile)
 
-    // Convert JSON into 3 lists of BufferedImages
-    val (axial, coronal, sagittal) = parseNiftiImages(result)
+    var output by remember { mutableStateOf<String?>(null) }
+    var axialImages by remember { mutableStateOf<List<BufferedImage>>(emptyList()) }
+    var coronalImages by remember { mutableStateOf<List<BufferedImage>>(emptyList()) }
+    var sagittalImages by remember { mutableStateOf<List<BufferedImage>>(emptyList()) }
+    var isProcessing by remember { mutableStateOf(false) }  // ✅ Prevent multiple executions
+
+    LaunchedEffect(niftiFile) {
+        if (!isProcessing) {
+            isProcessing = true
+            println("Running NIfTI Parser...")
+
+            output = runNiftiParser(niftiFile) // Run the Python script
+
+            output?.let {
+                val (axial, coronal, sagittal) = parseNiftiImages(it)
+                axialImages = axial
+                coronalImages = coronal
+                sagittalImages = sagittal
+            }
+        }
+    }
 
     //println("Python Output:\n$result")  // This should be your JSON data
 
@@ -302,7 +345,7 @@ fun imageViewer(
                                     // Here we assume the scroll delta is available on the first change.
                                     val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
                                     if (scrollDelta.y > 0f) {
-                                        interfaceModel.incrementSelectedImageIndex(axial.lastIndex-1)
+                                        interfaceModel.incrementSelectedImageIndex(axialImages.lastIndex-1)
                                     } else if (scrollDelta.y < 0f) {
                                         interfaceModel.decrementSelectedImageIndex()
                                     }
@@ -354,9 +397,9 @@ fun imageViewer(
                     modifier = Modifier.fillMaxWidth().height(500.dp),
                     contentAlignment = Alignment.Center
                     ) {
-                        if (axial.isNotEmpty()) {
+                        if (axialImages.isNotEmpty()) {
                             Image(
-                                bitmap = axial[selectedImageIndex].toComposeImageBitmap(),
+                                bitmap = axialImages[selectedImageIndex].toComposeImageBitmap(),
                                 contentDescription = "Selected Axial Image",
                                 modifier = Modifier.fillMaxSize()
                             )
