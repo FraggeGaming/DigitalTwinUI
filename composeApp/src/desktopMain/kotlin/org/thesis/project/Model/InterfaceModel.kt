@@ -2,9 +2,17 @@ package org.thesis.project.Model
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.*
+import java.awt.image.BufferedImage
+
+enum class NiftiView(val displayName: String) {
+    AXIAL("Axial"),
+    CORONAL("Coronal"),
+    SAGITTAL("Sagittal");
+
+    override fun toString(): String = displayName
+}
 
 class InterfaceModel : ViewModel() {
 
@@ -12,14 +20,40 @@ class InterfaceModel : ViewModel() {
     private val initialLeftPanelWidth: Dp = 400.dp
     private val initialRightPanelWidth: Dp = 300.dp
 
-    // Existing data flows
-    private val _nestedData = MutableStateFlow(
-        listOf(
-            "CT_Patient1" to listOf("PET_Patient1", "MRI_Patient1"),
-            "CT_Patient2" to listOf("PET_Patient2", "MRI_Patient2")
-        )
-    )
-    val nestedData: StateFlow<List<Pair<String, List<String>>>> = _nestedData
+
+
+
+    private val _fileMapping = MutableStateFlow<Map<String, Pair<List<String>, List<String>>>>(emptyMap())
+    val fileMapping: StateFlow<Map<String, Pair<List<String>, List<String>>>> = _fileMapping
+
+    //Add or update an entry in the mapping
+    fun addFileMapping(key: String, firstList: List<String>, secondList: List<String>) {
+        _fileMapping.update { currentMap ->
+            currentMap + (key to Pair(firstList, secondList))
+        }
+    }
+
+    //Retrieve a specific mapping by key
+    fun getFileMapping(key: String): Pair<List<String>, List<String>>? {
+        return _fileMapping.value[key]
+    }
+
+    //Get all keys (filenames)
+    fun getFileMappingKeys(): List<String> {
+        return _fileMapping.value.keys.toList()
+    }
+
+    //Remove an entry from the mapping
+    fun removeFileMapping(key: String) {
+        _fileMapping.update { currentMap ->
+            currentMap - key
+        }
+    }
+
+    //Check if a key exists in the mapping
+    fun hasFileMapping(key: String): Boolean {
+        return _fileMapping.value.containsKey(key)
+    }
 
     private val _organs = MutableStateFlow(listOf("Liver", "Heart", "Lung", "Kidney", "Brain"))
     val organs: StateFlow<List<String>> = _organs
@@ -81,19 +115,58 @@ class InterfaceModel : ViewModel() {
     }
 
 
-    private val _selectedImageIndex = MutableStateFlow(0)
-    val selectedImageIndex: StateFlow<Int> = _selectedImageIndex
+    private val _scrollPosition = MutableStateFlow(0f)
+    val scrollPosition: StateFlow<Float> = _scrollPosition
 
-    fun updateSelectedImageIndex(newIndex: Int) {
-        _selectedImageIndex.value = newIndex
+    private val _niftiImages = MutableStateFlow<Map<String, Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>>>>(emptyMap())
+    val niftiImages: StateFlow<Map<String, Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>>>> = _niftiImages
+
+    fun storeNiftiImages(filename: String, axial: List<BufferedImage>, coronal: List<BufferedImage>, sagittal: List<BufferedImage>) {
+        _niftiImages.update { currentMap ->
+            currentMap + (filename to Triple(axial, coronal, sagittal))
+        }
     }
 
-    fun incrementSelectedImageIndex(max: Int) {
-        _selectedImageIndex.update { (it + 1).coerceAtMost(max) }
+    val niftiFilenames: StateFlow<List<String>> = _niftiImages.map { it.keys.toList() }.stateIn(
+        viewModelScope, SharingStarted.Lazily, emptyList()
+    )
+
+    fun getNiftiImages(filename: String): Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>>? {
+        return _niftiImages.value[filename]
     }
 
-    fun decrementSelectedImageIndex() {
-        _selectedImageIndex.update { (it - 1).coerceAtLeast(0) }
+    private val _scrollStep = MutableStateFlow(0) // Holds the global scroll step
+    val scrollStep: StateFlow<Int> = _scrollStep
+
+    fun getImageIndices(filename: String): StateFlow<Triple<Int, Int, Int>> {
+        return scrollStep.map { step ->
+            val images = _niftiImages.value[filename] ?: return@map Triple(0, 0, 0)
+            val (axial, coronal, sagittal) = images
+
+            val maxLength = listOf(axial.size, coronal.size, sagittal.size).maxOrNull() ?: 1
+
+            val axialIndex = ((step * axial.size) / maxLength).coerceIn(0, axial.lastIndex)
+            val coronalIndex = ((step * coronal.size) / maxLength).coerceIn(0, coronal.lastIndex)
+            val sagittalIndex = ((step * sagittal.size) / maxLength).coerceIn(0, sagittal.lastIndex)
+
+            Triple(axialIndex, coronalIndex, sagittalIndex)
+        }.stateIn(viewModelScope, SharingStarted.Lazily, Triple(0, 0, 0))
     }
 
+    fun incrementScrollPosition() {
+        _scrollStep.update { (it + 1) }
+    }
+
+    fun decrementScrollPosition() {
+        _scrollStep.update { (it - 1).coerceAtLeast(0) }
+    }
+
+    private val _selectedViews = MutableStateFlow<Set<String>>(setOf())
+    val selectedViews: StateFlow<Set<String>> = _selectedViews
+
+    fun updateSelectedViews(label: String, isSelected: Boolean) {
+        _selectedViews.update { currentSet ->
+            if (isSelected) currentSet + label else currentSet - label
+        }
+    }
 }

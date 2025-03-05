@@ -2,53 +2,38 @@ package org.thesis.project
 
 import CardMenu
 import CardWithCheckboxes
+import navigationButtons
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.mouse.mouseScrollFilter
-import androidx.compose.ui.input.mouse.MouseScrollEvent
 import androidx.compose.ui.input.pointer.PointerEventType
-import java.util.*
-import java.io.ByteArrayInputStream
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
-import menuCard
+import androidx.compose.ui.text.style.TextAlign
+import bottomMenu
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.thesis.project.Model.InterfaceModel
-import org.thesis.project.Model.parseNifti
+import org.thesis.project.Model.NiftiView
 import java.awt.image.BufferedImage
-import java.io.File
-import javax.imageio.ImageIO
-import org.jetbrains.skia.Image
-import java.io.ByteArrayOutputStream
+import parseNifti
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
 
-fun BufferedImage.toImageBitmapCustom(): ImageBitmap {
-    val outputStream = ByteArrayOutputStream()
-    ImageIO.write(this, "png", outputStream)
-    val imageBytes = outputStream.toByteArray()
-    val skiaImage = Image.makeFromEncoded(imageBytes)
-    return skiaImage.toComposeImageBitmap()
-}
 
 @Composable
 @Preview
@@ -56,90 +41,85 @@ fun App() {
     MaterialTheme {
         val interfaceModel: InterfaceModel = viewModel()
 
-
         val navController = rememberNavController()
-
-
-
-
-
         NavHost(navController, startDestination = "main") {
 
             composable("upload"){
-                uploadData(interfaceModel = interfaceModel, navMenu = { NavigationButtons(navController, "upload") })
+                uploadData(interfaceModel = interfaceModel, navMenu = { navigationButtons(navController, "upload") })
             }
 
             composable("modelSelect"){
-                modelSelect(interfaceModel = interfaceModel, navMenu = { NavigationButtons(navController, "modelSelect") })
+                modelSelect(interfaceModel = interfaceModel, navMenu = { navigationButtons(navController, "modelSelect") })
             }
 
             composable("main"){
 
 
-                imageViewer(interfaceModel = interfaceModel, navMenu = { NavigationButtons(navController, "main") })
+                imageViewer(interfaceModel = interfaceModel, navMenu = { navigationButtons(navController, "main") })
             }
         }
     }
 }
 
 @Composable
-fun NavigationButtons(navController: NavController, selected: String) {
-    Row(
-        modifier = Modifier.height(height = 70.dp)
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+fun FileUploadComponent(
+    filePathFlow: MutableStateFlow<String?> // StateFlow to store the file path
+) {
+    var isDragging by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .background(Color.LightGray, RoundedCornerShape(8.dp))
+            .border(2.dp, if (isDragging) Color.Blue else Color.Gray, RoundedCornerShape(8.dp))
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { isDragging = true },
+                    onDragCancel = { isDragging = false },
+                    onDragEnd = { isDragging = false },
+                    onDrag = {_, _ ->}
+                )
+            }
+            .clickable { selectFile(filePathFlow) }, // Handle click to open file picker
+        contentAlignment = Alignment.Center
     ) {
-        Button(
-            onClick = { navController.navigate("upload") },
-            shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = if (selected == "upload") Color(0xFF0050A0) else Color(0xFF0050A0), // Blue background
-                contentColor = Color.White            // White text
-            ),
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-        ) {
-            Text("1. Upload", textAlign = TextAlign.Center)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Default.Upload, contentDescription = "Upload", tint = Color.DarkGray, modifier = Modifier.size(48.dp))
+            Text("Drag & Drop or Click to Upload", textAlign = TextAlign.Center)
         }
-        Button(
-            onClick = { navController.navigate("modelSelect") },
-            shape = RectangleShape,
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = if (selected == "modelSelect") Color(0xFF0050A0) else Color(0xFF0050A0), // Blue background
-                contentColor = Color.White            // White text
-            ),
-            // Center button can remain with default shape (or you can also set a shape if needed)
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-        ) {
-            Text("2. Model Select", textAlign = TextAlign.Center)
-        }
-        Button(
-            onClick = { navController.navigate("main") },
-            shape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = if (selected == "main") Color(0xFF0050A0) else Color(0xFF0050A0), // Blue background
-                contentColor = Color.White            // White text
-            ),
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-        ) {
-            Text("3. Result", textAlign = TextAlign.Center)
-        }
+    }
+
+    // Display selected file path
+    val filePath by filePathFlow.collectAsState()
+    filePath?.let {
+        Text("Selected File: $it", modifier = Modifier.padding(top = 8.dp), color = Color.Black)
+    }
+}
+
+// Function to open file picker
+fun selectFile(filePathFlow: MutableStateFlow<String?>) {
+    val fileChooser = JFileChooser().apply {
+        fileSelectionMode = JFileChooser.FILES_ONLY
+        fileFilter = FileNameExtensionFilter("NIfTI Files", "nii", "nii.gz")
+    }
+    val result = fileChooser.showOpenDialog(null)
+    if (result == JFileChooser.APPROVE_OPTION) {
+        filePathFlow.value = fileChooser.selectedFile.absolutePath
     }
 }
 
 @Composable
 fun uploadData(interfaceModel: InterfaceModel,
                navMenu: @Composable () -> Unit){
+    val selectedFilePath = remember { MutableStateFlow<String?>(null) }
+
     Box(
         modifier = Modifier.fillMaxWidth()
     ){
         navMenu()
         Text(text = "Upload Data")
+        FileUploadComponent(selectedFilePath)
     }
 }
 
@@ -154,71 +134,6 @@ fun modelSelect(interfaceModel: InterfaceModel,
     }
 }
 
-fun runNiftiParser(niftiPath: String): String {
-    val exePath = "G:/Coding/Imaging/composeApp/src/desktopMain/resources/executables/nifti_visualize.exe"
-
-    val exeFile = File(exePath)
-    if (!exeFile.exists()) {
-        throw RuntimeException("Executable not found at: $exePath")
-    }
-
-    val process = ProcessBuilder(exePath, niftiPath)
-        .redirectErrorStream(true)
-        .start()
-
-    val output = process.inputStream.bufferedReader().readText()
-    val errorOutput = process.errorStream.bufferedReader().readText()
-    process.waitFor()
-
-    if (errorOutput.isNotEmpty()) {
-        println("Error running NIfTI parser:\n$errorOutput")
-    }
-
-    return output
-}
-
-@Serializable
-data class NiftiImageData(
-    val axial: List<String>,
-    val coronal: List<String>,
-    val sagittal: List<String>
-)
-
-fun base64ToBufferedImage(base64: String): BufferedImage? {
-    return try {
-        val imageBytes = Base64.getDecoder().decode(base64)
-        val inputStream = ByteArrayInputStream(imageBytes)
-        ImageIO.read(inputStream)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
-
-fun parseNiftiImages(jsonData: String): Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>> {
-    val json = Json { ignoreUnknownKeys = true }
-    val niftiImages = json.decodeFromString<NiftiImageData>(jsonData)
-
-    val axialImages = niftiImages.axial.mapNotNull { base64ToBufferedImage(it) }
-    val coronalImages = niftiImages.coronal.mapNotNull { base64ToBufferedImage(it) }
-    val sagittalImages = niftiImages.sagittal.mapNotNull { base64ToBufferedImage(it) }
-
-    return Triple(axialImages, coronalImages, sagittalImages)
-}
-
-@Composable
-fun ImageProcessorUI(niftiPath: String) {
-    var output by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(niftiPath) { // Ensures execution runs once per path change
-        output = runNiftiParser(niftiPath)
-    }
-
-    output?.let {
-        Text("Processing complete: ${it.take(100)}") // Display first 100 chars of output
-    }
-}
-
 
 @Composable
 fun imageViewer(
@@ -226,7 +141,6 @@ fun imageViewer(
     navMenu: @Composable () -> Unit
 ){
     val selectedData by interfaceModel.selectedData.collectAsState()
-    val nestedData by interfaceModel.nestedData.collectAsState()
     val selectedDistricts by interfaceModel.selectedDistricts.collectAsState()
     val organs by interfaceModel.organs.collectAsState()
 
@@ -235,43 +149,24 @@ fun imageViewer(
     val leftPanelExpanded by interfaceModel.leftPanelExpanded.collectAsState()
     val rightPanelExpanded by interfaceModel.rightPanelExpanded.collectAsState()
 
-    val selectedImageIndex by interfaceModel.selectedImageIndex.collectAsState()
 
-   //
+    val selectedViews by interfaceModel.selectedViews.collectAsState()
 
-    //val niftiFile = File( "C:\\Users\\User\\Desktop\\Exjob\\47727\\47727\\BOX_CT\\brain_CT.nii.gz")
-    //val (axial, coronal, sagittal) = parseNifti(niftiFile)
 
-//    ImageIO.write(axial.first(), "png", File("axial_slice.png"))
-//    ImageIO.write(coronal.first(), "png", File("coronal_slice.png"))
-//    ImageIO.write(sagittal.first(), "png", File("sagittal_slice.png"))
+    //Takes the file path and parses the nifti
+    val niftiFile = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\liver_CT.nii.gz"
+    val file = parseNifti(niftiFile, interfaceModel)
 
-    val niftiFile = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
-    //val result = runNiftiParser(niftiFile)
+    val niftiFile1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
+    val file1 = parseNifti(niftiFile1, interfaceModel)
 
-    var output by remember { mutableStateOf<String?>(null) }
-    var axialImages by remember { mutableStateOf<List<BufferedImage>>(emptyList()) }
-    var coronalImages by remember { mutableStateOf<List<BufferedImage>>(emptyList()) }
-    var sagittalImages by remember { mutableStateOf<List<BufferedImage>>(emptyList()) }
-    var isProcessing by remember { mutableStateOf(false) }  // ✅ Prevent multiple executions
+    if (file != null && file1 != null) {
+        //Create coupling between the files, ex: file1 is synthetic pet from file
+        interfaceModel.addFileMapping("Patient 1", listOf(file), listOf(file1))
 
-    LaunchedEffect(niftiFile) {
-        if (!isProcessing) {
-            isProcessing = true
-            println("Running NIfTI Parser...")
-
-            output = runNiftiParser(niftiFile) // Run the Python script
-
-            output?.let {
-                val (axial, coronal, sagittal) = parseNiftiImages(it)
-                axialImages = axial
-                coronalImages = coronal
-                sagittalImages = sagittal
-            }
-        }
     }
 
-    //println("Python Output:\n$result")  // This should be your JSON data
+    interfaceModel.updateSelectedViews(NiftiView.AXIAL.toString(), true)
 
     MainPanelLayout(
         leftPanelWidth = leftPanelWidth,
@@ -296,27 +191,14 @@ fun imageViewer(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-//                    Box(
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .align(Alignment.End),
-//                        contentAlignment = Alignment.Center
-//                    ) {
-//                        IconButton(onClick = { interfaceModel.toggleLeftPanelExpanded() }) {
-//                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Collapse Left")
-//                        }
-//                    }
-
                     navMenu()
 
                     CardMenu(
-                        //onShowPopup = { showPopup = !showPopup },
+                        fileKeys = interfaceModel.getFileMappingKeys(),
                         selectedData = selectedData,
-                        items = nestedData,
+                        getFileMapping = interfaceModel::getFileMapping,
                         onCheckboxChanged = { label, isChecked ->
                             interfaceModel.updateSelectedData(label, isChecked)
-
-                            println("$label is ${if (isChecked) "selected" else "deselected"}")
                         }
                     )
 
@@ -325,7 +207,6 @@ fun imageViewer(
                         items = organs,
                         onCheckboxChanged = { organ, isChecked ->
                             interfaceModel.updateSelectedDistrict(organ, isChecked)
-                            println("$organ is ${if (isChecked) "selected" else "deselected"}")
                         }
                     )
                 }
@@ -333,200 +214,71 @@ fun imageViewer(
 
         },
         centerContent = {
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val event = awaitPointerEvent()
-                                if (event.type == PointerEventType.Scroll) {
-                                    // Here we assume the scroll delta is available on the first change.
-                                    val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
-                                    if (scrollDelta.y > 0f) {
-                                        interfaceModel.incrementSelectedImageIndex(axialImages.lastIndex-1)
-                                    } else if (scrollDelta.y < 0f) {
-                                        interfaceModel.decrementSelectedImageIndex()
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    if (event.type == PointerEventType.Scroll) {
+                                        val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
+                                        if (scrollDelta.y > 0f) {
+                                            interfaceModel.decrementScrollPosition()
+                                        } else if (scrollDelta.y < 0f) {
+                                            interfaceModel.incrementScrollPosition()
+                                        }
                                     }
                                 }
                             }
-                        }
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize() // Fill the entire Box
-                        .padding(bottom = 20.dp), // Optional padding to give room for menuCard
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween // Push content to top/bottom
-
-
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text("Center Panel")
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    )
-                    {
-                        selectedData.forEach { selected ->
-                            Text(text = selected)
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    )
-                    {
-                        selectedDistricts.forEach { selected ->
-                            Text(text = selected)
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                    }
-
-                    Box(
-                    modifier = Modifier.fillMaxWidth().height(500.dp),
-                    contentAlignment = Alignment.Center
-                    ) {
-                        if (axialImages.isNotEmpty()) {
-                            Image(
-                                bitmap = axialImages[selectedImageIndex].toComposeImageBitmap(),
-                                contentDescription = "Selected Axial Image",
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            Text("No Axial Images")
-                        }
-                    }
-
-
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                        },
                     contentAlignment = Alignment.Center
                 ) {
-                    //Image(painterResource(Res.drawable.compose_multiplatform), null)
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        selectedData.forEach { filename ->
+                            Text(filename)
+                            val images = interfaceModel.getNiftiImages(filename)
+                            val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
+                            images?.let { (axial, coronal, sagittal) ->
+                                val (axialIndex, coronalIndex, sagittalIndex) = imageIndices
+
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    if (selectedViews.contains(NiftiView.AXIAL.toString())) imageDisplay(axial, axialIndex, NiftiView.AXIAL.toString())
+                                    if (selectedViews.contains(NiftiView.CORONAL.toString())) imageDisplay(coronal, coronalIndex, NiftiView.CORONAL.toString())
+                                    if (selectedViews.contains(NiftiView.SAGITTAL.toString())) imageDisplay(sagittal, sagittalIndex, NiftiView.SAGITTAL.toString())
+                                }
+                            }
+                        }
+                    }
                 }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(100.dp)
-                            .padding(16.dp)
+                Row(
+                    modifier = Modifier
+                        .width(800.dp)
+                        .height(100.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    bottomMenu(
+                        selectedViews,
+                        onCheckboxChanged = interfaceModel::updateSelectedViews,
+                        modifier = Modifier.fillMaxSize()
                     )
-                    {
-                        menuCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            content = listOf(
-                                {
-                                    var checked by remember { mutableStateOf(false) }
-
-                                    Row(
-                                        modifier = Modifier
-                                            .clickable { checked = !checked }, // Toggle the checkbox state when Row is clicked
-                                        verticalAlignment = Alignment.CenterVertically // Align Checkbox and Text
-                                    ) {
-                                        Checkbox(
-                                            checked = checked,
-                                            onCheckedChange = { checked = it }
-                                        )
-                                        Text(text = "Axial")
-                                    }
-
-
-                                },
-
-                                {
-                                    var checked by remember { mutableStateOf(false) }
-
-                                    Row(
-                                        modifier = Modifier
-                                            .clickable { checked = !checked }, // Toggle the checkbox state when Row is clicked
-                                        verticalAlignment = Alignment.CenterVertically // Align Checkbox and Text
-                                    ) {
-                                        Checkbox(
-                                            checked = checked,
-                                            onCheckedChange = { checked = it }
-                                        )
-                                        Text(text = "Coronal")
-                                    }
-                                },
-
-                                {
-                                    var checked by remember { mutableStateOf(false) }
-                                    Row(
-                                        modifier = Modifier
-                                            .clickable { checked = !checked }, // Toggle the checkbox state when Row is clicked
-                                        verticalAlignment = Alignment.CenterVertically // Align Checkbox and Text
-                                    ) {
-                                        Checkbox(
-                                            checked = checked,
-                                            onCheckedChange = { checked = it }
-                                        )
-                                        Text(text = "Sagittal")
-                                    }
-
-                                    //clickableCheckBox(text = "Sagittal", model.selectedSettings)
-                                },
-
-                                {
-
-                                    Box(
-                                        modifier = Modifier
-                                            .width(1.dp)
-                                            .height(50.dp)
-                                            .background(Color.Gray)  // Line color
-                                    )
-
-
-                                },
-
-                                {
-                                    TextButton(
-                                        onClick = { /* Handle click */ },
-                                        colors = ButtonDefaults.textButtonColors(
-                                            backgroundColor = Color.Transparent, // No background
-                                            contentColor = Color.Unspecified // Keeps default text/icon color
-                                        ),
-                                        elevation = null, // Removes elevation
-                                        modifier = Modifier.padding(0.dp) // Removes extra padding
-                                    ) {
-                                        Icon(Icons.Default.Straighten, contentDescription = "Measure")
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Measure")
-                                    }
-                                },
-
-                                {
-                                    TextButton(
-                                        onClick = { /* Handle click */ },
-                                        colors = ButtonDefaults.textButtonColors(
-                                            backgroundColor = Color.Transparent, // No background
-                                            contentColor = Color.Unspecified // Keeps default text/icon color
-                                        ),
-                                        elevation = null, // Removes elevation
-                                        modifier = Modifier.padding(0.dp) // Removes extra padding
-                                    ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Pixel intensity")
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Pixel intensity")
-                                    }
-                                }
-                            )
-                        )
-                    }
                 }
             }
-
-        },
+        }
+        ,
         rightContent = {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -557,42 +309,24 @@ fun imageViewer(
     )
 }
 
+@Composable
+fun imageDisplay(images: List<BufferedImage>, index: Int, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("$label - Slice $index")
 
-//@Composable
-//fun displayImg(images: List<BufferedImage>) {
-//
-//    Box(
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .pointerInput(Unit) {
-//                awaitPointerEventScope {
-//                    while (true) {
-//                        val event = awaitPointerEvent()
-//                        if (event.type == PointerEventType.Scroll) {
-//                            // Here we assume the scroll delta is available on the first change.
-//                            val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
-//                            if (scrollDelta.y > 0f) {
-//                                selectedIndex = (selectedIndex + 1).coerceAtMost(images.lastIndex-1)
-//                            } else if (scrollDelta.y < 0f) {
-//                                selectedIndex = (selectedIndex - 1).coerceAtLeast(0)
-//                            }
-//                        }
-//                    }
-//                }
-//            },
-//        contentAlignment = Alignment.Center
-//    ) {
-//        if (images.isNotEmpty()) {
-//            Image(
-//                bitmap = images[selectedIndex].toComposeImageBitmap(),
-//                contentDescription = "Selected Axial Image",
-//                modifier = Modifier.fillMaxSize()
-//            )
-//        } else {
-//            Text("No Axial Images")
-//        }
-//    }
-//}
-
-
-
+        Box(
+            modifier = Modifier
+                .size(250.dp) // Fixed size for images
+        ) {
+            if (images.isNotEmpty()) {
+                Image(
+                    bitmap = images[index].toComposeImageBitmap(),
+                    contentDescription = "$label Image",
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Text("No images")
+            }
+        }
+    }
+}

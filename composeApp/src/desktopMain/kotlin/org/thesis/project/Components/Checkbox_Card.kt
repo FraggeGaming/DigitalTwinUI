@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
+import kotlin.reflect.KFunction1
 
 
 @Composable
@@ -129,7 +130,37 @@ fun buttonWithCheckbox(
     ){
     Row(verticalAlignment = Alignment.CenterVertically) {
         TextButton(
-            modifier = Modifier.fillMaxWidth(),
+            //modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.textButtonColors(
+                backgroundColor = Color.Transparent,
+                contentColor = LocalContentColor.current
+            ),
+            onClick = {
+                val isCurrentlyChecked = selectedData.contains(label)
+                onCheckboxChanged(label, !isCurrentlyChecked)
+            }
+        ) {
+            Checkbox(
+                checked = selectedData.contains(label),
+                onCheckedChange = { isChecked ->
+                    onCheckboxChanged(label, isChecked)
+                }
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text = label)
+        }
+    }
+}
+
+@Composable
+fun buttonWithCheckboxSet(
+    selectedData: Set<String>,
+    label: String,
+    onCheckboxChanged: (String, Boolean) -> Unit,
+){
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextButton(
+            //modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.textButtonColors(
                 backgroundColor = Color.Transparent,
                 contentColor = LocalContentColor.current
@@ -154,7 +185,7 @@ fun buttonWithCheckbox(
 @Composable
 fun modalities(
     selectedData: Set<String>,
-    mainLabel: String,
+    mainLabels: List<String>,
     subLabels: List<String>,
     onCheckboxChanged: (String, Boolean) -> Unit,
     shape: Shape = RoundedCornerShape(8.dp)
@@ -173,7 +204,11 @@ fun modalities(
                 .fillMaxWidth()
                 .padding(bottom = 4.dp)
         )
-        buttonWithCheckbox(selectedData, mainLabel, onCheckboxChanged)
+
+        mainLabels.forEach { mainLabel ->
+            buttonWithCheckbox(selectedData, mainLabel, onCheckboxChanged)
+
+        }
 
         Divider(modifier = Modifier.padding(vertical = 8.dp))
         Text(
@@ -193,11 +228,11 @@ fun modalities(
 @Composable
 fun CardMenu(
     selectedData: Set<String>,
-    items: List<Pair<String, List<String>>>,
+    fileKeys: List<String>,
+    getFileMapping: (String) -> Pair<List<String>, List<String>>?, // ✅ Uses List<String> instead of List<Pair<String, String>>
     onCheckboxChanged: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-
     var expandedMenu by remember { mutableStateOf<String?>(null) }
 
     Card(
@@ -220,17 +255,17 @@ fun CardMenu(
                 )
 
                 if (boxMaxWidth < 300.dp) {
-                    //vertical list of menu items,
+                    // Vertical list of menu items
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items.forEach { (mainLabel, subLabels) ->
+                        fileKeys.forEach { mainLabel ->
                             val isSelected = expandedMenu == mainLabel
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(0.dp), // No gap between button and modalities
+                                verticalArrangement = Arrangement.spacedBy(0.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 MenuButton(
@@ -246,33 +281,33 @@ fun CardMenu(
                                     )
                                 )
                                 if (isSelected) {
-                                    modalities(
-                                        selectedData = selectedData,
-                                        mainLabel = mainLabel,
-                                        subLabels = subLabels,
-                                        onCheckboxChanged = onCheckboxChanged,
-                                        shape = RoundedCornerShape(
-                                            topStart = 0.dp,
-                                            bottomStart = 8.dp,
-                                            topEnd = 0.dp,
-                                            bottomEnd = 8.dp
+                                    getFileMapping(mainLabel)?.let { (inputList, outputList) ->
+                                        modalities(
+                                            selectedData = selectedData, // ✅ Inputs are now correctly mapped
+                                            mainLabels = inputList,
+                                            subLabels = outputList, // ✅ Outputs go into modalities
+                                            onCheckboxChanged = onCheckboxChanged,
+                                            shape = RoundedCornerShape(
+                                                topStart = 0.dp,
+                                                bottomStart = 8.dp,
+                                                topEnd = 0.dp,
+                                                bottomEnd = 8.dp
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                else {
-                    //Wide layout
+                } else {
+                    // Wide layout
                     if (expandedMenu == null) {
-                        //Show all buttons in a vertical column.
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            items.forEach { (mainLabel, _) ->
+                            fileKeys.forEach { mainLabel ->
                                 MenuButton(
                                     mainLabel = mainLabel,
                                     isSelected = false,
@@ -282,16 +317,14 @@ fun CardMenu(
                                 )
                             }
                         }
-                    }
-                    else {
-                        //Use a two-column layout:
+                    } else {
                         Row(modifier = Modifier.fillMaxWidth()) {
                             Column(
                                 modifier = Modifier.weight(0.4f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                items.forEach { (mainLabel, _) ->
+                                fileKeys.forEach { mainLabel ->
                                     val isSelected = expandedMenu == mainLabel
                                     MenuButton(
                                         mainLabel = mainLabel,
@@ -313,17 +346,16 @@ fun CardMenu(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 expandedMenu?.let { selectedMainLabel ->
-                                    val selectedItem = items.find { it.first == selectedMainLabel }
-                                    selectedItem?.let { (mainLabel, subLabels) ->
+                                    getFileMapping(selectedMainLabel)?.let { (inputList, outputList) ->
                                         modalities(
-                                            selectedData = selectedData,
-                                            mainLabel = mainLabel,
-                                            subLabels = subLabels,
+                                            selectedData = selectedData, // ✅ Inputs are now correctly mapped
+                                            mainLabels = inputList,
+                                            subLabels = outputList, // ✅ Outputs go into modalities
                                             onCheckboxChanged = onCheckboxChanged,
                                             shape = RoundedCornerShape(
                                                 topStart = 0.dp,
-                                                bottomStart = 0.dp,
-                                                topEnd = 8.dp,
+                                                bottomStart = 8.dp,
+                                                topEnd = 0.dp,
                                                 bottomEnd = 8.dp
                                             )
                                         )
@@ -342,6 +374,7 @@ fun CardMenu(
         }
     }
 }
+
 
 @Composable
 fun MenuButton(

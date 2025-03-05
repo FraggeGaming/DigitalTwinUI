@@ -25,6 +25,10 @@ def convert_to_base64(image_array):
     normalized_img = cv2.normalize(image_array, None, 0, 255, cv2.NORM_MINMAX)
     img_uint8 = np.uint8(normalized_img)
 
+    #Might have to delete if they were in fact not rotated
+    img_uint8 = cv2.rotate(img_uint8, cv2.ROTATE_90_CLOCKWISE)
+
+
     _, buffer = cv2.imencode(".png", img_uint8)
     encoded_image = base64.b64encode(buffer).decode("utf-8")
 
@@ -32,7 +36,7 @@ def convert_to_base64(image_array):
 
 def process_slices(slice_list):
     """ Process image slices in parallel using multiprocessing (Only in Python mode). """
-    if getattr(sys, 'frozen', False):  # ✅ Detect if running as an .exe
+    if getattr(sys, 'frozen', False):
         return [convert_to_base64(slice) for slice in slice_list]  # **Run in single-threaded mode**
     else:
         with multiprocessing.Pool() as pool:
