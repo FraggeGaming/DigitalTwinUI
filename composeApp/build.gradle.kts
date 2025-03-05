@@ -1,9 +1,11 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
+    kotlin("plugin.serialization")
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+
 }
 
 kotlin {
@@ -24,7 +26,7 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
             implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
 
 
         }
@@ -32,10 +34,12 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
             implementation("org.jetbrains.compose.ui:ui-desktop:1.6.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
         }
     }
 }
+
 
 
 compose.desktop {

@@ -29,7 +29,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.mouse.mouseScrollFilter
 import androidx.compose.ui.input.mouse.MouseScrollEvent
 import androidx.compose.ui.input.pointer.PointerEventType
-
+import java.util.*
+import java.io.ByteArrayInputStream
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
 import menuCard
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.parseNifti
@@ -151,19 +154,46 @@ fun modelSelect(interfaceModel: InterfaceModel,
     }
 }
 
-fun callPythonScript(scriptPath: String, vararg args: String): String {
-    // Construct the command with "python", the script path, and any additional arguments.
-    val command = listOf("python", scriptPath) + args
-    val process = ProcessBuilder(command)
-        .redirectErrorStream(true) // merge stdout and stderr
+fun runNiftiParser(niftiPath: String): String {
+    val exePath = File("src/desktopMain/resources/executables/nifti_visualize.exe").absolutePath
+
+    val process = ProcessBuilder(exePath, niftiPath)
+        .redirectErrorStream(true)
         .start()
 
-    // Read the process output.
     val output = process.inputStream.bufferedReader().readText()
-
-    // Wait for the process to finish.
     process.waitFor()
+
     return output
+}
+
+@Serializable
+data class NiftiImageData(
+    val axial: List<String>,
+    val coronal: List<String>,
+    val sagittal: List<String>
+)
+
+fun base64ToBufferedImage(base64: String): BufferedImage? {
+    return try {
+        val imageBytes = Base64.getDecoder().decode(base64)
+        val inputStream = ByteArrayInputStream(imageBytes)
+        ImageIO.read(inputStream)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+fun parseNiftiImages(jsonData: String): Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>> {
+    val json = Json { ignoreUnknownKeys = true }
+    val niftiImages = json.decodeFromString<NiftiImageData>(jsonData)
+
+    val axialImages = niftiImages.axial.mapNotNull { base64ToBufferedImage(it) }
+    val coronalImages = niftiImages.coronal.mapNotNull { base64ToBufferedImage(it) }
+    val sagittalImages = niftiImages.sagittal.mapNotNull { base64ToBufferedImage(it) }
+
+    return Triple(axialImages, coronalImages, sagittalImages)
 }
 
 @Composable
@@ -185,13 +215,20 @@ fun imageViewer(
 
    //
 
-    val niftiFile = File( "C:\\Users\\User\\Desktop\\Exjob\\47727\\47727\\BOX_CT\\brain_CT.nii.gz")
-    val (axial, coronal, sagittal) = parseNifti(niftiFile)
+    //val niftiFile = File( "C:\\Users\\User\\Desktop\\Exjob\\47727\\47727\\BOX_CT\\brain_CT.nii.gz")
+    //val (axial, coronal, sagittal) = parseNifti(niftiFile)
 
 //    ImageIO.write(axial.first(), "png", File("axial_slice.png"))
 //    ImageIO.write(coronal.first(), "png", File("coronal_slice.png"))
 //    ImageIO.write(sagittal.first(), "png", File("sagittal_slice.png"))
 
+    val niftiFile = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+    val result = runNiftiParser(niftiFile)
+
+    // Convert JSON into 3 lists of BufferedImages
+    val (axial, coronal, sagittal) = parseNiftiImages(result)
+
+    //println("Python Output:\n$result")  // This should be your JSON data
 
     MainPanelLayout(
         leftPanelWidth = leftPanelWidth,
@@ -314,7 +351,7 @@ fun imageViewer(
                     }
 
                     Box(
-                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    modifier = Modifier.fillMaxWidth().height(500.dp),
                     contentAlignment = Alignment.Center
                     ) {
                         if (axial.isNotEmpty()) {
@@ -329,12 +366,12 @@ fun imageViewer(
                     }
 
 
-//                Box(
-//                    modifier = Modifier.fillMaxWidth().height(200.dp),
-//                    contentAlignment = Alignment.Center
-//                ) {
-//                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-//                }
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    //Image(painterResource(Res.drawable.compose_multiplatform), null)
+                }
 
                     Box(
                         modifier = Modifier

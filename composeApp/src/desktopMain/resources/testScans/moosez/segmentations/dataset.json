@@ -1,0 +1,19 @@
+{
+    "name": "Dataset001_PUMA",
+    "description": "",
+    "reference": "",
+    "licence": "hands off!",
+    "release": "0.0",
+    "labels": {
+        "background": 0,
+        "legs": 1,
+        "body": 2,
+        "head": 3,
+        "arms": 4
+    },
+    "numTraining": 121,
+    "file_ending": ".nii.gz",
+    "channel_names": {
+        "0": "CT"
+    }
+}

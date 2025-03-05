@@ -1,0 +1,22 @@
+{
+    "checkpoint_name": "checkpoint_final.pth",
+    "device": "cuda:0",
+    "folder_with_segs_from_prev_stage": null,
+    "list_of_lists_or_source_folder": "/mimer/NOBACKUP/groups/snic2022-5-277/rrestivo/Data/nifti_images/PETCT_595975bc57/47727/moosez/CT/temp",
+    "model_training_output_dir": "/mimer/NOBACKUP/groups/snic2022-5-277/rrestivo/reb-env/models/nnunet_trained_models/Dataset001_PUMA/nnUNetTrainer__nnUNetPlans__3d_fullres",
+    "num_parts": 1,
+    "num_processes_preprocessing": 3,
+    "num_processes_segmentation_export": 3,
+    "output_folder": "/mimer/NOBACKUP/groups/snic2022-5-277/rrestivo/Data/nifti_images/PETCT_595975bc57/47727/moosez/segmentations",
+    "overwrite": true,
+    "part_id": 0,
+    "perform_everything_on_gpu": true,
+    "save_probabilities": false,
+    "tile_step_size": 0.5,
+    "use_folds": [
+        "all"
+    ],
+    "use_gaussian": true,
+    "use_mirroring": false,
+    "verbose": false
+}
