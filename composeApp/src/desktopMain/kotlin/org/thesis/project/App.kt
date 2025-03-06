@@ -27,6 +27,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.text.style.TextAlign
 import bottomMenu
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import java.awt.image.BufferedImage
@@ -154,16 +155,14 @@ fun imageViewer(
 
 
     //Takes the file path and parses the nifti
-    val niftiFile = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\liver_CT.nii.gz"
+    val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\liver_CT.nii.gz"
     val file = parseNifti(niftiFile, interfaceModel)
 
-    val niftiFile1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
-    val file1 = parseNifti(niftiFile1, interfaceModel)
+    //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CT.nii.gz"
+    //val file1 = parseNifti(niftiFile1, interfaceModel)
 
-    if (file != null && file1 != null) {
-        //Create coupling between the files, ex: file1 is synthetic pet from file
-        interfaceModel.addFileMapping("Patient 1", listOf(file), listOf(file1))
-
+    if (file != null) {
+        interfaceModel.addFileMapping("Patient 1", listOf(file), listOf("file1"))
     }
 
     interfaceModel.updateSelectedViews(NiftiView.AXIAL.toString(), true)
@@ -299,6 +298,15 @@ fun imageViewer(
                     }
 
                     Text("Right Panel")
+
+                    ScrollSlider(
+                        selectedData = interfaceModel.selectedData,
+                        scrollStep = interfaceModel.scrollStep,
+                        maxIndexMap = interfaceModel.maxSelectedImageIndex,
+                        onUpdate = { value -> interfaceModel.setScrollPosition(value.toFloat()) } // Convert Int -> Float
+                    )
+
+
                 }
 
 
@@ -308,6 +316,38 @@ fun imageViewer(
 
     )
 }
+
+@Composable
+fun ScrollSlider(
+    selectedData: StateFlow<Set<String>>,
+    scrollStep: StateFlow<Int>,
+    maxIndexMap: StateFlow<Map<String, Float>>,
+    onUpdate: (Int) -> Unit
+) {
+    val currentScrollStep by scrollStep.collectAsState()
+    val selectedFilenames by selectedData.collectAsState()
+    val maxSizeMap by maxIndexMap.collectAsState()
+
+    val maxValue = selectedFilenames.mapNotNull { maxSizeMap[it]?.toInt() }.maxOrNull() ?: 1
+
+    Column {
+        Slider(
+            value = currentScrollStep.toFloat(),
+            onValueChange = { newValue ->
+                onUpdate(newValue.toInt())
+            },
+            valueRange = 0f..maxValue.toFloat(),
+            steps = maxValue - 1,
+            colors = SliderDefaults.colors(
+                thumbColor = Color.Gray,
+                activeTrackColor = Color.Blue,
+                inactiveTrackColor = Color.Green,
+            )
+        )
+        Text(text = "Step: ${currentScrollStep.toFloat().toInt()} / $maxValue")
+    }
+}
+
 
 @Composable
 fun imageDisplay(images: List<BufferedImage>, index: Int, label: String) {

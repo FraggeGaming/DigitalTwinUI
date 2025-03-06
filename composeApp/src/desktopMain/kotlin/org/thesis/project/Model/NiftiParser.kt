@@ -9,7 +9,7 @@ import java.util.*
 import javax.imageio.ImageIO
 
 fun runNiftiParser(niftiPath: String): String {
-    val exePath = "G:/Coding/Imaging/composeApp/src/desktopMain/resources/executables/nifti_visualize.exe"
+    val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
 
     val exeFile = File(exePath)
     if (!exeFile.exists()) {

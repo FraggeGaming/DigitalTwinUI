@@ -71,7 +71,14 @@ class InterfaceModel : ViewModel() {
         _selectedData.update { currentSet ->
             if (isSelected) currentSet + label else currentSet - label
         }
+
+        if (!isSelected) {
+            _maxSelectedImageIndex.update { currentMap ->
+                currentMap.toMutableMap().apply { remove(label) } // Apply returns the modified map
+            }
+        }
     }
+
 
     fun updateSelectedSettings(label: String, isSelected: Boolean) {
         _selectedSettings.update { currentSet ->
@@ -114,10 +121,6 @@ class InterfaceModel : ViewModel() {
         _rightPanelExpanded.value = !_rightPanelExpanded.value
     }
 
-
-    private val _scrollPosition = MutableStateFlow(0f)
-    val scrollPosition: StateFlow<Float> = _scrollPosition
-
     private val _niftiImages = MutableStateFlow<Map<String, Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>>>>(emptyMap())
     val niftiImages: StateFlow<Map<String, Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>>>> = _niftiImages
 
@@ -135,6 +138,32 @@ class InterfaceModel : ViewModel() {
         return _niftiImages.value[filename]
     }
 
+    fun getMaxIndexSizeForSelectedData(): Int {
+        val valuesList: List<String> = _selectedData.value.toList()
+        var maxIndex = 0
+
+        valuesList.forEachIndexed { index, value ->
+            val images = getNiftiImages(value)
+            if (images != null){
+                val (axial, coronal, sagittal) = images
+                val size = listOf(axial.size, coronal.size, sagittal.size).maxOrNull() ?: 1
+
+
+                println("Size: $size")
+                if (size < maxIndex){
+                    maxIndex = size
+                }
+            }
+        }
+        println("Max index: $maxIndex")
+
+        return maxIndex
+    }
+
+    private val _maxSelectedImageIndex = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
+
+
     private val _scrollStep = MutableStateFlow(0) // Holds the global scroll step
     val scrollStep: StateFlow<Int> = _scrollStep
 
@@ -144,6 +173,9 @@ class InterfaceModel : ViewModel() {
             val (axial, coronal, sagittal) = images
 
             val maxLength = listOf(axial.size, coronal.size, sagittal.size).maxOrNull() ?: 1
+            _maxSelectedImageIndex.update { currentMap ->
+                currentMap.toMutableMap().apply { put(filename, maxLength.toFloat()) }
+            }
 
             val axialIndex = ((step * axial.size) / maxLength).coerceIn(0, axial.lastIndex)
             val coronalIndex = ((step * coronal.size) / maxLength).coerceIn(0, coronal.lastIndex)
@@ -155,7 +187,16 @@ class InterfaceModel : ViewModel() {
 
     fun incrementScrollPosition() {
         _scrollStep.update { (it + 1) }
+
     }
+
+    fun setScrollPosition(value: Float) {
+        _scrollStep.update { current ->
+            val newValue = value.toInt()
+            if (current != newValue) newValue else current // Avoid redundant updates
+        }
+    }
+
 
     fun decrementScrollPosition() {
         _scrollStep.update { (it - 1).coerceAtLeast(0) }
