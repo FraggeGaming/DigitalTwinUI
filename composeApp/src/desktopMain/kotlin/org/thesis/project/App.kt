@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.dp
@@ -21,10 +22,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import bottomMenu
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,7 @@ import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import java.awt.image.BufferedImage
 import parseNifti
+import java.awt.Point
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -253,9 +255,9 @@ fun imageViewer(
                                     Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
-                                    if (selectedViews.contains(NiftiView.AXIAL.toString())) imageDisplay(axial, axialIndex, NiftiView.AXIAL.toString())
-                                    if (selectedViews.contains(NiftiView.CORONAL.toString())) imageDisplay(coronal, coronalIndex, NiftiView.CORONAL.toString())
-                                    if (selectedViews.contains(NiftiView.SAGITTAL.toString())) imageDisplay(sagittal, sagittalIndex, NiftiView.SAGITTAL.toString())
+                                    if (selectedViews.contains(NiftiView.AXIAL.toString())) imageDisplay(axial, axialIndex, NiftiView.AXIAL.toString(), 2f)
+                                    if (selectedViews.contains(NiftiView.CORONAL.toString())) imageDisplay(coronal, coronalIndex, NiftiView.CORONAL.toString(),2f)
+                                    if (selectedViews.contains(NiftiView.SAGITTAL.toString())) imageDisplay(sagittal, sagittalIndex, NiftiView.SAGITTAL.toString(),2f)
                                 }
                             }
                         }
@@ -350,23 +352,109 @@ fun ScrollSlider(
 
 
 @Composable
-fun imageDisplay(images: List<BufferedImage>, index: Int, label: String) {
+fun imageDisplay(images: List<BufferedImage>, index: Int, label: String, scaleFactor: Float = 2f) {
+    var hoverPosition by remember { mutableStateOf<Point?>(null) }
+    var hoverColor by remember { mutableStateOf<Color?>(null) }
+    var intensity by remember { mutableStateOf<Int?>(null) }
+    var cursorPosition by remember { mutableStateOf(Offset.Zero) }
+
+    if (images.isEmpty()) {
+        Text("No images")
+        return
+    }
+
+    val image = images[index]
+    val bitmap = image.toComposeImageBitmap()
+
+    // Calculate scaled dimensions
+    val scaledWidth = (image.width * scaleFactor).toInt()
+    val scaledHeight = (image.height * scaleFactor).toInt()
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text("$label - Slice $index")
 
         Box(
             modifier = Modifier
-                .size(250.dp) // Fixed size for images
+                .size(scaledWidth.dp, scaledHeight.dp)
+                .pointerInput(Unit) {
+                    detectPointerMovement(image, scaleFactor) { x, y, position ->
+                        hoverPosition = Point(x, y)
+                        val rgb = image.getRGB(x, y) // Get pixel color as int
+                        hoverColor = Color(rgb)
+
+                        intensity = extractIntensity(rgb) // Extract intensity from pixel
+                        cursorPosition = position // Store cursor position for the popup
+                    }
+                }
         ) {
-            if (images.isNotEmpty()) {
-                Image(
-                    bitmap = images[index].toComposeImageBitmap(),
-                    contentDescription = "$label Image",
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Text("No images")
+            Image(
+                bitmap = bitmap,
+                contentDescription = "$label Image",
+                modifier = Modifier.size(scaledWidth.dp, scaledHeight.dp)
+            )
+
+            // Show popup next to cursor
+            hoverPosition?.let { pos ->
+                intensity?.let { value ->
+                    HoverPopup(cursorPosition, pos, value)
+                }
             }
         }
     }
 }
+
+/**
+ * Detects mouse movement and maps scaled coordinates back to the original image pixel positions.
+ */
+suspend fun PointerInputScope.detectPointerMovement(
+    image: BufferedImage,
+    scaleFactor: Float,
+    onPixelHover: (Int, Int, Offset) -> Unit
+) {
+    awaitPointerEventScope {
+        while (true) {
+            val event = awaitPointerEvent()
+            val position = event.changes.first().position
+
+            // Convert screen position to image pixel coordinates
+            val x = (position.x / scaleFactor).toInt().coerceIn(0, image.width - 1)
+            val y = (position.y / scaleFactor).toInt().coerceIn(0, image.height - 1)
+
+            onPixelHover(x, y, position)
+        }
+    }
+}
+
+/**
+ * Small popup card showing hover pixel values.
+ */
+@Composable
+fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, intensity: Int) {
+    Box(
+        modifier = Modifier
+            .offset(cursorPosition.x.dp + 16.dp, cursorPosition.y.dp + 16.dp) // Position slightly to the right of the cursor
+            .background(Color.White, shape = RoundedCornerShape(8.dp))
+            .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
+            .padding(8.dp)
+    ) {
+        Column {
+            Text("X: ${hoverPosition.x}, Y: ${hoverPosition.y}", fontSize = 12.sp)
+            Text("Intensity: $intensity", fontSize = 12.sp)
+        }
+    }
+}
+
+/**
+ * Extract intensity from an RGB pixel.
+ * - If the image is grayscale, it returns the grayscale value.
+ * - If the image is color, it converts to grayscale using luminance formula.
+ */
+fun extractIntensity(rgb: Int): Int {
+    val r = (rgb shr 16) and 0xFF // Extract Red
+    val g = (rgb shr 8) and 0xFF  // Extract Green
+    val b = rgb and 0xFF          // Extract Blue
+
+    return ((0.299 * r) + (0.587 * g) + (0.114 * b)).toInt() // Convert to grayscale intensity
+}
+
+
