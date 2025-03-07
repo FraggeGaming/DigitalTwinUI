@@ -1,10 +1,16 @@
 package org.thesis.project.Model
+import androidx.compose.runtime.*
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
+import parseNifti
+import parseNiftiImages
+import removeNiiExtension
+import runNiftiParser
 import java.awt.image.BufferedImage
+import java.io.File
 
 enum class NiftiView(val displayName: String) {
     AXIAL("Axial"),
@@ -14,6 +20,18 @@ enum class NiftiView(val displayName: String) {
     override fun toString(): String = displayName
 }
 
+data class NiftiImageData(
+    val axial: List<BufferedImage> = emptyList(),
+    val coronal: List<BufferedImage> = emptyList(),
+    val sagittal: List<BufferedImage> = emptyList()
+)
+
+data class NiftiImageJson(
+    val axial: List<BufferedImage> = emptyList(),
+    val coronal: List<BufferedImage> = emptyList(),
+    val sagittal: List<BufferedImage> = emptyList()
+)
+
 class InterfaceModel : ViewModel() {
 
     // Define initial values as constants or properties
@@ -21,6 +39,62 @@ class InterfaceModel : ViewModel() {
     private val initialRightPanelWidth: Dp = 300.dp
 
 
+    fun parseNiftiData(title: String, inputNiftiFile: List<String>, outputNiftiFile: List<String>){
+
+        var inputFilename by remember { mutableStateOf<List<String>>(emptyList()) }
+        var outputFilename by remember { mutableStateOf<List<String>>(emptyList()) }
+
+
+
+        inputNiftiFile.forEachIndexed { index, file ->
+            var output by remember { mutableStateOf<String?>(null) }
+            var isProcessing by remember { mutableStateOf(false) }
+
+            LaunchedEffect(file) {
+                if (!isProcessing) {
+                    isProcessing = true
+                    println("Running NIfTI Parser for: $file")
+
+                    output = runNiftiParser(file)
+
+                    output?.let {
+                        val niftiData = parseNiftiImages(it)
+                        inputFilename = inputFilename + removeNiiExtension(File(file).nameWithoutExtension)
+                        storeNiftiImages(file, niftiData.axialImages, niftiData.coronalImages, niftiData.sagittalImages)
+                        println("Stored NIfTI images for: $file")
+                    }
+                }
+            }
+
+        }
+
+
+        outputFilename.forEachIndexed { index, file ->
+            var output by remember { mutableStateOf<String?>(null) }
+            var isProcessing by remember { mutableStateOf(false) }
+
+            LaunchedEffect(file) {
+                if (!isProcessing) {
+                    isProcessing = true
+                    println("Running NIfTI Parser for: $file")
+
+                    output = runNiftiParser(file)
+
+                    output?.let {
+                        val niftiData = parseNiftiImages(it)
+                        val fileName = removeNiiExtension(File(file).nameWithoutExtension)
+                        outputFilename = outputFilename + fileName
+
+                        storeNiftiImages(fileName, niftiData.axialImages, niftiData.coronalImages, niftiData.sagittalImages)
+                        println("Stored NIfTI images for: $fileName")
+                    }
+                }
+            }
+
+        }
+
+        addFileMapping(title, inputNiftiFile, outputNiftiFile)
+    }
 
 
     private val _fileMapping = MutableStateFlow<Map<String, Pair<List<String>, List<String>>>>(emptyMap())
@@ -127,6 +201,7 @@ class InterfaceModel : ViewModel() {
     fun storeNiftiImages(filename: String, axial: List<BufferedImage>, coronal: List<BufferedImage>, sagittal: List<BufferedImage>) {
         _niftiImages.update { currentMap ->
             currentMap + (filename to Triple(axial, coronal, sagittal))
+            //filename to NiftiData
         }
     }
 

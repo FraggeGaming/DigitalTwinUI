@@ -158,16 +158,18 @@ fun imageViewer(
 
     //Takes the file path and parses the nifti
     val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\liver_CT.nii.gz"
-    val file = parseNifti(niftiFile, interfaceModel)
+    //val file = parseNifti(niftiFile, interfaceModel)
 
     //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CT.nii.gz"
     //val file1 = parseNifti(niftiFile1, interfaceModel)
 
-    if (file != null) {
-        interfaceModel.addFileMapping("Patient 1", listOf(file), listOf("file1"))
-    }
+    val title = "Patient_1"
+    val inputFiles = listOf("scan1.nii", "scan2.nii") // Example input NIfTI files
+    val outputFiles = listOf("output1.nii", "output2.nii") // Example output NIfTI files
 
-    interfaceModel.updateSelectedViews(NiftiView.AXIAL.toString(), true)
+
+
+    interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
 
     MainPanelLayout(
         leftPanelWidth = leftPanelWidth,

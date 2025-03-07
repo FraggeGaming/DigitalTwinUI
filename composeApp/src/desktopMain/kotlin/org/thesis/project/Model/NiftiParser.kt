@@ -35,7 +35,8 @@ fun runNiftiParser(niftiPath: String): String {
 data class NiftiImageData(
     val axial: List<String>,
     val coronal: List<String>,
-    val sagittal: List<String>
+    val sagittal: List<String>,
+    //val axialBase64: String Add so base json is stored as well
 )
 
 fun base64ToBufferedImage(base64: String): BufferedImage? {
@@ -49,7 +50,16 @@ fun base64ToBufferedImage(base64: String): BufferedImage? {
     }
 }
 
-fun parseNiftiImages(jsonData: String): Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>> {
+data class NiftiData(
+    val axial: List<String>, // Axial Base64 JSON Data
+    val axialImages: List<BufferedImage>, // Axial BufferedImages
+    val coronal: List<String>, // Coronal Base64 JSON Data
+    val coronalImages: List<BufferedImage>, // Coronal BufferedImages
+    val sagittal: List<String>, // Sagittal Base64 JSON Data
+    val sagittalImages: List<BufferedImage> // Sagittal BufferedImages
+)
+
+fun parseNiftiImages(jsonData: String): NiftiData {
     val json = Json { ignoreUnknownKeys = true }
     val niftiImages = json.decodeFromString<NiftiImageData>(jsonData)
 
@@ -57,8 +67,16 @@ fun parseNiftiImages(jsonData: String): Triple<List<BufferedImage>, List<Buffere
     val coronalImages = niftiImages.coronal.mapNotNull { base64ToBufferedImage(it) }
     val sagittalImages = niftiImages.sagittal.mapNotNull { base64ToBufferedImage(it) }
 
-    return Triple(axialImages, coronalImages, sagittalImages)
+    return NiftiData(
+        axial = niftiImages.axial,
+        axialImages = axialImages,
+        coronal = niftiImages.coronal,
+        coronalImages = coronalImages,
+        sagittal = niftiImages.sagittal,
+        sagittalImages = sagittalImages
+    )
 }
+
 
 fun removeNiiExtension(filename: String): String {
     return filename.removeSuffix(".nii").removeSuffix(".nii.gz") // Handles both .nii and .nii.gz
@@ -78,9 +96,9 @@ fun parseNifti(niftiPath: String, interfaceModel: InterfaceModel): String? {
             output = runNiftiParser(niftiPath) // Run the Python script
 
             output?.let {
-                val (axial, coronal, sagittal) = parseNiftiImages(it)
+                val (axial, axialImages, coronal, coronalImages, sagittal, sagittalImages) = parseNiftiImages(it)
                 fileName = removeNiiExtension(File(niftiPath).nameWithoutExtension)  // Extract filename
-                interfaceModel.storeNiftiImages(fileName!!, axial, coronal, sagittal) // ✅ Store images in ViewModel
+                interfaceModel.storeNiftiImages(fileName!!, axialImages, coronalImages, sagittalImages)
                 println("Stored NIfTI images for: $fileName")
             }
         }
