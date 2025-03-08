@@ -161,10 +161,9 @@ fun imageViewer(
 
     //Takes the file path and parses the nifti
     //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\liver_CT.nii.gz"
-    //val file = parseNifti(niftiFile, interfaceModel)
+
 
     //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CT.nii.gz"
-    //val file1 = parseNifti(niftiFile1, interfaceModel)
 
     val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\brain_CT.nii.gz"
 
@@ -177,6 +176,7 @@ fun imageViewer(
 
 
     interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
+    interfaceModel.updateSelectedViews(NiftiView.AXIAL.displayName, true)
 
     MainPanelLayout(
         leftPanelWidth = leftPanelWidth,
@@ -268,11 +268,11 @@ fun imageViewer(
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
                                     if (selectedViews.contains(NiftiView.AXIAL.toString()))
-                                        imageDisplay(images.axialImages ,images.axialVoxels, axialIndex, NiftiView.AXIAL.toString(), 2f)
+                                        imageDisplay(images.axialImages ,images.axialVoxels, axialIndex, NiftiView.AXIAL.toString(), 4f)
                                     if (selectedViews.contains(NiftiView.CORONAL.toString()))
-                                        imageDisplay(images.coronalImages, images.coronalVoxels, coronalIndex, NiftiView.CORONAL.toString(),2f)
+                                        imageDisplay(images.coronalImages, images.coronalVoxels, coronalIndex, NiftiView.CORONAL.toString(),4f)
                                     if (selectedViews.contains(NiftiView.SAGITTAL.toString()))
-                                        imageDisplay(images.sagittalImages, images.sagittalVoxels, sagittalIndex, NiftiView.SAGITTAL.toString(),2f)
+                                        imageDisplay(images.sagittalImages, images.sagittalVoxels, sagittalIndex, NiftiView.SAGITTAL.toString(),4f)
                                 }
                             }
 
@@ -371,8 +371,8 @@ fun ScrollSlider(
 @Composable
 fun imageDisplay(
     images: List<BufferedImage>,
-    voxelData: List<List<List<Float>>>, // 3D voxel data (slices -> rows -> columns)
-    index: Int, // Slice index
+    voxelData: List<List<List<Float>>>,
+    index: Int,
     label: String,
     scaleFactor: Float = 2f
 ) {
@@ -387,7 +387,7 @@ fun imageDisplay(
 
     val image = images[index]
     val bitmap = image.toComposeImageBitmap()
-    val currentVoxelSlice = voxelData[index] // Get the updated 2D voxel slice
+    val currentVoxelSlice = voxelData[index]
 
     // Reset hover state when index changes
     LaunchedEffect(index) {
@@ -404,7 +404,7 @@ fun imageDisplay(
                 modifier = Modifier
                     .size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
                     .pointerInput(Unit) { // This will recompose when key(index) triggers
-                        detectPointerMovement(image, scaleFactor, currentVoxelSlice) { x, y, position, voxel ->
+                        detectPointerMovement(scaleFactor, currentVoxelSlice) { x, y, position, voxel ->
                             hoverPosition = Point(x, y)
                             voxelValue = voxel
                             cursorPosition = position
@@ -419,7 +419,7 @@ fun imageDisplay(
 
                 hoverPosition?.let { pos ->
                     voxelValue?.let { value ->
-                        val formattedValue = formatVoxelValue(value, "CT") // Adjust modality as needed
+                        val formattedValue = formatVoxelValue(value, "CT")
                         HoverPopup(cursorPosition, pos, formattedValue)
                     }
                 }
@@ -442,9 +442,8 @@ fun formatVoxelValue(value: Float, modality: String): String {
 
 
 suspend fun PointerInputScope.detectPointerMovement(
-    image: BufferedImage,
     scaleFactor: Float,
-    voxelSlice: List<List<Float>>, // 2D voxel data for the current slice
+    voxelSlice: List<List<Float>>,
     onVoxelHover: (Int, Int, Offset, Float) -> Unit
 ) {
     awaitPointerEventScope {

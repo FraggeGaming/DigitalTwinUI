@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import org.thesis.project.Model.NiftiView
 
 @Composable
 fun navigationButtons(navController: NavController, selected: String) {
@@ -73,21 +74,21 @@ fun bottomMenu(selectedViews: Set<String>, onCheckboxChanged: (String, Boolean) 
         menuCard(
             content = listOf(
                 { Row {
-                    buttonWithCheckboxSet(selectedViews, "Axial", onCheckboxChanged)
+                    buttonWithCheckboxSet(selectedViews, NiftiView.AXIAL.displayName, onCheckboxChanged)
 
                 }
                 },
 
                 {
                     Row{
-                        buttonWithCheckboxSet(selectedViews, "Coronal", onCheckboxChanged)
+                        buttonWithCheckboxSet(selectedViews, NiftiView.CORONAL.displayName, onCheckboxChanged)
 
                     }
                 },
 
                 {
                     Row {
-                        buttonWithCheckboxSet(selectedViews, "Sagittal", onCheckboxChanged)
+                        buttonWithCheckboxSet(selectedViews, NiftiView.SAGITTAL.displayName, onCheckboxChanged)
 
                     }
                 },
