@@ -65,7 +65,8 @@ fun navigationButtons(navController: NavController, selected: String) {
 }
 
 @Composable
-fun bottomMenu(selectedViews: Set<String>, onCheckboxChanged: (String, Boolean) -> Unit, modifier: Modifier){
+fun bottomMenu(
+    selectedViews: Set<String>, onCheckboxChanged: (String, Boolean) -> Unit, modifier: Modifier){
     Box(
         modifier = modifier
             .padding(16.dp)

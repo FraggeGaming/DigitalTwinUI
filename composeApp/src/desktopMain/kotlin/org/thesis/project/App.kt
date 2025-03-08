@@ -2,6 +2,7 @@ package org.thesis.project
 
 import CardMenu
 import CardWithCheckboxes
+import androidx.compose.animation.animateColorAsState
 import navigationButtons
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -10,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +33,7 @@ import bottomMenu
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.Json
+import menuCard
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import java.awt.image.BufferedImage
@@ -39,6 +43,8 @@ import java.nio.ByteOrder
 import java.util.*
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
+import buttonWithCheckboxSet
+import buttonWithCheckbox
 
 
 @Composable
@@ -157,7 +163,7 @@ fun imageViewer(
 
 
     val selectedViews by interfaceModel.selectedViews.collectAsState()
-
+    val selectedSettings by interfaceModel.selectedSettings.collectAsState()
 
     //Takes the file path and parses the nifti
     //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\liver_CT.nii.gz"
@@ -268,11 +274,11 @@ fun imageViewer(
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
                                     if (selectedViews.contains(NiftiView.AXIAL.toString()))
-                                        imageDisplay(images.axialImages ,images.axialVoxels, axialIndex, NiftiView.AXIAL.toString(), 4f)
+                                        imageDisplay(images.axialImages ,images.axialVoxels, axialIndex, NiftiView.AXIAL.toString(), 4f, selectedSettings)
                                     if (selectedViews.contains(NiftiView.CORONAL.toString()))
-                                        imageDisplay(images.coronalImages, images.coronalVoxels, coronalIndex, NiftiView.CORONAL.toString(),4f)
+                                        imageDisplay(images.coronalImages, images.coronalVoxels, coronalIndex, NiftiView.CORONAL.toString(),4f, selectedSettings)
                                     if (selectedViews.contains(NiftiView.SAGITTAL.toString()))
-                                        imageDisplay(images.sagittalImages, images.sagittalVoxels, sagittalIndex, NiftiView.SAGITTAL.toString(),4f)
+                                        imageDisplay(images.sagittalImages, images.sagittalVoxels, sagittalIndex, NiftiView.SAGITTAL.toString(),4f, selectedSettings)
                                 }
                             }
 
@@ -288,11 +294,85 @@ fun imageViewer(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    bottomMenu(
-                        selectedViews,
-                        onCheckboxChanged = interfaceModel::updateSelectedViews,
-                        modifier = Modifier.fillMaxSize()
+
+                    Box(
+                        modifier = Modifier
+                            .padding(16.dp)
                     )
+                    {
+                        menuCard(
+
+                            content = listOf(
+                                { Row {
+                                    buttonWithCheckboxSet(selectedViews, NiftiView.AXIAL.displayName, interfaceModel::updateSelectedViews)
+
+                                }
+                                },
+
+                                {
+                                    Row{
+                                        buttonWithCheckboxSet(selectedViews, NiftiView.CORONAL.displayName, interfaceModel::updateSelectedViews)
+
+                                    }
+                                },
+
+                                {
+                                    Row {
+                                        buttonWithCheckboxSet(selectedViews, NiftiView.SAGITTAL.displayName, interfaceModel::updateSelectedViews)
+
+                                    }
+                                },
+
+                                {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(1.dp)
+                                            .height(50.dp)
+                                            .background(Color.Gray)  // Line color
+                                    )
+                                },
+
+                                {
+
+                                    TextButton(
+                                        onClick = {
+                                            val isCurrentlyChecked = selectedSettings.contains("measure")
+                                            interfaceModel.updateSelectedSettings("measure", !isCurrentlyChecked)
+                                        },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            backgroundColor = if (selectedSettings.contains("measure")) Color.Gray else Color.Transparent, // Change background
+                                            contentColor = Color.Unspecified
+                                        ),
+                                        elevation = null, // Removes elevation
+                                        modifier = Modifier.padding(0.dp) // Removes extra padding
+                                    ) {
+                                        Icon(Icons.Default.Straighten, contentDescription = "Measure")
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Measure")
+                                    }
+                                },
+
+                                {
+                                    TextButton(
+                                        onClick = {
+                                            val isCurrentlyChecked = selectedSettings.contains("pixel")
+                                            interfaceModel.updateSelectedSettings("pixel", !isCurrentlyChecked)
+                                        },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            backgroundColor = if (selectedSettings.contains("pixel")) Color.Gray else Color.Transparent, // Change background
+                                            contentColor = Color.Unspecified
+                                        ),
+                                        elevation = null, // Removes elevation
+                                        modifier = Modifier.padding(0.dp) // Removes extra padding
+                                    ) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Pixel intensity")
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Pixel intensity")
+                                    }
+                                }
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -337,6 +417,12 @@ fun imageViewer(
 }
 
 @Composable
+fun bottomMenu(
+    selectedViews: Set<String>, onCheckboxChanged: (String, Boolean) -> Unit, modifier: Modifier){
+
+}
+
+@Composable
 fun ScrollSlider(
     selectedData: StateFlow<Set<String>>,
     scrollStep: StateFlow<Int>,
@@ -374,7 +460,8 @@ fun imageDisplay(
     voxelData: List<List<List<Float>>>,
     index: Int,
     label: String,
-    scaleFactor: Float = 2f
+    scaleFactor: Float = 2f,
+    selectedSettings: Set<String>
 ) {
     var hoverPosition by remember { mutableStateOf<Point?>(null) }
     var voxelValue by remember { mutableStateOf<Float?>(null) }
@@ -403,11 +490,18 @@ fun imageDisplay(
             Box(
                 modifier = Modifier
                     .size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
-                    .pointerInput(Unit) { // This will recompose when key(index) triggers
+                    .pointerInput(Unit) {
                         detectPointerMovement(scaleFactor, currentVoxelSlice) { x, y, position, voxel ->
-                            hoverPosition = Point(x, y)
-                            voxelValue = voxel
-                            cursorPosition = position
+                            if (x == null || y == null || position == null || voxel == null) {
+                                // Pointer is out of bounds
+                                hoverPosition = null
+                                voxelValue = null
+                            } else {
+                                // Pointer is within bounds
+                                hoverPosition = Point(x, y)
+                                voxelValue = voxel
+                                cursorPosition = position
+                            }
                         }
                     }
             ) {
@@ -417,12 +511,15 @@ fun imageDisplay(
                     modifier = Modifier.size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
                 )
 
-                hoverPosition?.let { pos ->
-                    voxelValue?.let { value ->
-                        val formattedValue = formatVoxelValue(value, "CT")
-                        HoverPopup(cursorPosition, pos, formattedValue)
+                if (selectedSettings.contains("pixel")){
+                    hoverPosition?.let { pos ->
+                        voxelValue?.let { value ->
+                            val formattedValue = formatVoxelValue(value, "CT")
+                            HoverPopup(cursorPosition, pos, formattedValue)
+                        }
                     }
                 }
+
             }
         }
     }
@@ -444,8 +541,11 @@ fun formatVoxelValue(value: Float, modality: String): String {
 suspend fun PointerInputScope.detectPointerMovement(
     scaleFactor: Float,
     voxelSlice: List<List<Float>>,
-    onVoxelHover: (Int, Int, Offset, Float) -> Unit
+    onVoxelHover: (Int?, Int?, Offset?, Float?) -> Unit // Nullable to allow clearing hover
 ) {
+    var lastX: Int? = null
+    var lastY: Int? = null
+
     awaitPointerEventScope {
         while (true) {
             val event = awaitPointerEvent()
@@ -454,9 +554,19 @@ suspend fun PointerInputScope.detectPointerMovement(
             val x = (position.x / scaleFactor).toInt()
             val y = (position.y / scaleFactor).toInt()
 
-            // Ensure x and y are within bounds
-            if (x in voxelSlice[0].indices && y in voxelSlice.indices) {
-                val voxelValue = voxelSlice[y][x] // Access voxel value from 2D list
+            // If pointer goes out of bounds → clear hover state
+            if (x !in voxelSlice[0].indices || y !in voxelSlice.indices) {
+                if (lastX != null || lastY != null) { // Prevent unnecessary clearing
+                    lastX = null
+                    lastY = null
+                    onVoxelHover(null, null, null, null) // Clear hover
+                }
+            }
+            // If pointer is within bounds and position changed → update hover
+            else if (x != lastX || y != lastY) {
+                lastX = x
+                lastY = y
+                val voxelValue = voxelSlice[y][x]
                 onVoxelHover(x, y, position, voxelValue)
             }
         }
