@@ -1,20 +1,18 @@
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import kotlin.reflect.KFunction1
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 
 
 @Composable
@@ -127,7 +125,7 @@ fun buttonWithCheckbox(
     selectedData: Set<String>,
     label: String,
     onCheckboxChanged: (String, Boolean) -> Unit,
-    ){
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         TextButton(
             //modifier = Modifier.fillMaxWidth(),
@@ -157,7 +155,7 @@ fun buttonWithCheckboxSet(
     selectedData: Set<String>,
     label: String,
     onCheckboxChanged: (String, Boolean) -> Unit,
-){
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         TextButton(
             //modifier = Modifier.fillMaxWidth(),
@@ -282,6 +280,7 @@ fun CardMenu(
                                 )
                                 if (isSelected) {
                                     getFileMapping(mainLabel)?.let { (inputList, outputList) ->
+
                                         modalities(
                                             selectedData = selectedData, // ✅ Inputs are now correctly mapped
                                             mainLabels = inputList,
@@ -390,11 +389,15 @@ fun MenuButton(
             .fillMaxWidth(widthFraction)
             .background(
                 color = Color.LightGray,
-                shape = if (isSelected) { shapeSelected } else { RoundedCornerShape(8.dp) }
+                shape = if (isSelected) {
+                    shapeSelected
+                } else {
+                    RoundedCornerShape(8.dp)
+                }
             )
     ) {
         Text(
-            text = mainLabel.substringAfter("_"),
+            text = mainLabel,
             textAlign = TextAlign.Center,
             color = Color.Black
         )

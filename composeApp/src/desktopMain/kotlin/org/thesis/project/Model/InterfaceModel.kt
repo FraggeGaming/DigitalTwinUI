@@ -1,15 +1,14 @@
 package org.thesis.project.Model
-import androidx.compose.runtime.*
+
+import NiftiData
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
-import parseNifti
 import parseNiftiImages
 import removeNiiExtension
 import runNiftiParser
-import java.awt.image.BufferedImage
 import java.io.File
 
 enum class NiftiView(val displayName: String) {
@@ -20,85 +19,67 @@ enum class NiftiView(val displayName: String) {
     override fun toString(): String = displayName
 }
 
-data class NiftiImageData(
-    val axial: List<BufferedImage> = emptyList(),
-    val coronal: List<BufferedImage> = emptyList(),
-    val sagittal: List<BufferedImage> = emptyList()
-)
-
-data class NiftiImageJson(
-    val axial: List<BufferedImage> = emptyList(),
-    val coronal: List<BufferedImage> = emptyList(),
-    val sagittal: List<BufferedImage> = emptyList()
-)
-
 class InterfaceModel : ViewModel() {
 
     // Define initial values as constants or properties
     private val initialLeftPanelWidth: Dp = 400.dp
     private val initialRightPanelWidth: Dp = 300.dp
 
+    //Stores the niftiData by Filename
+    private val _niftiImages = MutableStateFlow<Map<String, NiftiData>>(emptyMap())
+    val niftiImages: StateFlow<Map<String, NiftiData>> = _niftiImages
 
-    fun parseNiftiData(title: String, inputNiftiFile: List<String>, outputNiftiFile: List<String>){
+    //Currently selected niftiData by name
+    private val _selectedData = MutableStateFlow<Set<String>>(setOf())
+    val selectedData: StateFlow<Set<String>> = _selectedData
 
-        var inputFilename by remember { mutableStateOf<List<String>>(emptyList()) }
-        var outputFilename by remember { mutableStateOf<List<String>>(emptyList()) }
-
-
-
-        inputNiftiFile.forEachIndexed { index, file ->
-            var output by remember { mutableStateOf<String?>(null) }
-            var isProcessing by remember { mutableStateOf(false) }
-
-            LaunchedEffect(file) {
-                if (!isProcessing) {
-                    isProcessing = true
-                    println("Running NIfTI Parser for: $file")
-
-                    output = runNiftiParser(file)
-
-                    output?.let {
-                        val niftiData = parseNiftiImages(it)
-                        inputFilename = inputFilename + removeNiiExtension(File(file).nameWithoutExtension)
-                        storeNiftiImages(file, niftiData.axialImages, niftiData.coronalImages, niftiData.sagittalImages)
-                        println("Stored NIfTI images for: $file")
-                    }
-                }
-            }
-
-        }
-
-
-        outputFilename.forEachIndexed { index, file ->
-            var output by remember { mutableStateOf<String?>(null) }
-            var isProcessing by remember { mutableStateOf(false) }
-
-            LaunchedEffect(file) {
-                if (!isProcessing) {
-                    isProcessing = true
-                    println("Running NIfTI Parser for: $file")
-
-                    output = runNiftiParser(file)
-
-                    output?.let {
-                        val niftiData = parseNiftiImages(it)
-                        val fileName = removeNiiExtension(File(file).nameWithoutExtension)
-                        outputFilename = outputFilename + fileName
-
-                        storeNiftiImages(fileName, niftiData.axialImages, niftiData.coronalImages, niftiData.sagittalImages)
-                        println("Stored NIfTI images for: $fileName")
-                    }
-                }
-            }
-
-        }
-
-        addFileMapping(title, inputNiftiFile, outputNiftiFile)
-    }
-
-
+    //Connects multiple filenames together, ex: Patient_1 : List("CT_img1", "PET_real"), List("Syntet_PET")
     private val _fileMapping = MutableStateFlow<Map<String, Pair<List<String>, List<String>>>>(emptyMap())
     val fileMapping: StateFlow<Map<String, Pair<List<String>, List<String>>>> = _fileMapping
+
+
+    fun parseNiftiData(title: String, inputNiftiFile: List<String>, outputNiftiFile: List<String>) {
+
+        val inputFilenames = mutableListOf<String>()
+        val outputFilenames = mutableListOf<String>()
+
+        inputNiftiFile.forEach { file ->
+
+
+            println("Running NIfTI Parser for: $file")
+
+            val output = runNiftiParser(file)
+
+            output.let {
+                val niftiData = parseNiftiImages(it)
+                println("Parsing: $file")
+                val fileName = removeNiiExtension(File(file).nameWithoutExtension)
+                inputFilenames.add(fileName)
+                storeNiftiImages(fileName, niftiData)
+                println("Stored NIfTI images for: $fileName")
+            }
+        }
+
+        outputNiftiFile.forEach { file ->
+
+            println("Running NIfTI Parser for: $file")
+
+            val output = runNiftiParser(file)
+
+            output.let {
+                val niftiData = parseNiftiImages(it)
+                val fileName = removeNiiExtension(File(file).nameWithoutExtension)
+                outputFilenames.add(fileName)
+
+                storeNiftiImages(fileName, niftiData)
+                println("Stored NIfTI images for: $fileName")
+            }
+        }
+
+        println("Added mapping for $title : $inputFilenames, $outputFilenames")
+        addFileMapping(title, inputFilenames, outputFilenames)
+    }
+
 
     //Add or update an entry in the mapping
     fun addFileMapping(key: String, firstList: List<String>, secondList: List<String>) {
@@ -135,8 +116,6 @@ class InterfaceModel : ViewModel() {
     private val _selectedDistricts = MutableStateFlow<Set<String>>(setOf())
     val selectedDistricts: StateFlow<Set<String>> = _selectedDistricts
 
-    private val _selectedData = MutableStateFlow<Set<String>>(setOf())
-    val selectedData: StateFlow<Set<String>> = _selectedData
 
     private val _selectedSettings = MutableStateFlow<Set<String>>(setOf())
     val selectedSettings: StateFlow<Set<String>> = _selectedSettings
@@ -195,12 +174,10 @@ class InterfaceModel : ViewModel() {
         _rightPanelExpanded.value = !_rightPanelExpanded.value
     }
 
-    private val _niftiImages = MutableStateFlow<Map<String, Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>>>>(emptyMap())
-    val niftiImages: StateFlow<Map<String, Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>>>> = _niftiImages
 
-    fun storeNiftiImages(filename: String, axial: List<BufferedImage>, coronal: List<BufferedImage>, sagittal: List<BufferedImage>) {
+    fun storeNiftiImages(filename: String, data: NiftiData) {
         _niftiImages.update { currentMap ->
-            currentMap + (filename to Triple(axial, coronal, sagittal))
+            currentMap + (filename to data)
             //filename to NiftiData
         }
     }
@@ -209,30 +186,14 @@ class InterfaceModel : ViewModel() {
         viewModelScope, SharingStarted.Lazily, emptyList()
     )
 
-    fun getNiftiImages(filename: String): Triple<List<BufferedImage>, List<BufferedImage>, List<BufferedImage>>? {
-        return _niftiImages.value[filename]
+    fun getNiftiImages(filename: String): NiftiData? {
+        val niftiData = _niftiImages.value[filename] ?: return null
+        return niftiData
     }
 
-    fun getMaxIndexSizeForSelectedData(): Int {
-        val valuesList: List<String> = _selectedData.value.toList()
-        var maxIndex = 0
-
-        valuesList.forEachIndexed { index, value ->
-            val images = getNiftiImages(value)
-            if (images != null){
-                val (axial, coronal, sagittal) = images
-                val size = listOf(axial.size, coronal.size, sagittal.size).maxOrNull() ?: 1
-
-
-                println("Size: $size")
-                if (size < maxIndex){
-                    maxIndex = size
-                }
-            }
-        }
-        println("Max index: $maxIndex")
-
-        return maxIndex
+    fun getNiftiJson(filename: String): Triple<List<String>, List<String>, List<String>>? {
+        val niftiData = _niftiImages.value[filename] ?: return null
+        return Triple(niftiData.axial, niftiData.coronal, niftiData.sagittal)
     }
 
     private val _maxSelectedImageIndex = MutableStateFlow<Map<String, Float>>(emptyMap())
@@ -245,16 +206,15 @@ class InterfaceModel : ViewModel() {
     fun getImageIndices(filename: String): StateFlow<Triple<Int, Int, Int>> {
         return scrollStep.map { step ->
             val images = _niftiImages.value[filename] ?: return@map Triple(0, 0, 0)
-            val (axial, coronal, sagittal) = images
 
-            val maxLength = listOf(axial.size, coronal.size, sagittal.size).maxOrNull() ?: 1
+            val maxLength = listOf(images.axial.size, images.coronal.size, images.sagittal.size).maxOrNull() ?: 1
             _maxSelectedImageIndex.update { currentMap ->
                 currentMap.toMutableMap().apply { put(filename, maxLength.toFloat()) }
             }
 
-            val axialIndex = ((step * axial.size) / maxLength).coerceIn(0, axial.lastIndex)
-            val coronalIndex = ((step * coronal.size) / maxLength).coerceIn(0, coronal.lastIndex)
-            val sagittalIndex = ((step * sagittal.size) / maxLength).coerceIn(0, sagittal.lastIndex)
+            val axialIndex = ((step * images.axial.size) / maxLength).coerceIn(0, images.axial.lastIndex)
+            val coronalIndex = ((step * images.coronal.size) / maxLength).coerceIn(0, images.coronal.lastIndex)
+            val sagittalIndex = ((step * images.sagittal.size) / maxLength).coerceIn(0, images.sagittal.lastIndex)
 
             Triple(axialIndex, coronalIndex, sagittalIndex)
         }.stateIn(viewModelScope, SharingStarted.Lazily, Triple(0, 0, 0))

@@ -29,11 +29,14 @@ import androidx.compose.ui.unit.sp
 import bottomMenu
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.serialization.json.Json
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import java.awt.image.BufferedImage
-import parseNifti
 import java.awt.Point
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.*
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -157,15 +160,19 @@ fun imageViewer(
 
 
     //Takes the file path and parses the nifti
-    val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\liver_CT.nii.gz"
+    //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\liver_CT.nii.gz"
     //val file = parseNifti(niftiFile, interfaceModel)
 
     //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CT.nii.gz"
     //val file1 = parseNifti(niftiFile1, interfaceModel)
 
+    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\brain_CT.nii.gz"
+
+    val file2= "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\brain_PET.nii.gz"
+
     val title = "Patient_1"
-    val inputFiles = listOf("scan1.nii", "scan2.nii") // Example input NIfTI files
-    val outputFiles = listOf("output1.nii", "output2.nii") // Example output NIfTI files
+    val inputFiles = listOf(file1) // Example input NIfTI files
+    val outputFiles = listOf(file2) // Example output NIfTI files
 
 
 
@@ -249,20 +256,28 @@ fun imageViewer(
                         selectedData.forEach { filename ->
                             Text(filename)
                             val images = interfaceModel.getNiftiImages(filename)
-                            val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
-                            images?.let { (axial, coronal, sagittal) ->
-                                val (axialIndex, coronalIndex, sagittalIndex) = imageIndices
 
+
+                            val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
+
+                            val (axialIndex, coronalIndex, sagittalIndex) = imageIndices
+
+                            if (images != null){
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
-                                    if (selectedViews.contains(NiftiView.AXIAL.toString())) imageDisplay(axial, axialIndex, NiftiView.AXIAL.toString(), 2f)
-                                    if (selectedViews.contains(NiftiView.CORONAL.toString())) imageDisplay(coronal, coronalIndex, NiftiView.CORONAL.toString(),2f)
-                                    if (selectedViews.contains(NiftiView.SAGITTAL.toString())) imageDisplay(sagittal, sagittalIndex, NiftiView.SAGITTAL.toString(),2f)
+                                    if (selectedViews.contains(NiftiView.AXIAL.toString()))
+                                        imageDisplay(images.axialImages ,images.axialVoxels, axialIndex, NiftiView.AXIAL.toString(), 2f)
+                                    if (selectedViews.contains(NiftiView.CORONAL.toString()))
+                                        imageDisplay(images.coronalImages, images.coronalVoxels, coronalIndex, NiftiView.CORONAL.toString(),2f)
+                                    if (selectedViews.contains(NiftiView.SAGITTAL.toString()))
+                                        imageDisplay(images.sagittalImages, images.sagittalVoxels, sagittalIndex, NiftiView.SAGITTAL.toString(),2f)
                                 }
                             }
+
                         }
+
                     }
                 }
 
@@ -354,75 +369,97 @@ fun ScrollSlider(
 
 
 @Composable
-fun imageDisplay(images: List<BufferedImage>, index: Int, label: String, scaleFactor: Float = 2f) {
+fun imageDisplay(
+    images: List<BufferedImage>,
+    voxelData: List<List<List<Float>>>, // 3D voxel data (slices -> rows -> columns)
+    index: Int, // Slice index
+    label: String,
+    scaleFactor: Float = 2f
+) {
     var hoverPosition by remember { mutableStateOf<Point?>(null) }
-    var hoverColor by remember { mutableStateOf<Color?>(null) }
-    var intensity by remember { mutableStateOf<Int?>(null) }
+    var voxelValue by remember { mutableStateOf<Float?>(null) }
     var cursorPosition by remember { mutableStateOf(Offset.Zero) }
 
-    if (images.isEmpty()) {
+    if (images.isEmpty() || voxelData.isEmpty() || voxelData.size <= index) {
         Text("No images")
         return
     }
 
     val image = images[index]
     val bitmap = image.toComposeImageBitmap()
+    val currentVoxelSlice = voxelData[index] // Get the updated 2D voxel slice
 
-    // Calculate scaled dimensions
-    val scaledWidth = (image.width * scaleFactor).toInt()
-    val scaledHeight = (image.height * scaleFactor).toInt()
+    // Reset hover state when index changes
+    LaunchedEffect(index) {
+        hoverPosition = null
+        voxelValue = null
+    }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text("$label - Slice $index")
 
-        Box(
-            modifier = Modifier
-                .size(scaledWidth.dp, scaledHeight.dp)
-                .pointerInput(Unit) {
-                    detectPointerMovement(image, scaleFactor) { x, y, position ->
-                        hoverPosition = Point(x, y)
-                        val rgb = image.getRGB(x, y) // Get pixel color as int
-                        hoverColor = Color(rgb)
-
-                        intensity = extractIntensity(rgb) // Extract intensity from pixel
-                        cursorPosition = position // Store cursor position for the popup
+        // Force full recomposition on index change
+        key(index) {
+            Box(
+                modifier = Modifier
+                    .size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
+                    .pointerInput(Unit) { // This will recompose when key(index) triggers
+                        detectPointerMovement(image, scaleFactor, currentVoxelSlice) { x, y, position, voxel ->
+                            hoverPosition = Point(x, y)
+                            voxelValue = voxel
+                            cursorPosition = position
+                        }
                     }
-                }
-        ) {
-            Image(
-                bitmap = bitmap,
-                contentDescription = "$label Image",
-                modifier = Modifier.size(scaledWidth.dp, scaledHeight.dp)
-            )
+            ) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "$label Image",
+                    modifier = Modifier.size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
+                )
 
-            // Show popup next to cursor
-            hoverPosition?.let { pos ->
-                intensity?.let { value ->
-                    HoverPopup(cursorPosition, pos, value)
+                hoverPosition?.let { pos ->
+                    voxelValue?.let { value ->
+                        val formattedValue = formatVoxelValue(value, "CT") // Adjust modality as needed
+                        HoverPopup(cursorPosition, pos, formattedValue)
+                    }
                 }
             }
         }
     }
 }
 
-/**
- * Detects mouse movement and maps scaled coordinates back to the original image pixel positions.
- */
+
+
+fun formatVoxelValue(value: Float, modality: String): String {
+    return when (modality) {
+        "CT" -> "HU: ${value.toInt()}"  // Hounsfield Units (CT)
+        "MRI" -> "Signal Intensity: ${"%.3f".format(value)}"  // MRI Signal
+        "PET" -> "SUV: ${"%.2f".format(value)}"  // Standardized Uptake Value (PET)
+        else -> "Value: ${"%.3f".format(value)}"
+    }
+}
+
+
+
 suspend fun PointerInputScope.detectPointerMovement(
     image: BufferedImage,
     scaleFactor: Float,
-    onPixelHover: (Int, Int, Offset) -> Unit
+    voxelSlice: List<List<Float>>, // 2D voxel data for the current slice
+    onVoxelHover: (Int, Int, Offset, Float) -> Unit
 ) {
     awaitPointerEventScope {
         while (true) {
             val event = awaitPointerEvent()
             val position = event.changes.first().position
 
-            // Convert screen position to image pixel coordinates
-            val x = (position.x / scaleFactor).toInt().coerceIn(0, image.width - 1)
-            val y = (position.y / scaleFactor).toInt().coerceIn(0, image.height - 1)
+            val x = (position.x / scaleFactor).toInt()
+            val y = (position.y / scaleFactor).toInt()
 
-            onPixelHover(x, y, position)
+            // Ensure x and y are within bounds
+            if (x in voxelSlice[0].indices && y in voxelSlice.indices) {
+                val voxelValue = voxelSlice[y][x] // Access voxel value from 2D list
+                onVoxelHover(x, y, position, voxelValue)
+            }
         }
     }
 }
@@ -431,32 +468,21 @@ suspend fun PointerInputScope.detectPointerMovement(
  * Small popup card showing hover pixel values.
  */
 @Composable
-fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, intensity: Int) {
+fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, voxelValue: String) {
     Box(
         modifier = Modifier
-            .offset(cursorPosition.x.dp + 16.dp, cursorPosition.y.dp + 16.dp) // Position slightly to the right of the cursor
+            .offset(cursorPosition.x.dp + 16.dp, cursorPosition.y.dp + 16.dp)
             .background(Color.White, shape = RoundedCornerShape(8.dp))
             .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
             .padding(8.dp)
     ) {
         Column {
             Text("X: ${hoverPosition.x}, Y: ${hoverPosition.y}", fontSize = 12.sp)
-            Text("Intensity: $intensity", fontSize = 12.sp)
+            Text("Voxel Value: $voxelValue", fontSize = 12.sp)
         }
     }
 }
 
-/**
- * Extract intensity from an RGB pixel.
- * - If the image is grayscale, it returns the grayscale value.
- * - If the image is color, it converts to grayscale using luminance formula.
- */
-fun extractIntensity(rgb: Int): Int {
-    val r = (rgb shr 16) and 0xFF // Extract Red
-    val g = (rgb shr 8) and 0xFF  // Extract Green
-    val b = rgb and 0xFF          // Extract Blue
 
-    return ((0.299 * r) + (0.587 * g) + (0.114 * b)).toInt() // Convert to grayscale intensity
-}
 
 

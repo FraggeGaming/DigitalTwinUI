@@ -1,7 +1,5 @@
-import androidx.compose.runtime.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import org.thesis.project.Model.InterfaceModel
+import kotlinx.serialization.json.*
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -9,7 +7,8 @@ import java.util.*
 import javax.imageio.ImageIO
 
 fun runNiftiParser(niftiPath: String): String {
-    val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
+    //val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
+    val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
 
     val exeFile = File(exePath)
     if (!exeFile.exists()) {
@@ -31,14 +30,6 @@ fun runNiftiParser(niftiPath: String): String {
     return output
 }
 
-@Serializable
-data class NiftiImageData(
-    val axial: List<String>,
-    val coronal: List<String>,
-    val sagittal: List<String>,
-    //val axialBase64: String Add so base json is stored as well
-)
-
 fun base64ToBufferedImage(base64: String): BufferedImage? {
     return try {
         val imageBytes = Base64.getDecoder().decode(base64)
@@ -50,29 +41,68 @@ fun base64ToBufferedImage(base64: String): BufferedImage? {
     }
 }
 
+@Serializable
 data class NiftiData(
+    val width: Int,
+    val height: Int,
+    val depth: Int,
     val axial: List<String>, // Axial Base64 JSON Data
-    val axialImages: List<BufferedImage>, // Axial BufferedImages
+    val axialVoxels: List<List<List<Float>>>,
     val coronal: List<String>, // Coronal Base64 JSON Data
-    val coronalImages: List<BufferedImage>, // Coronal BufferedImages
+    val coronalVoxels: List<List<List<Float>>>,
     val sagittal: List<String>, // Sagittal Base64 JSON Data
-    val sagittalImages: List<BufferedImage> // Sagittal BufferedImages
+    val sagittalVoxels: List<List<List<Float>>>,
+    @kotlinx.serialization.Transient
+    val axialImages: List<BufferedImage> = emptyList(),
+    @kotlinx.serialization.Transient
+    val coronalImages: List<BufferedImage> = emptyList(),
+    @kotlinx.serialization.Transient
+    val sagittalImages: List<BufferedImage> = emptyList()
 )
+
 
 fun parseNiftiImages(jsonData: String): NiftiData {
     val json = Json { ignoreUnknownKeys = true }
-    val niftiImages = json.decodeFromString<NiftiImageData>(jsonData)
+    val jsonElement = json.parseToJsonElement(jsonData).jsonObject
 
-    val axialImages = niftiImages.axial.mapNotNull { base64ToBufferedImage(it) }
-    val coronalImages = niftiImages.coronal.mapNotNull { base64ToBufferedImage(it) }
-    val sagittalImages = niftiImages.sagittal.mapNotNull { base64ToBufferedImage(it) }
+    val width = jsonElement["width"]?.jsonPrimitive?.intOrNull ?: 0
+    val height = jsonElement["height"]?.jsonPrimitive?.intOrNull ?: 0
+    val depth = jsonElement["depth"]?.jsonPrimitive?.intOrNull ?: 0
+
+    fun extractVoxelData(key: String): List<List<List<Float>>> {
+        return jsonElement[key]?.jsonArray?.map { slice ->  // Iterate over slices (depth)
+            slice.jsonArray.map { row ->  // Iterate over rows
+                row.jsonArray.map { it.jsonPrimitive.floatOrNull ?: 0f } // Extract voxel values
+            }
+        } ?: emptyList()
+    }
+
+
+    val axialVoxels = extractVoxelData("axial_voxels")
+    val coronalVoxels = extractVoxelData("coronal_voxels")
+    val sagittalVoxels = extractVoxelData("sagittal_voxels")
+
+    val axialEncoded = jsonElement["axial"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
+    val coronalEncoded = jsonElement["coronal"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
+    val sagittalEncoded = jsonElement["sagittal"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
+
+    val axialImages = axialEncoded.mapNotNull { base64ToBufferedImage(it) }
+    val coronalImages = coronalEncoded.mapNotNull { base64ToBufferedImage(it) }
+    val sagittalImages = sagittalEncoded.mapNotNull { base64ToBufferedImage(it) }
+    println("test : ${axialImages.size}")
 
     return NiftiData(
-        axial = niftiImages.axial,
+        width = width,
+        height = height,
+        depth = depth,
+        axial = axialEncoded,
+        coronal = coronalEncoded,
+        sagittal = sagittalEncoded,
+        axialVoxels = axialVoxels,
+        coronalVoxels = coronalVoxels,
+        sagittalVoxels = sagittalVoxels,
         axialImages = axialImages,
-        coronal = niftiImages.coronal,
         coronalImages = coronalImages,
-        sagittal = niftiImages.sagittal,
         sagittalImages = sagittalImages
     )
 }
@@ -80,29 +110,4 @@ fun parseNiftiImages(jsonData: String): NiftiData {
 
 fun removeNiiExtension(filename: String): String {
     return filename.removeSuffix(".nii").removeSuffix(".nii.gz") // Handles both .nii and .nii.gz
-}
-
-@Composable
-fun parseNifti(niftiPath: String, interfaceModel: InterfaceModel): String? {
-    var isProcessing by remember { mutableStateOf(false) }
-    var output by remember { mutableStateOf<String?>(null) }
-    var fileName by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(niftiPath) {
-        if (!isProcessing) {
-            isProcessing = true
-            println("Running NIfTI Parser for: $niftiPath")
-
-            output = runNiftiParser(niftiPath) // Run the Python script
-
-            output?.let {
-                val (axial, axialImages, coronal, coronalImages, sagittal, sagittalImages) = parseNiftiImages(it)
-                fileName = removeNiiExtension(File(niftiPath).nameWithoutExtension)  // Extract filename
-                interfaceModel.storeNiftiImages(fileName!!, axialImages, coronalImages, sagittalImages)
-                println("Stored NIfTI images for: $fileName")
-            }
-        }
-    }
-
-    return fileName
 }
