@@ -1,6 +1,9 @@
 package org.thesis.project.Model
 
 import NiftiData
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -9,7 +12,9 @@ import kotlinx.coroutines.flow.*
 import parseNiftiImages
 import removeNiiExtension
 import runNiftiParser
+import java.awt.Point
 import java.io.File
+import kotlin.math.floor
 
 enum class NiftiView(val displayName: String) {
     AXIAL("Axial"),
@@ -205,7 +210,8 @@ class InterfaceModel : ViewModel() {
 
             val axialIndex = ((step * images.axial.size) / maxLength).toInt().coerceIn(0, images.axial.lastIndex)
             val coronalIndex = ((step * images.coronal.size) / maxLength).toInt().coerceIn(0, images.coronal.lastIndex)
-            val sagittalIndex = ((step * images.sagittal.size) / maxLength).toInt().coerceIn(0, images.sagittal.lastIndex)
+            val sagittalIndex =
+                ((step * images.sagittal.size) / maxLength).toInt().coerceIn(0, images.sagittal.lastIndex)
 
             Triple(axialIndex, coronalIndex, sagittalIndex)
         }.stateIn(viewModelScope, SharingStarted.Lazily, Triple(0, 0, 0))
@@ -234,4 +240,60 @@ class InterfaceModel : ViewModel() {
             if (isSelected) currentSet + label else currentSet - label
         }
     }
+
+
+    fun getVoxelInfo(
+        position: Offset,
+        scaleFactor: Float,
+        imageWidth: Int,
+        imageHeight: Int,
+        voxelSlice: List<List<Float>>
+    ): VoxelData? {
+        val x = floor(position.x / scaleFactor).toInt()
+        val y = floor(position.y / scaleFactor).toInt()
+
+        // Out-of-bounds check
+        val outOfBounds = x < 0 || x >= imageWidth || y < 0 || y >= imageHeight
+        if (outOfBounds) return null
+
+        // Prevent crash if voxelSlice is misaligned
+        val voxelValue = voxelSlice.getOrNull(y)?.getOrNull(x) ?: 0f
+
+        return VoxelData(x, y, position, voxelValue)
+    }
+
+    // Data class to store voxel information
+    data class VoxelData(val x: Int, val y: Int, val position: Offset, val voxelValue: Float)
+
+    var hoverPosition = mutableStateOf<Point?>(null)
+        private set
+
+    var voxelValue = mutableStateOf<Float?>(null)
+        private set
+
+    var cursorPosition = mutableStateOf(Offset.Zero)
+        private set
+
+    var isHovering = mutableStateOf(false)
+        private set
+
+
+    fun updateHover(x: Int?, y: Int?, position: Offset?, voxel: Float?) {
+        if (x == null || y == null || position == null || voxel == null) {
+            hoverPosition.value = null
+            voxelValue.value = null
+            cursorPosition.value = Offset.Zero
+            isHovering.value = false
+        } else {
+            hoverPosition.value = Point(x, y)
+            voxelValue.value = voxel
+            cursorPosition.value = position
+            isHovering.value = true
+        }
+    }
+
 }
+
+
+
+

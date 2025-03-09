@@ -15,7 +15,9 @@ import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,8 +27,12 @@ import androidx.navigation.compose.rememberNavController
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import menuCard
@@ -37,7 +43,7 @@ import java.awt.Point
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 import buttonWithCheckboxSet
-import kotlin.math.floor
+
 
 
 @Composable
@@ -269,12 +275,42 @@ fun imageViewer(
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
                                     if (selectedViews.contains(NiftiView.AXIAL.toString()))
-                                        imageDisplay(images.axialImages ,images.axialVoxels, axialIndex, NiftiView.AXIAL.toString(), 4f, selectedSettings, selectedOption)
+                                        imageDisplay(
+                                            images.axialImages ,
+                                            images.axialVoxels,
+                                            axialIndex,
+                                            NiftiView.AXIAL.toString(),
+                                            4f,
+                                            selectedSettings,
+                                            selectedOption,
+                                            interfaceModel
+                                        )
                                     if (selectedViews.contains(NiftiView.CORONAL.toString()))
-                                        imageDisplay(images.coronalImages, images.coronalVoxels, coronalIndex, NiftiView.CORONAL.toString(),4f, selectedSettings,selectedOption)
+                                        imageDisplay(
+                                            images.coronalImages,
+                                            images.coronalVoxels,
+                                            coronalIndex,
+                                            NiftiView.CORONAL.toString(),
+                                            4f,
+                                            selectedSettings,
+                                            selectedOption,
+                                            interfaceModel
+                                        )
                                     if (selectedViews.contains(NiftiView.SAGITTAL.toString()))
-                                        imageDisplay(images.sagittalImages, images.sagittalVoxels, sagittalIndex, NiftiView.SAGITTAL.toString(),4f, selectedSettings,selectedOption)
+                                        imageDisplay(
+                                            images.sagittalImages,
+                                            images.sagittalVoxels,
+                                            sagittalIndex,
+                                            NiftiView.SAGITTAL.toString(),
+                                            4f,
+                                            selectedSettings,
+                                            selectedOption,
+                                            interfaceModel
+                                        )
                                 }
+
+
+
                             }
 
                         }
@@ -423,6 +459,11 @@ fun imageViewer(
     )
 }
 
+
+
+
+
+
 @Composable
 fun RadioButtonList(
     selectedOption: String, // Currently selected option
@@ -500,8 +541,44 @@ fun ScrollSlider(
 }
 
 
+suspend fun PointerInputScope.calculateVoxelValue(
+    scaleFactor: Float,
+    imageWidth: Int,
+    imageHeight: Int,
+    voxelSlice: List<List<Float>>,
+    interfaceModel: InterfaceModel,
+    layoutCoordinates: () -> LayoutCoordinates?,
+) {
+    var lastX: Int? = null
+    var lastY: Int? = null
+
+    awaitPointerEventScope {
+        while (true) {
+            val event = awaitPointerEvent()
+            val position = event.changes.first().position
+
+            val localPosition = layoutCoordinates()?.let { layoutCoordinates()?.localPositionOf(it, position) } ?: position
+            val voxelData = interfaceModel.getVoxelInfo(position, scaleFactor, imageWidth, imageHeight, voxelSlice)
+
+            if (voxelData == null) {
+                if (lastX != null || lastY != null) {
+                    lastX = null
+                    lastY = null
+                    interfaceModel.updateHover(null, null, null, null) // Reset image index
+                }
+            } else if (voxelData.x != lastX || voxelData.y != lastY) {
+                lastX = voxelData.x
+                lastY = voxelData.y
+                interfaceModel.updateHover(voxelData.x, voxelData.y, localPosition, voxelData.voxelValue)
+            }
+        }
+    }
+}
 
 
+
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun imageDisplay(
     images: List<BufferedImage>,
@@ -510,12 +587,9 @@ fun imageDisplay(
     label: String,
     scaleFactor: Float = 2f,
     selectedSettings: Set<String>,
-    selectedOption: String
+    selectedOption: String,
+    interfaceModel: InterfaceModel
 ) {
-    var hoverPosition by remember { mutableStateOf<Point?>(null) }
-    var voxelValue by remember { mutableStateOf<Float?>(null) }
-    var cursorPosition by remember { mutableStateOf(Offset.Zero) }
-
     if (images.isEmpty() || voxelData.isEmpty() || voxelData.size <= index) {
         Text("No images")
         return
@@ -525,34 +599,41 @@ fun imageDisplay(
     val bitmap = image.toComposeImageBitmap()
     val currentVoxelSlice = voxelData[index]
 
+    var isHoveringLocal by remember { mutableStateOf(false) }
+    // This will store the layout position of the Box
+    var layoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
     // Reset hover state when index changes
     LaunchedEffect(index) {
-        hoverPosition = null
-        voxelValue = null
+        interfaceModel.updateHover(null, null, null, null)
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text("$label - Slice $index")
 
-        // Force full recomposition on index change
         key(index) {
             Box(
                 modifier = Modifier
                     .size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
+                    .onGloballyPositioned { coordinates -> layoutCoordinates = coordinates } // Get layout coordinates
                     .pointerInput(Unit) {
-                        detectPointerMovement(scaleFactor, image.width, image.height, currentVoxelSlice) { x, y, position, voxel ->
-                            if (x == null || y == null || position == null || voxel == null) {
-                                hoverPosition = null
-                                voxelValue = null
-                            } else {
-                                hoverPosition = Point(x, y)
-                                voxelValue = voxel
-                                cursorPosition = position
-                            }
-                        }
+                        calculateVoxelValue(
+                            scaleFactor,
+                            image.width,
+                            image.height,
+                            currentVoxelSlice,
+                            interfaceModel = interfaceModel,
+                            layoutCoordinates = { layoutCoordinates } // Pass layout position
+                        )
                     }
-
-
+                    .onPointerEvent(PointerEventType.Move) {
+                    }
+                    .onPointerEvent(PointerEventType.Enter) {
+                        isHoveringLocal = true
+                    }
+                    .onPointerEvent(PointerEventType.Exit) {
+                        isHoveringLocal = false
+                    }
             ) {
                 Image(
                     bitmap = bitmap,
@@ -560,20 +641,52 @@ fun imageDisplay(
                     modifier = Modifier.size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
                 )
 
-                //TODO add click for stay?
-                if (selectedSettings.contains("pixel")){
-                    hoverPosition?.let { pos ->
-                        voxelValue?.let { value ->
+                if (selectedSettings.contains("pixel") && isHoveringLocal && interfaceModel.isHovering.value) {
+                    interfaceModel.hoverPosition.value?.let { pos ->
+                        interfaceModel.voxelValue.value?.let { value ->
                             val formattedValue = formatVoxelValue(value, selectedOption)
-                            HoverPopup(cursorPosition, pos, formattedValue)
+                            HoverPopup(
+                                cursorPosition = interfaceModel.cursorPosition.value,
+                                hoverPosition = pos,
+                                voxelValue = formattedValue
+                            )
                         }
                     }
                 }
-
             }
+
+
         }
     }
 }
+
+/**
+ * Small popup card showing hover pixel values.
+ */
+@Composable
+fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, voxelValue: String) {
+    Card(
+        modifier = Modifier
+            .offset(
+                x = cursorPosition.x.dp + 10.dp, // Small offset to prevent overlap
+                y = cursorPosition.y.dp + 10.dp // Floating effect
+            ),
+        elevation = 8.dp, // Adds elevation to make it float
+        shape = RoundedCornerShape(12.dp) // Optional: Smooth edges
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text("X: ${hoverPosition.x}, Y: ${hoverPosition.y}", fontSize = 8.sp, fontWeight = FontWeight.Normal)
+            Text("Value: $voxelValue", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+
+
+
+
 
 
 
@@ -585,68 +698,7 @@ fun formatVoxelValue(value: Float, modality: String): String {
         else -> "Value: ${"%.3f".format(value)}"
     }
 }
-suspend fun PointerInputScope.detectPointerMovement(
-    scaleFactor: Float,
-    imageWidth: Int,
-    imageHeight: Int,
-    voxelSlice: List<List<Float>>,
-    onVoxelHover: (Int?, Int?, Offset?, Float?) -> Unit
-) {
-    var lastX: Int? = null
-    var lastY: Int? = null
 
-    awaitPointerEventScope {
-        while (true) {
-            val event = awaitPointerEvent()
-            val position = event.changes.first().position
-
-            val x = floor(position.x / scaleFactor).toInt()
-            val y = floor(position.y / scaleFactor).toInt()
-
-            //out-of-bounds check
-            val outOfBounds = x < 0 || x >= imageWidth || y < 0 || y >= imageHeight
-
-            if (outOfBounds) {
-                if (lastX != null || lastY != null) {
-                    lastX = null
-                    lastY = null
-                    onVoxelHover(null, null, null, null) // Clear hover
-                }
-            }
-            //If within bounds and position changed
-            else if (x != lastX || y != lastY) {
-                lastX = x
-                lastY = y
-
-                // Prevent crash if voxelSlice is misaligned
-                val voxelValue = voxelSlice.getOrNull(y)?.getOrNull(x) ?: 0f
-
-                onVoxelHover(x, y, position, voxelValue)
-            }
-        }
-    }
-}
-
-
-
-/**
- * Small popup card showing hover pixel values.
- */
-@Composable
-fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, voxelValue: String) {
-    Box(
-        modifier = Modifier
-            .offset(cursorPosition.x.dp + 16.dp, cursorPosition.y.dp + 16.dp)
-            .background(Color.White, shape = RoundedCornerShape(8.dp))
-            .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
-            .padding(8.dp)
-    ) {
-        Column {
-            Text("X: ${hoverPosition.x}, Y: ${hoverPosition.y}", fontSize = 12.sp)
-            Text("Value: $voxelValue", fontSize = 12.sp)
-        }
-    }
-}
 
 
 
