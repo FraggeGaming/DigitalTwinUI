@@ -182,26 +182,17 @@ class InterfaceModel : ViewModel() {
         }
     }
 
-    val niftiFilenames: StateFlow<List<String>> = _niftiImages.map { it.keys.toList() }.stateIn(
-        viewModelScope, SharingStarted.Lazily, emptyList()
-    )
-
     fun getNiftiImages(filename: String): NiftiData? {
         val niftiData = _niftiImages.value[filename] ?: return null
         return niftiData
-    }
-
-    fun getNiftiJson(filename: String): Triple<List<String>, List<String>, List<String>>? {
-        val niftiData = _niftiImages.value[filename] ?: return null
-        return Triple(niftiData.axial, niftiData.coronal, niftiData.sagittal)
     }
 
     private val _maxSelectedImageIndex = MutableStateFlow<Map<String, Float>>(emptyMap())
     val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
 
 
-    private val _scrollStep = MutableStateFlow(0) // Holds the global scroll step
-    val scrollStep: StateFlow<Int> = _scrollStep
+    private val _scrollStep = MutableStateFlow(0f) // Holds the global scroll step as Float
+    val scrollStep: StateFlow<Float> = _scrollStep
 
     fun getImageIndices(filename: String): StateFlow<Triple<Int, Int, Int>> {
         return scrollStep.map { step ->
@@ -212,30 +203,28 @@ class InterfaceModel : ViewModel() {
                 currentMap.toMutableMap().apply { put(filename, maxLength.toFloat()) }
             }
 
-            val axialIndex = ((step * images.axial.size) / maxLength).coerceIn(0, images.axial.lastIndex)
-            val coronalIndex = ((step * images.coronal.size) / maxLength).coerceIn(0, images.coronal.lastIndex)
-            val sagittalIndex = ((step * images.sagittal.size) / maxLength).coerceIn(0, images.sagittal.lastIndex)
+            val axialIndex = ((step * images.axial.size) / maxLength).toInt().coerceIn(0, images.axial.lastIndex)
+            val coronalIndex = ((step * images.coronal.size) / maxLength).toInt().coerceIn(0, images.coronal.lastIndex)
+            val sagittalIndex = ((step * images.sagittal.size) / maxLength).toInt().coerceIn(0, images.sagittal.lastIndex)
 
             Triple(axialIndex, coronalIndex, sagittalIndex)
         }.stateIn(viewModelScope, SharingStarted.Lazily, Triple(0, 0, 0))
     }
 
     fun incrementScrollPosition() {
-        _scrollStep.update { (it + 1) }
-
+        _scrollStep.update { it + 0.5f } // **Finer step increments**
     }
 
     fun setScrollPosition(value: Float) {
         _scrollStep.update { current ->
-            val newValue = value.toInt()
-            if (current != newValue) newValue else current // Avoid redundant updates
+            if (current != value) value else current // **Avoid redundant updates**
         }
     }
 
-
     fun decrementScrollPosition() {
-        _scrollStep.update { (it - 1).coerceAtLeast(0) }
+        _scrollStep.update { (it - 0.5f).coerceAtLeast(0f) } // **Finer decrement**
     }
+
 
     private val _selectedViews = MutableStateFlow<Set<String>>(setOf())
     val selectedViews: StateFlow<Set<String>> = _selectedViews

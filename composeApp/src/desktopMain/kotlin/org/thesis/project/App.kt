@@ -2,7 +2,6 @@ package org.thesis.project
 
 import CardMenu
 import CardWithCheckboxes
-import androidx.compose.animation.animateColorAsState
 import navigationButtons
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -16,7 +15,6 @@ import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.dp
@@ -29,22 +27,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-import bottomMenu
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.serialization.json.Json
 import menuCard
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import java.awt.image.BufferedImage
 import java.awt.Point
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.util.*
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 import buttonWithCheckboxSet
-import buttonWithCheckbox
+import kotlin.math.floor
 
 
 @Composable
@@ -174,12 +167,14 @@ fun imageViewer(
     val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\brain_CT.nii.gz"
 
     val file2= "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\brain_PET.nii.gz"
+    //TODO change this to a dynamic path
 
     val title = "Patient_1"
     val inputFiles = listOf(file1) // Example input NIfTI files
     val outputFiles = listOf(file2) // Example output NIfTI files
 
-
+    var selectedOption by remember { mutableStateOf("CT") } //TODO add to model
+    //TODO refactor to separate files. Refactor to viewmodel
 
     interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
     interfaceModel.updateSelectedViews(NiftiView.AXIAL.displayName, true)
@@ -274,11 +269,11 @@ fun imageViewer(
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
                                     if (selectedViews.contains(NiftiView.AXIAL.toString()))
-                                        imageDisplay(images.axialImages ,images.axialVoxels, axialIndex, NiftiView.AXIAL.toString(), 4f, selectedSettings)
+                                        imageDisplay(images.axialImages ,images.axialVoxels, axialIndex, NiftiView.AXIAL.toString(), 4f, selectedSettings, selectedOption)
                                     if (selectedViews.contains(NiftiView.CORONAL.toString()))
-                                        imageDisplay(images.coronalImages, images.coronalVoxels, coronalIndex, NiftiView.CORONAL.toString(),4f, selectedSettings)
+                                        imageDisplay(images.coronalImages, images.coronalVoxels, coronalIndex, NiftiView.CORONAL.toString(),4f, selectedSettings,selectedOption)
                                     if (selectedViews.contains(NiftiView.SAGITTAL.toString()))
-                                        imageDisplay(images.sagittalImages, images.sagittalVoxels, sagittalIndex, NiftiView.SAGITTAL.toString(),4f, selectedSettings)
+                                        imageDisplay(images.sagittalImages, images.sagittalVoxels, sagittalIndex, NiftiView.SAGITTAL.toString(),4f, selectedSettings,selectedOption)
                                 }
                             }
 
@@ -328,12 +323,13 @@ fun imageViewer(
                                         modifier = Modifier
                                             .width(1.dp)
                                             .height(50.dp)
-                                            .background(Color.Gray)  // Line color
+                                            .background(Color.Gray)
                                     )
                                 },
 
                                 {
 
+                                    //TODO change to enum
                                     TextButton(
                                         onClick = {
                                             val isCurrentlyChecked = selectedSettings.contains("measure")
@@ -402,8 +398,19 @@ fun imageViewer(
                         selectedData = interfaceModel.selectedData,
                         scrollStep = interfaceModel.scrollStep,
                         maxIndexMap = interfaceModel.maxSelectedImageIndex,
-                        onUpdate = { value -> interfaceModel.setScrollPosition(value.toFloat()) } // Convert Int -> Float
+                        onUpdate = { value -> interfaceModel.setScrollPosition(value) } // Convert Int -> Float
                     )
+
+
+
+                    if (selectedSettings.contains("pixel")){
+                        RadioButtonList(
+                            selectedOption = selectedOption,
+                            onRadioSelected = { option ->
+                                selectedOption = option
+                            }
+                        )
+                    }
 
 
                 }
@@ -417,6 +424,35 @@ fun imageViewer(
 }
 
 @Composable
+fun RadioButtonList(
+    selectedOption: String, // Currently selected option
+    onRadioSelected: (String) -> Unit // Callback for handling selection
+) {
+    val options = listOf("CT", "PET", "MRI")
+    //TODO change to enum from model
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        options.forEach { option ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onRadioSelected(option) } // Calls the provided onClick logic
+                    .padding(vertical = 8.dp)
+            ) {
+                RadioButton(
+                    selected = (option == selectedOption),
+                    onClick = { onRadioSelected(option) }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = option, fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+
+@Composable
 fun bottomMenu(
     selectedViews: Set<String>, onCheckboxChanged: (String, Boolean) -> Unit, modifier: Modifier){
 
@@ -425,33 +461,45 @@ fun bottomMenu(
 @Composable
 fun ScrollSlider(
     selectedData: StateFlow<Set<String>>,
-    scrollStep: StateFlow<Int>,
+    scrollStep: StateFlow<Float>, // **Now using Float**
     maxIndexMap: StateFlow<Map<String, Float>>,
-    onUpdate: (Int) -> Unit
+    onUpdate: (Float) -> Unit
 ) {
     val currentScrollStep by scrollStep.collectAsState()
     val selectedFilenames by selectedData.collectAsState()
     val maxSizeMap by maxIndexMap.collectAsState()
 
-    val maxValue = selectedFilenames.mapNotNull { maxSizeMap[it]?.toInt() }.maxOrNull() ?: 1
+    val maxValue = selectedFilenames.mapNotNull { maxSizeMap[it] }.maxOrNull() ?: 1f
+
+    var sliderPosition by remember { mutableStateOf(currentScrollStep) }
 
     Column {
         Slider(
-            value = currentScrollStep.toFloat(),
+            value = sliderPosition,
             onValueChange = { newValue ->
-                onUpdate(newValue.toInt())
+                sliderPosition = newValue
+                onUpdate(newValue) // **Now passes Float directly**
             },
-            valueRange = 0f..maxValue.toFloat(),
-            steps = maxValue - 1,
+            valueRange = 0f..maxValue,
+            steps = 0, // **Ensures smooth movement**
             colors = SliderDefaults.colors(
                 thumbColor = Color.Gray,
                 activeTrackColor = Color.Blue,
                 inactiveTrackColor = Color.Green,
             )
         )
-        Text(text = "Step: ${currentScrollStep.toFloat().toInt()} / $maxValue")
+        Text(text = "Step: ${currentScrollStep.toInt()} / ${maxValue.toInt()}")
+    }
+
+    // Ensure smooth synchronization
+    LaunchedEffect(currentScrollStep) {
+        if (currentScrollStep != sliderPosition) {
+            sliderPosition = currentScrollStep
+        }
     }
 }
+
+
 
 
 @Composable
@@ -461,7 +509,8 @@ fun imageDisplay(
     index: Int,
     label: String,
     scaleFactor: Float = 2f,
-    selectedSettings: Set<String>
+    selectedSettings: Set<String>,
+    selectedOption: String
 ) {
     var hoverPosition by remember { mutableStateOf<Point?>(null) }
     var voxelValue by remember { mutableStateOf<Float?>(null) }
@@ -491,19 +540,19 @@ fun imageDisplay(
                 modifier = Modifier
                     .size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
                     .pointerInput(Unit) {
-                        detectPointerMovement(scaleFactor, currentVoxelSlice) { x, y, position, voxel ->
+                        detectPointerMovement(scaleFactor, image.width, image.height, currentVoxelSlice) { x, y, position, voxel ->
                             if (x == null || y == null || position == null || voxel == null) {
-                                // Pointer is out of bounds
                                 hoverPosition = null
                                 voxelValue = null
                             } else {
-                                // Pointer is within bounds
                                 hoverPosition = Point(x, y)
                                 voxelValue = voxel
                                 cursorPosition = position
                             }
                         }
                     }
+
+
             ) {
                 Image(
                     bitmap = bitmap,
@@ -511,10 +560,11 @@ fun imageDisplay(
                     modifier = Modifier.size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
                 )
 
+                //TODO add click for stay?
                 if (selectedSettings.contains("pixel")){
                     hoverPosition?.let { pos ->
                         voxelValue?.let { value ->
-                            val formattedValue = formatVoxelValue(value, "CT")
+                            val formattedValue = formatVoxelValue(value, selectedOption)
                             HoverPopup(cursorPosition, pos, formattedValue)
                         }
                     }
@@ -535,13 +585,12 @@ fun formatVoxelValue(value: Float, modality: String): String {
         else -> "Value: ${"%.3f".format(value)}"
     }
 }
-
-
-
 suspend fun PointerInputScope.detectPointerMovement(
     scaleFactor: Float,
+    imageWidth: Int,
+    imageHeight: Int,
     voxelSlice: List<List<Float>>,
-    onVoxelHover: (Int?, Int?, Offset?, Float?) -> Unit // Nullable to allow clearing hover
+    onVoxelHover: (Int?, Int?, Offset?, Float?) -> Unit
 ) {
     var lastX: Int? = null
     var lastY: Int? = null
@@ -551,27 +600,34 @@ suspend fun PointerInputScope.detectPointerMovement(
             val event = awaitPointerEvent()
             val position = event.changes.first().position
 
-            val x = (position.x / scaleFactor).toInt()
-            val y = (position.y / scaleFactor).toInt()
+            val x = floor(position.x / scaleFactor).toInt()
+            val y = floor(position.y / scaleFactor).toInt()
 
-            // If pointer goes out of bounds → clear hover state
-            if (x !in voxelSlice[0].indices || y !in voxelSlice.indices) {
-                if (lastX != null || lastY != null) { // Prevent unnecessary clearing
+            //out-of-bounds check
+            val outOfBounds = x < 0 || x >= imageWidth || y < 0 || y >= imageHeight
+
+            if (outOfBounds) {
+                if (lastX != null || lastY != null) {
                     lastX = null
                     lastY = null
                     onVoxelHover(null, null, null, null) // Clear hover
                 }
             }
-            // If pointer is within bounds and position changed → update hover
+            //If within bounds and position changed
             else if (x != lastX || y != lastY) {
                 lastX = x
                 lastY = y
-                val voxelValue = voxelSlice[y][x]
+
+                // Prevent crash if voxelSlice is misaligned
+                val voxelValue = voxelSlice.getOrNull(y)?.getOrNull(x) ?: 0f
+
                 onVoxelHover(x, y, position, voxelValue)
             }
         }
     }
 }
+
+
 
 /**
  * Small popup card showing hover pixel values.
@@ -587,7 +643,7 @@ fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, voxelValue: String)
     ) {
         Column {
             Text("X: ${hoverPosition.x}, Y: ${hoverPosition.y}", fontSize = 12.sp)
-            Text("Voxel Value: $voxelValue", fontSize = 12.sp)
+            Text("Value: $voxelValue", fontSize = 12.sp)
         }
     }
 }
