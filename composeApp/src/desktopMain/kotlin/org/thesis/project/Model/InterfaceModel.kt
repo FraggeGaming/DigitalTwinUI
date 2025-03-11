@@ -4,6 +4,7 @@ import NiftiData
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -277,6 +278,12 @@ class InterfaceModel : ViewModel() {
     var isHovering = mutableStateOf(false)
         private set
 
+    var lastX = mutableStateOf<Int?>(null)
+        private set
+
+    var lastY = mutableStateOf<Int?>(null)
+        private set
+
 
     fun updateHover(x: Int?, y: Int?, position: Offset?, voxel: Float?) {
         if (x == null || y == null || position == null || voxel == null) {
@@ -292,6 +299,20 @@ class InterfaceModel : ViewModel() {
         }
     }
 
+    fun setHoverData(data: VoxelData?, localPosition: Offset) {
+
+        if (data == null) {
+            if (lastX.value != null || lastY.value != null) {
+                lastX.value = null
+                lastY.value = null
+                updateHover(null, null, null, null) // Reset image index
+            }
+        } else if (data.x != lastX.value || data.y != lastY.value) {
+            lastX.value = data.x
+            lastY.value = data.y
+            updateHover(data.x, data.y, localPosition, data.voxelValue)
+        }
+    }
 }
 
 

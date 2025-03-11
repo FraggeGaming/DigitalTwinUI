@@ -549,9 +549,6 @@ suspend fun PointerInputScope.calculateVoxelValue(
     interfaceModel: InterfaceModel,
     layoutCoordinates: () -> LayoutCoordinates?,
 ) {
-    var lastX: Int? = null
-    var lastY: Int? = null
-
     awaitPointerEventScope {
         while (true) {
             val event = awaitPointerEvent()
@@ -560,17 +557,7 @@ suspend fun PointerInputScope.calculateVoxelValue(
             val localPosition = layoutCoordinates()?.let { layoutCoordinates()?.localPositionOf(it, position) } ?: position
             val voxelData = interfaceModel.getVoxelInfo(position, scaleFactor, imageWidth, imageHeight, voxelSlice)
 
-            if (voxelData == null) {
-                if (lastX != null || lastY != null) {
-                    lastX = null
-                    lastY = null
-                    interfaceModel.updateHover(null, null, null, null) // Reset image index
-                }
-            } else if (voxelData.x != lastX || voxelData.y != lastY) {
-                lastX = voxelData.x
-                lastY = voxelData.y
-                interfaceModel.updateHover(voxelData.x, voxelData.y, localPosition, voxelData.voxelValue)
-            }
+            interfaceModel.setHoverData(voxelData, localPosition)
         }
     }
 }
@@ -648,7 +635,7 @@ fun imageDisplay(
                             HoverPopup(
                                 cursorPosition = interfaceModel.cursorPosition.value,
                                 hoverPosition = pos,
-                                voxelValue = formattedValue
+                                string = formattedValue
                             )
                         }
                     }
@@ -664,7 +651,7 @@ fun imageDisplay(
  * Small popup card showing hover pixel values.
  */
 @Composable
-fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, voxelValue: String) {
+fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, string: String) {
     Card(
         modifier = Modifier
             .offset(
@@ -677,8 +664,8 @@ fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, voxelValue: String)
         Column(
             modifier = Modifier.padding(8.dp)
         ) {
-            Text("X: ${hoverPosition.x}, Y: ${hoverPosition.y}", fontSize = 8.sp, fontWeight = FontWeight.Normal)
-            Text("Value: $voxelValue", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("X: ${hoverPosition.x}, Y: ${hoverPosition.y}", fontSize = 10.sp, fontWeight = FontWeight.Normal)
+            Text("Value: $string", fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
