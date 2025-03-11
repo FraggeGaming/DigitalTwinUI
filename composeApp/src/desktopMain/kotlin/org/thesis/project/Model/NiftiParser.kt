@@ -7,8 +7,8 @@ import java.util.*
 import javax.imageio.ImageIO
 
 fun runNiftiParser(niftiPath: String): String {
-    //val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
-    val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
+    val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
+    //val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
 
     val exeFile = File(exePath)
     if (!exeFile.exists()) {
@@ -57,11 +57,12 @@ data class NiftiData(
     @kotlinx.serialization.Transient
     val coronalImages: List<BufferedImage> = emptyList(),
     @kotlinx.serialization.Transient
-    val sagittalImages: List<BufferedImage> = emptyList()
+    val sagittalImages: List<BufferedImage> = emptyList(),
+    val modality: String
 )
 
 
-fun parseNiftiImages(jsonData: String): NiftiData {
+fun parseNiftiImages(jsonData: String, modality: String): NiftiData {
     val json = Json { ignoreUnknownKeys = true }
     val jsonElement = json.parseToJsonElement(jsonData).jsonObject
 
@@ -91,6 +92,7 @@ fun parseNiftiImages(jsonData: String): NiftiData {
     val sagittalImages = sagittalEncoded.mapNotNull { base64ToBufferedImage(it) }
     println("test : ${axialImages.size}")
 
+
     return NiftiData(
         width = width,
         height = height,
@@ -103,7 +105,8 @@ fun parseNiftiImages(jsonData: String): NiftiData {
         sagittalVoxels = sagittalVoxels,
         axialImages = axialImages,
         coronalImages = coronalImages,
-        sagittalImages = sagittalImages
+        sagittalImages = sagittalImages,
+        modality = modality
     )
 }
 

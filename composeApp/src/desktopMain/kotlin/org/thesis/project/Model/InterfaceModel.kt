@@ -57,11 +57,14 @@ class InterfaceModel : ViewModel() {
             val output = runNiftiParser(file)
 
             output.let {
-                val niftiData = parseNiftiImages(it)
+                val niftiData = extractModality(file)?.let { it1 -> parseNiftiImages(it, it1) }
                 println("Parsing: $file")
                 val fileName = removeNiiExtension(File(file).nameWithoutExtension)
-                inputFilenames.add(fileName)
-                storeNiftiImages(fileName, niftiData)
+
+                if (niftiData != null) {
+                    inputFilenames.add(fileName)
+                    storeNiftiImages(fileName, niftiData)
+                }
                 println("Stored NIfTI images for: $fileName")
             }
         }
@@ -73,11 +76,14 @@ class InterfaceModel : ViewModel() {
             val output = runNiftiParser(file)
 
             output.let {
-                val niftiData = parseNiftiImages(it)
+                val niftiData = extractModality(file)?.let { it1 -> parseNiftiImages(it, it1) }
                 val fileName = removeNiiExtension(File(file).nameWithoutExtension)
-                outputFilenames.add(fileName)
 
-                storeNiftiImages(fileName, niftiData)
+
+                if (niftiData != null) {
+                    outputFilenames.add(fileName)
+                    storeNiftiImages(fileName, niftiData)
+                }
                 println("Stored NIfTI images for: $fileName")
             }
         }
@@ -85,6 +91,24 @@ class InterfaceModel : ViewModel() {
         println("Added mapping for $title : $inputFilenames, $outputFilenames")
         addFileMapping(title, inputFilenames, outputFilenames)
     }
+
+    fun extractModality(filename: String): String? {
+        // First try to extract known modalities
+        val knownModalities = listOf("CT", "PET", "MR", "MRI", "T1", "T2", "FLAIR")
+        val regexKnown = Regex("_(\\w+)(?=\\.nii\\.gz$)", RegexOption.IGNORE_CASE)
+
+        val match = regexKnown.find(filename)
+        val modality = match?.groupValues?.get(1)
+
+        // Return if it's a known modality
+        if (modality != null && knownModalities.any { it.equals(modality, ignoreCase = true) }) {
+            return modality.uppercase()
+        }
+
+        // Fallback: extract whatever is between last `_` and `.nii`
+        return ""
+    }
+
 
 
     //Add or update an entry in the mapping
@@ -285,32 +309,29 @@ class InterfaceModel : ViewModel() {
         private set
 
 
-    fun updateHover(x: Int?, y: Int?, position: Offset?, voxel: Float?) {
-        if (x == null || y == null || position == null || voxel == null) {
-            hoverPosition.value = null
-            voxelValue.value = null
-            cursorPosition.value = Offset.Zero
-            isHovering.value = false
-        } else {
-            hoverPosition.value = Point(x, y)
-            voxelValue.value = voxel
-            cursorPosition.value = position
-            isHovering.value = true
-        }
+    fun setHoverData(data: VoxelData, localPosition: Offset) {
+
+
+        lastX.value = data.x
+        lastY.value = data.y
+
+        hoverPosition.value = Point(data.x, data.y)
+        voxelValue.value = data.voxelValue
+        cursorPosition.value = localPosition
+        isHovering.value = true
+
     }
 
-    fun setHoverData(data: VoxelData?, localPosition: Offset) {
-
-        if (data == null) {
-            if (lastX.value != null || lastY.value != null) {
-                lastX.value = null
-                lastY.value = null
-                updateHover(null, null, null, null) // Reset image index
-            }
-        } else if (data.x != lastX.value || data.y != lastY.value) {
-            lastX.value = data.x
-            lastY.value = data.y
-            updateHover(data.x, data.y, localPosition, data.voxelValue)
+    fun updatePointerPosition(
+        position: Offset,
+        scaleFactor: Float,
+        width: Int,
+        height: Int,
+        currentVoxelSlice: List<List<Float>> // ← make sure this is passed in!
+    ) {
+        val voxelData = getVoxelInfo(position, scaleFactor, width, height, currentVoxelSlice)
+        if (voxelData != null) {
+            setHoverData(voxelData, position)
         }
     }
 }

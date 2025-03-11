@@ -5,6 +5,7 @@ import CardWithCheckboxes
 import navigationButtons
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -165,21 +166,21 @@ fun imageViewer(
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
 
     //Takes the file path and parses the nifti
-    //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\liver_CT.nii.gz"
+    val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
 
 
-    //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CT.nii.gz"
+    val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
 
-    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\brain_CT.nii.gz"
+    //val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\brain_CT.nii.gz"
 
-    val file2= "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\brain_PET.nii.gz"
+    //val file2= "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\brain_PET.nii.gz"
     //TODO change this to a dynamic path
 
     val title = "Patient_1"
-    val inputFiles = listOf(file1) // Example input NIfTI files
-    val outputFiles = listOf(file2) // Example output NIfTI files
+    val inputFiles = listOf(niftiFile) // Example input NIfTI files
+    val outputFiles = listOf(niftiFile1) // Example output NIfTI files
 
-    var selectedOption by remember { mutableStateOf("CT") } //TODO add to model
+    var selectedOption by remember { mutableStateOf("") } //TODO add to model
     //TODO refactor to separate files. Refactor to viewmodel
 
     interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
@@ -274,7 +275,9 @@ fun imageViewer(
                                     Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
-                                    if (selectedViews.contains(NiftiView.AXIAL.toString()))
+
+                                    if (selectedViews.contains(NiftiView.AXIAL.toString())){
+                                        selectedOption = images.modality
                                         imageDisplay(
                                             images.axialImages ,
                                             images.axialVoxels,
@@ -285,7 +288,10 @@ fun imageViewer(
                                             selectedOption,
                                             interfaceModel
                                         )
-                                    if (selectedViews.contains(NiftiView.CORONAL.toString()))
+                                    }
+                                    if (selectedViews.contains(NiftiView.CORONAL.toString())){
+                                        selectedOption = images.modality
+
                                         imageDisplay(
                                             images.coronalImages,
                                             images.coronalVoxels,
@@ -296,7 +302,10 @@ fun imageViewer(
                                             selectedOption,
                                             interfaceModel
                                         )
-                                    if (selectedViews.contains(NiftiView.SAGITTAL.toString()))
+                                    }
+                                    if (selectedViews.contains(NiftiView.SAGITTAL.toString())){
+                                        selectedOption = images.modality
+
                                         imageDisplay(
                                             images.sagittalImages,
                                             images.sagittalVoxels,
@@ -307,6 +316,8 @@ fun imageViewer(
                                             selectedOption,
                                             interfaceModel
                                         )
+                                    }
+
                                 }
 
 
@@ -439,7 +450,7 @@ fun imageViewer(
 
 
 
-                    if (selectedSettings.contains("pixel")){
+                    if (selectedSettings.contains("pixel") && selectedOption == ""){
                         RadioButtonList(
                             selectedOption = selectedOption,
                             onRadioSelected = { option ->
@@ -492,17 +503,10 @@ fun RadioButtonList(
     }
 }
 
-
-@Composable
-fun bottomMenu(
-    selectedViews: Set<String>, onCheckboxChanged: (String, Boolean) -> Unit, modifier: Modifier){
-
-}
-
 @Composable
 fun ScrollSlider(
     selectedData: StateFlow<Set<String>>,
-    scrollStep: StateFlow<Float>, // **Now using Float**
+    scrollStep: StateFlow<Float>,
     maxIndexMap: StateFlow<Map<String, Float>>,
     onUpdate: (Float) -> Unit
 ) {
@@ -519,10 +523,10 @@ fun ScrollSlider(
             value = sliderPosition,
             onValueChange = { newValue ->
                 sliderPosition = newValue
-                onUpdate(newValue) // **Now passes Float directly**
+                onUpdate(newValue)
             },
             valueRange = 0f..maxValue,
-            steps = 0, // **Ensures smooth movement**
+            steps = 0,
             colors = SliderDefaults.colors(
                 thumbColor = Color.Gray,
                 activeTrackColor = Color.Blue,
@@ -532,37 +536,12 @@ fun ScrollSlider(
         Text(text = "Step: ${currentScrollStep.toInt()} / ${maxValue.toInt()}")
     }
 
-    // Ensure smooth synchronization
     LaunchedEffect(currentScrollStep) {
         if (currentScrollStep != sliderPosition) {
             sliderPosition = currentScrollStep
         }
     }
 }
-
-
-suspend fun PointerInputScope.calculateVoxelValue(
-    scaleFactor: Float,
-    imageWidth: Int,
-    imageHeight: Int,
-    voxelSlice: List<List<Float>>,
-    interfaceModel: InterfaceModel,
-    layoutCoordinates: () -> LayoutCoordinates?,
-) {
-    awaitPointerEventScope {
-        while (true) {
-            val event = awaitPointerEvent()
-            val position = event.changes.first().position
-
-            val localPosition = layoutCoordinates()?.let { layoutCoordinates()?.localPositionOf(it, position) } ?: position
-            val voxelData = interfaceModel.getVoxelInfo(position, scaleFactor, imageWidth, imageHeight, voxelSlice)
-
-            interfaceModel.setHoverData(voxelData, localPosition)
-        }
-    }
-}
-
-
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -589,29 +568,36 @@ fun imageDisplay(
     var isHoveringLocal by remember { mutableStateOf(false) }
     // This will store the layout position of the Box
     var layoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var scaleFactorState by remember { mutableStateOf(scaleFactor) }
 
-    // Reset hover state when index changes
-    LaunchedEffect(index) {
-        interfaceModel.updateHover(null, null, null, null)
-    }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text("$label - Slice $index")
 
-        key(index) {
+        key(currentVoxelSlice) {
             Box(
                 modifier = Modifier
-                    .size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
+                    .size((image.width * scaleFactorState).dp, (image.height * scaleFactorState).dp)
                     .onGloballyPositioned { coordinates -> layoutCoordinates = coordinates } // Get layout coordinates
-                    .pointerInput(Unit) {
-                        calculateVoxelValue(
-                            scaleFactor,
-                            image.width,
-                            image.height,
-                            currentVoxelSlice,
-                            interfaceModel = interfaceModel,
-                            layoutCoordinates = { layoutCoordinates } // Pass layout position
-                        )
+                    .pointerInput(currentVoxelSlice) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val position = event.changes.first().position
+
+                                // Use layout coordinates if available
+                                val localPosition = layoutCoordinates?.localPositionOf(layoutCoordinates!!, position) ?: position
+
+                                interfaceModel.updatePointerPosition(
+                                    position = position,
+                                    scaleFactor = scaleFactorState,
+                                    width = image.width,
+                                    height = image.height,
+                                    currentVoxelSlice = currentVoxelSlice
+                                )
+                            }
+                        }
+
                     }
                     .onPointerEvent(PointerEventType.Move) {
                     }
@@ -625,7 +611,7 @@ fun imageDisplay(
                 Image(
                     bitmap = bitmap,
                     contentDescription = "$label Image",
-                    modifier = Modifier.size((image.width * scaleFactor).dp, (image.height * scaleFactor).dp)
+                    modifier = Modifier.size((image.width * scaleFactorState).dp, (image.height * scaleFactorState).dp)
                 )
 
                 if (selectedSettings.contains("pixel") && isHoveringLocal && interfaceModel.isHovering.value) {
@@ -647,6 +633,7 @@ fun imageDisplay(
     }
 }
 
+
 /**
  * Small popup card showing hover pixel values.
  */
@@ -655,11 +642,11 @@ fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, string: String) {
     Card(
         modifier = Modifier
             .offset(
-                x = cursorPosition.x.dp + 10.dp, // Small offset to prevent overlap
-                y = cursorPosition.y.dp + 10.dp // Floating effect
+                x = cursorPosition.x.dp + 10.dp,
+                y = cursorPosition.y.dp + 10.dp
             ),
         elevation = 8.dp, // Adds elevation to make it float
-        shape = RoundedCornerShape(12.dp) // Optional: Smooth edges
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier.padding(8.dp)
