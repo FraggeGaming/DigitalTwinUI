@@ -1,6 +1,8 @@
 package org.thesis.project.Model
 
 import NiftiData
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerInputScope
@@ -14,6 +16,7 @@ import parseNiftiImages
 import removeNiiExtension
 import runNiftiParser
 import java.awt.Point
+import java.awt.image.BufferedImage
 import java.io.File
 import kotlin.math.floor
 
@@ -220,27 +223,104 @@ class InterfaceModel : ViewModel() {
     private val _maxSelectedImageIndex = MutableStateFlow<Map<String, Float>>(emptyMap())
     val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
 
+    fun applyAutoWindowing(voxelSlice: List<List<Float>>): BufferedImage {
+        val allValues = voxelSlice.flatten()
+        val min = allValues.minOrNull() ?: 0f
+        val max = allValues.maxOrNull() ?: 1f
+        val range = max - min
+
+        val height = voxelSlice.size
+        val width = voxelSlice.firstOrNull()?.size ?: 0
+        val image = BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY)
+        val raster = image.raster
+
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val value = voxelSlice[y][x].coerceIn(min, max)
+                val scaled = ((value - min) / range * 255f).toInt().coerceIn(0, 255)
+                raster.setSample(x, y, 0, scaled)
+            }
+        }
+
+        return image
+    }
+
+    fun getSlicesFromVolume(view: NiftiView, filename: String): List<List<List<Float>>> {
+        val images = getNiftiImages(filename) ?: return emptyList()
+        val voxelVolume = images.voxel_volume
+
+        return when (view) {
+            NiftiView.AXIAL -> {
+                // Axial slices = voxelVolume[z], index = axialIndex
+                voxelVolume
+            }
+
+            NiftiView.CORONAL -> {
+                // Coronal slices = voxelVolume[z][y][x] -> converted to [y][z][x]
+                val depth = voxelVolume.size
+                val height = voxelVolume[0].size
+                val width = voxelVolume[0][0].size
+
+                val coronalSlices = List(height) { y ->
+                    List(depth) { z ->
+                        List(width) { x ->
+                            voxelVolume[z][y][x]
+                        }
+                    }
+                }
+               coronalSlices
+            }
+
+            NiftiView.SAGITTAL -> {
+                // Sagittal slices = voxelVolume[z][y][x] -> converted to [x][z][y]
+                val depth = voxelVolume.size
+                val height = voxelVolume[0].size
+                val width = voxelVolume[0][0].size
+
+                val sagittalSlices = List(width) { x ->
+                    List(depth) { z ->
+                        List(height) { y ->
+                            voxelVolume[z][y][x]
+                        }
+                    }
+                }
+                sagittalSlices
+            }
+        }
+    }
+
+
+
 
     private val _scrollStep = MutableStateFlow(0f) // Holds the global scroll step as Float
     val scrollStep: StateFlow<Float> = _scrollStep
 
     fun getImageIndices(filename: String): StateFlow<Triple<Int, Int, Int>> {
-        return scrollStep.map { step ->
-            val images = _niftiImages.value[filename] ?: return@map Triple(0, 0, 0)
+        return combine(scrollStep, _niftiImages) { step, imagesMap ->
+            val images = imagesMap[filename]
+            if (images == null) {
+                return@combine Triple(0, 0, 0)
+            }
 
-            val maxLength = listOf(images.axial.size, images.coronal.size, images.sagittal.size).maxOrNull() ?: 1
+            val axialSize = images.voxel_volume.size
+            val coronalSize = images.voxel_volume[0].size
+            val sagittalSize = images.voxel_volume[0][0].size
+
+            val maxLength = listOf(axialSize, coronalSize, sagittalSize).maxOrNull() ?: 1
+
             _maxSelectedImageIndex.update { currentMap ->
                 currentMap.toMutableMap().apply { put(filename, maxLength.toFloat()) }
             }
 
-            val axialIndex = ((step * images.axial.size) / maxLength).toInt().coerceIn(0, images.axial.lastIndex)
-            val coronalIndex = ((step * images.coronal.size) / maxLength).toInt().coerceIn(0, images.coronal.lastIndex)
-            val sagittalIndex =
-                ((step * images.sagittal.size) / maxLength).toInt().coerceIn(0, images.sagittal.lastIndex)
+            val axialIndex = ((step * axialSize) / maxLength).toInt().coerceIn(0, axialSize - 1)
+            val coronalIndex = ((step * coronalSize) / maxLength).toInt().coerceIn(0, coronalSize - 1)
+            val sagittalIndex = ((step * sagittalSize) / maxLength).toInt().coerceIn(0, sagittalSize - 1)
 
             Triple(axialIndex, coronalIndex, sagittalIndex)
         }.stateIn(viewModelScope, SharingStarted.Lazily, Triple(0, 0, 0))
     }
+
+
 
     fun incrementScrollPosition() {
         _scrollStep.update { it + 0.5f } // **Finer step increments**
@@ -257,10 +337,10 @@ class InterfaceModel : ViewModel() {
     }
 
 
-    private val _selectedViews = MutableStateFlow<Set<String>>(setOf())
-    val selectedViews: StateFlow<Set<String>> = _selectedViews
+    private val _selectedViews = MutableStateFlow<Set<NiftiView>>(setOf())
+    val selectedViews: StateFlow<Set<NiftiView>> = _selectedViews
 
-    fun updateSelectedViews(label: String, isSelected: Boolean) {
+    fun updateSelectedViews(label: NiftiView, isSelected: Boolean) {
         _selectedViews.update { currentSet ->
             if (isSelected) currentSet + label else currentSet - label
         }
@@ -309,8 +389,7 @@ class InterfaceModel : ViewModel() {
         private set
 
 
-    fun setHoverData(data: VoxelData, localPosition: Offset) {
-
+    private fun setHoverData(data: VoxelData, localPosition: Offset) {
 
         lastX.value = data.x
         lastY.value = data.y

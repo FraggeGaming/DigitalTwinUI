@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.thesis.project.Model.NiftiView
 
 
 @Composable
@@ -152,9 +153,9 @@ fun buttonWithCheckbox(
 
 @Composable
 fun buttonWithCheckboxSet(
-    selectedData: Set<String>,
-    label: String,
-    onCheckboxChanged: (String, Boolean) -> Unit,
+    selectedData: Set<NiftiView>,
+    label: NiftiView,
+    onCheckboxChanged: (NiftiView, Boolean) -> Unit,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         TextButton(
@@ -175,7 +176,7 @@ fun buttonWithCheckboxSet(
                 }
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text(text = label)
+            Text(text = label.displayName)
         }
     }
 }

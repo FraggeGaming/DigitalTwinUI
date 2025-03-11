@@ -5,7 +5,6 @@ import CardWithCheckboxes
 import navigationButtons
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -18,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,13 +31,11 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import menuCard
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
-import java.awt.image.BufferedImage
 import java.awt.Point
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -166,25 +162,25 @@ fun imageViewer(
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
 
     //Takes the file path and parses the nifti
-    val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+    //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
 
 
-    val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
+    //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
 
-    //val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_CT\\brain_CT.nii.gz"
+    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\\\CTres.nii.gz"
 
-    //val file2= "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\brain_PET.nii.gz"
+    val file2= "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\brain_PET.nii.gz"
     //TODO change this to a dynamic path
 
     val title = "Patient_1"
-    val inputFiles = listOf(niftiFile) // Example input NIfTI files
-    val outputFiles = listOf(niftiFile1) // Example output NIfTI files
+    val inputFiles = listOf(file1) // Example input NIfTI files
+    val outputFiles = listOf(file2) // Example output NIfTI files
 
     var selectedOption by remember { mutableStateOf("") } //TODO add to model
     //TODO refactor to separate files. Refactor to viewmodel
 
     interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
-    interfaceModel.updateSelectedViews(NiftiView.AXIAL.displayName, true)
+    interfaceModel.updateSelectedViews(NiftiView.AXIAL, true)
 
     MainPanelLayout(
         leftPanelWidth = leftPanelWidth,
@@ -263,69 +259,34 @@ fun imageViewer(
                     ) {
                         selectedData.forEach { filename ->
                             Text(filename)
-                            val images = interfaceModel.getNiftiImages(filename)
 
 
-                            val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
-
-                            val (axialIndex, coronalIndex, sagittalIndex) = imageIndices
-
-                            if (images != null){
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
+                                    selectedViews.forEach { selectedView ->
+                                        val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
+                                        val currentIndex = when (selectedView) {
+                                            NiftiView.AXIAL -> imageIndices.first
+                                            NiftiView.CORONAL -> imageIndices.second
+                                            NiftiView.SAGITTAL -> imageIndices.third
+                                        }
 
-                                    if (selectedViews.contains(NiftiView.AXIAL.toString())){
-                                        selectedOption = images.modality
-                                        imageDisplay(
-                                            images.axialImages ,
-                                            images.axialVoxels,
-                                            axialIndex,
-                                            NiftiView.AXIAL.toString(),
-                                            4f,
-                                            selectedSettings,
-                                            selectedOption,
-                                            interfaceModel
-                                        )
-                                    }
-                                    if (selectedViews.contains(NiftiView.CORONAL.toString())){
-                                        selectedOption = images.modality
+                                        val slices = interfaceModel.getSlicesFromVolume(selectedView, filename)
 
                                         imageDisplay(
-                                            images.coronalImages,
-                                            images.coronalVoxels,
-                                            coronalIndex,
-                                            NiftiView.CORONAL.toString(),
-                                            4f,
-                                            selectedSettings,
-                                            selectedOption,
-                                            interfaceModel
+                                            voxelData = slices,
+                                            index = currentIndex,
+                                            label = selectedView,
+                                            scaleFactor = 4f,
+                                            selectedSettings = selectedSettings,
+                                            modality = interfaceModel.extractModality(filename) ?: "",
+                                            interfaceModel = interfaceModel
                                         )
                                     }
-                                    if (selectedViews.contains(NiftiView.SAGITTAL.toString())){
-                                        selectedOption = images.modality
-
-                                        imageDisplay(
-                                            images.sagittalImages,
-                                            images.sagittalVoxels,
-                                            sagittalIndex,
-                                            NiftiView.SAGITTAL.toString(),
-                                            4f,
-                                            selectedSettings,
-                                            selectedOption,
-                                            interfaceModel
-                                        )
-                                    }
-
                                 }
-
-
-
-                            }
-
                         }
-
                     }
                 }
 
@@ -346,21 +307,21 @@ fun imageViewer(
 
                             content = listOf(
                                 { Row {
-                                    buttonWithCheckboxSet(selectedViews, NiftiView.AXIAL.displayName, interfaceModel::updateSelectedViews)
+                                    buttonWithCheckboxSet(selectedViews, NiftiView.AXIAL, interfaceModel::updateSelectedViews)
 
                                 }
                                 },
 
                                 {
                                     Row{
-                                        buttonWithCheckboxSet(selectedViews, NiftiView.CORONAL.displayName, interfaceModel::updateSelectedViews)
+                                        buttonWithCheckboxSet(selectedViews, NiftiView.CORONAL, interfaceModel::updateSelectedViews)
 
                                     }
                                 },
 
                                 {
                                     Row {
-                                        buttonWithCheckboxSet(selectedViews, NiftiView.SAGITTAL.displayName, interfaceModel::updateSelectedViews)
+                                        buttonWithCheckboxSet(selectedViews, NiftiView.SAGITTAL, interfaceModel::updateSelectedViews)
 
                                     }
                                 },
@@ -547,28 +508,29 @@ fun ScrollSlider(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun imageDisplay(
-    images: List<BufferedImage>,
     voxelData: List<List<List<Float>>>,
     index: Int,
-    label: String,
+    label: NiftiView,
     scaleFactor: Float = 2f,
     selectedSettings: Set<String>,
-    selectedOption: String,
+    modality: String,
     interfaceModel: InterfaceModel
 ) {
-    if (images.isEmpty() || voxelData.isEmpty() || voxelData.size <= index) {
+    if (voxelData.isEmpty() || voxelData.size <= index) {
         Text("No images")
         return
     }
 
-    val image = images[index]
-    val bitmap = image.toComposeImageBitmap()
+
     val currentVoxelSlice = voxelData[index]
+    val bitmap = interfaceModel.applyAutoWindowing(currentVoxelSlice).toComposeImageBitmap()
 
     var isHoveringLocal by remember { mutableStateOf(false) }
     // This will store the layout position of the Box
     var layoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var scaleFactorState by remember { mutableStateOf(scaleFactor) }
+
+    println(modality)
 
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -577,7 +539,7 @@ fun imageDisplay(
         key(currentVoxelSlice) {
             Box(
                 modifier = Modifier
-                    .size((image.width * scaleFactorState).dp, (image.height * scaleFactorState).dp)
+                    .size((bitmap.width * scaleFactorState).dp, (bitmap.height * scaleFactorState).dp)
                     .onGloballyPositioned { coordinates -> layoutCoordinates = coordinates } // Get layout coordinates
                     .pointerInput(currentVoxelSlice) {
                         awaitPointerEventScope {
@@ -591,8 +553,8 @@ fun imageDisplay(
                                 interfaceModel.updatePointerPosition(
                                     position = position,
                                     scaleFactor = scaleFactorState,
-                                    width = image.width,
-                                    height = image.height,
+                                    width = bitmap.width,
+                                    height = bitmap.height,
                                     currentVoxelSlice = currentVoxelSlice
                                 )
                             }
@@ -611,13 +573,14 @@ fun imageDisplay(
                 Image(
                     bitmap = bitmap,
                     contentDescription = "$label Image",
-                    modifier = Modifier.size((image.width * scaleFactorState).dp, (image.height * scaleFactorState).dp)
+                    modifier = Modifier.size((bitmap.width * scaleFactorState).dp, (bitmap.height * scaleFactorState).dp)
                 )
 
                 if (selectedSettings.contains("pixel") && isHoveringLocal && interfaceModel.isHovering.value) {
                     interfaceModel.hoverPosition.value?.let { pos ->
                         interfaceModel.voxelValue.value?.let { value ->
-                            val formattedValue = formatVoxelValue(value, selectedOption)
+                            val formattedValue = formatVoxelValue(value, modality)
+                            println(formattedValue)
                             HoverPopup(
                                 cursorPosition = interfaceModel.cursorPosition.value,
                                 hoverPosition = pos,
