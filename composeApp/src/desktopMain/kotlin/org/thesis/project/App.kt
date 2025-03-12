@@ -40,7 +40,7 @@ import java.awt.Point
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 import buttonWithCheckboxSet
-
+import java.awt.image.BufferedImage
 
 
 @Composable
@@ -273,13 +273,14 @@ fun imageViewer(
                                             NiftiView.SAGITTAL -> imageIndices.third
                                         }
 
-                                        val slices = interfaceModel.getSlicesFromVolume(selectedView, filename)
+                                        val (slices, image) = interfaceModel.getSlicesFromVolume(selectedView, filename)
 
                                         imageDisplay(
                                             voxelData = slices,
+                                            image = image,
                                             index = currentIndex,
                                             label = selectedView,
-                                            scaleFactor = 4f,
+                                            scaleFactor = 1f,
                                             selectedSettings = selectedSettings,
                                             modality = interfaceModel.extractModality(filename) ?: "",
                                             interfaceModel = interfaceModel
@@ -509,9 +510,10 @@ fun ScrollSlider(
 @Composable
 fun imageDisplay(
     voxelData: List<List<List<Float>>>,
+    image: List<BufferedImage>,
     index: Int,
     label: NiftiView,
-    scaleFactor: Float = 2f,
+    scaleFactor: Float = 1f,
     selectedSettings: Set<String>,
     modality: String,
     interfaceModel: InterfaceModel
@@ -523,7 +525,7 @@ fun imageDisplay(
 
 
     val currentVoxelSlice = voxelData[index]
-    val bitmap = interfaceModel.applyAutoWindowing(currentVoxelSlice).toComposeImageBitmap()
+    val bitmap = image[index].toComposeImageBitmap()
 
     var isHoveringLocal by remember { mutableStateOf(false) }
     // This will store the layout position of the Box
@@ -551,10 +553,10 @@ fun imageDisplay(
                                 val localPosition = layoutCoordinates?.localPositionOf(layoutCoordinates!!, position) ?: position
 
                                 interfaceModel.updatePointerPosition(
-                                    position = position,
+                                    position = localPosition,
                                     scaleFactor = scaleFactorState,
-                                    width = bitmap.width,
-                                    height = bitmap.height,
+                                    width = (bitmap.height).toInt(),
+                                    height = (bitmap.width ).toInt(),
                                     currentVoxelSlice = currentVoxelSlice
                                 )
                             }
@@ -580,6 +582,7 @@ fun imageDisplay(
                     interfaceModel.hoverPosition.value?.let { pos ->
                         interfaceModel.voxelValue.value?.let { value ->
                             val formattedValue = formatVoxelValue(value, modality)
+                            println("modality: $modality")
                             println(formattedValue)
                             HoverPopup(
                                 cursorPosition = interfaceModel.cursorPosition.value,
@@ -590,8 +593,6 @@ fun imageDisplay(
                     }
                 }
             }
-
-
         }
     }
 }

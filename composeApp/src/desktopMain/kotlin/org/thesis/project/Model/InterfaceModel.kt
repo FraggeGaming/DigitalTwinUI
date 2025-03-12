@@ -5,13 +5,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import parseNiftiImages
 import removeNiiExtension
 import runNiftiParser
@@ -86,6 +90,7 @@ class InterfaceModel : ViewModel() {
                 if (niftiData != null) {
                     outputFilenames.add(fileName)
                     storeNiftiImages(fileName, niftiData)
+                    preloadSlicesInBackground(niftiData)
                 }
                 println("Stored NIfTI images for: $fileName")
             }
@@ -93,6 +98,8 @@ class InterfaceModel : ViewModel() {
 
         println("Added mapping for $title : $inputFilenames, $outputFilenames")
         addFileMapping(title, inputFilenames, outputFilenames)
+
+
     }
 
     fun extractModality(filename: String): String? {
@@ -245,49 +252,152 @@ class InterfaceModel : ViewModel() {
         return image
     }
 
-    fun getSlicesFromVolume(view: NiftiView, filename: String): List<List<List<Float>>> {
-        val images = getNiftiImages(filename) ?: return emptyList()
+
+    fun transformToCoronalSlices(voxelVolume: List<List<List<Float>>>): List<List<List<Float>>> {
+        val depth = voxelVolume.size
+        val height = voxelVolume[0].size
+        val width = voxelVolume[0][0].size
+
+        return List(height) { y ->
+            List(depth) { z ->
+                List(width) { x ->
+                    voxelVolume[z][y][x]
+                }
+            }
+        }
+    }
+
+    fun transformToSagittalSlices(voxelVolume: List<List<List<Float>>>): List<List<List<Float>>> {
+        val depth = voxelVolume.size
+        val height = voxelVolume[0].size
+        val width = voxelVolume[0][0].size
+
+        return List(width) { x ->
+            List(depth) { z ->
+                List(height) { y ->
+                    voxelVolume[z][y][x]
+                }
+            }
+        }
+    }
+
+
+
+    fun preloadSlicesInBackground(images: NiftiData) {
+        CoroutineScope(Dispatchers.Default).launch {
+            if (images.coronalVoxelSlices.isEmpty()) {
+                images.coronalVoxelSlices = transformToCoronalSlices(images.voxel_volume)
+            }
+            if (images.imageSlicesCoronal.isEmpty()) {
+                images.imageSlicesCoronal = images.coronalVoxelSlices.map { applyAutoWindowing(it) }
+            }
+
+            if (images.sagittalVoxelSlices.isEmpty()) {
+                images.sagittalVoxelSlices = transformToSagittalSlices(images.voxel_volume)
+            }
+            if (images.imageSlicesSagittal.isEmpty()) {
+                images.imageSlicesSagittal = images.sagittalVoxelSlices.map { applyAutoWindowing(it) }
+            }
+        }
+    }
+
+
+
+
+//    fun getSlicesFromVolume(view: NiftiView, filename: String): Pair<List<List<List<Float>>>, List<BufferedImage>> {
+//        val images = getNiftiImages(filename) ?: return Pair(emptyList(), emptyList())
+//        val voxelVolume = images.voxel_volume
+//
+//        return when (view) {
+//            NiftiView.AXIAL -> {
+//                val axialSlices = voxelVolume
+//                if (images.imageSlicesAxial.isEmpty()) {
+//                    images.imageSlicesAxial = axialSlices.map { applyAutoWindowing(it) }
+//                }
+//                Pair(axialSlices, images.imageSlicesAxial)
+//            }
+//
+//            NiftiView.CORONAL -> {
+//                val depth = voxelVolume.size
+//                val height = voxelVolume[0].size
+//                val width = voxelVolume[0][0].size
+//
+//                val coronalSlices = List(height) { y ->
+//                    List(depth) { z ->
+//                        List(width) { x ->
+//                            voxelVolume[z][y][x]
+//                        }
+//                    }
+//                }
+//
+//                if (images.coronalVoxelSlices.isEmpty()) {
+//                    images.coronalVoxelSlices = transformToCoronalSlices(voxelVolume)
+//                }
+//
+//
+//                Pair(coronalSlices, images.imageSlicesCoronal)
+//            }
+//
+//            NiftiView.SAGITTAL -> {
+//                val depth = voxelVolume.size
+//                val height = voxelVolume[0].size
+//                val width = voxelVolume[0][0].size
+//
+//                val sagittalSlices = List(width) { x ->
+//                    List(depth) { z ->
+//                        List(height) { y ->
+//                            voxelVolume[z][y][x]
+//                        }
+//                    }
+//                }
+//
+//                if (images.imageSlicesSagittal.isEmpty()) {
+//                    images.imageSlicesSagittal = sagittalSlices.map { applyAutoWindowing(it) }
+//                }
+//
+//                Pair(sagittalSlices, images.imageSlicesSagittal)
+//            }
+//        }
+//    }
+
+    fun getSlicesFromVolume(view: NiftiView, filename: String): Pair<List<List<List<Float>>>, List<BufferedImage>> {
+        val images = getNiftiImages(filename) ?: return Pair(emptyList(), emptyList())
         val voxelVolume = images.voxel_volume
 
         return when (view) {
             NiftiView.AXIAL -> {
-                // Axial slices = voxelVolume[z], index = axialIndex
-                voxelVolume
+                val axialSlices = voxelVolume
+                if (images.imageSlicesAxial.isEmpty()) {
+                    images.imageSlicesAxial = axialSlices.map { applyAutoWindowing(it) }
+                }
+                Pair(axialSlices, images.imageSlicesAxial)
             }
 
             NiftiView.CORONAL -> {
-                // Coronal slices = voxelVolume[z][y][x] -> converted to [y][z][x]
-                val depth = voxelVolume.size
-                val height = voxelVolume[0].size
-                val width = voxelVolume[0][0].size
-
-                val coronalSlices = List(height) { y ->
-                    List(depth) { z ->
-                        List(width) { x ->
-                            voxelVolume[z][y][x]
-                        }
-                    }
+                if (images.coronalVoxelSlices.isEmpty()) {
+                    images.coronalVoxelSlices = transformToCoronalSlices(voxelVolume)
                 }
-               coronalSlices
+                if (images.imageSlicesCoronal.isEmpty()) {
+                    images.imageSlicesCoronal = images.coronalVoxelSlices.map { applyAutoWindowing(it) }
+                }
+                Pair(images.coronalVoxelSlices, images.imageSlicesCoronal)
             }
 
             NiftiView.SAGITTAL -> {
-                // Sagittal slices = voxelVolume[z][y][x] -> converted to [x][z][y]
-                val depth = voxelVolume.size
-                val height = voxelVolume[0].size
-                val width = voxelVolume[0][0].size
-
-                val sagittalSlices = List(width) { x ->
-                    List(depth) { z ->
-                        List(height) { y ->
-                            voxelVolume[z][y][x]
-                        }
-                    }
+                if (images.sagittalVoxelSlices.isEmpty()) {
+                    images.sagittalVoxelSlices = transformToSagittalSlices(voxelVolume)
                 }
-                sagittalSlices
+                if (images.imageSlicesSagittal.isEmpty()) {
+                    images.imageSlicesSagittal = images.sagittalVoxelSlices.map { applyAutoWindowing(it) }
+                }
+                Pair(images.sagittalVoxelSlices, images.imageSlicesSagittal)
             }
         }
     }
+
+
+
+
 
 
 

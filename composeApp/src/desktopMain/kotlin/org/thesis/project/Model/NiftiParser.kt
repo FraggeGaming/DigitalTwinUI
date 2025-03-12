@@ -50,7 +50,20 @@ data class NiftiData(
     val voxel_volume: List<List<List<Float>>>,
 
     @Transient
-    val modality: String = "CT"
+    val modality: String = "CT",
+
+    @Transient
+    var imageSlicesAxial: List<BufferedImage> = emptyList(),
+
+    @Transient
+    var imageSlicesCoronal: List<BufferedImage> = emptyList(),
+
+    @Transient
+    var imageSlicesSagittal: List<BufferedImage> = emptyList(),
+
+    @Transient var coronalVoxelSlices: List<List<List<Float>>> = emptyList(),
+    @Transient var sagittalVoxelSlices: List<List<List<Float>>> = emptyList()
+
 )
 
 
@@ -60,21 +73,6 @@ fun parseNiftiImages(jsonData: String, modality: String): NiftiData {
     val json = Json { ignoreUnknownKeys = true }
     val baseData = json.decodeFromString<NiftiData>(jsonData)
     return baseData.copy(modality = modality)
-
-
-//    val axialVoxels = extractVoxelData("axial_voxels")
-//    val coronalVoxels = extractVoxelData("coronal_voxels")
-//    val sagittalVoxels = extractVoxelData("sagittal_voxels")
-
-
-//    val axialEncoded = jsonElement["axial"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
-//    val coronalEncoded = jsonElement["coronal"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
-//    val sagittalEncoded = jsonElement["sagittal"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList()
-
-//    val axialImages = axialEncoded.mapNotNull { base64ToBufferedImage(it) }
-//    val coronalImages = coronalEncoded.mapNotNull { base64ToBufferedImage(it) }
-//    val sagittalImages = sagittalEncoded.mapNotNull { base64ToBufferedImage(it) }
-//    println("test : ${axialImages.size}")
 }
 
 
