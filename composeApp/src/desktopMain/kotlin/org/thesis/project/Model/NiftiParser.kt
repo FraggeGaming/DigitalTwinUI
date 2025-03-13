@@ -52,20 +52,11 @@ data class NiftiData(
     @Transient
     val modality: String = "CT",
 
-    @Transient
-    var imageSlicesAxial: List<BufferedImage> = emptyList(),
-
-    @Transient
-    var imageSlicesCoronal: List<BufferedImage> = emptyList(),
-
-    @Transient
-    var imageSlicesSagittal: List<BufferedImage> = emptyList(),
-
     @Transient var coronalVoxelSlices: List<List<List<Float>>> = emptyList(),
     @Transient var sagittalVoxelSlices: List<List<List<Float>>> = emptyList()
 
-)
 
+)
 
 
 

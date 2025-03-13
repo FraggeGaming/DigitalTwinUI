@@ -90,7 +90,7 @@ class InterfaceModel : ViewModel() {
                 if (niftiData != null) {
                     outputFilenames.add(fileName)
                     storeNiftiImages(fileName, niftiData)
-                    preloadSlicesInBackground(niftiData)
+
                 }
                 println("Stored NIfTI images for: $fileName")
             }
@@ -103,20 +103,12 @@ class InterfaceModel : ViewModel() {
     }
 
     fun extractModality(filename: String): String? {
-        // First try to extract known modalities
         val knownModalities = listOf("CT", "PET", "MR", "MRI", "T1", "T2", "FLAIR")
-        val regexKnown = Regex("_(\\w+)(?=\\.nii\\.gz$)", RegexOption.IGNORE_CASE)
+        val upperFilename = filename.uppercase()
 
-        val match = regexKnown.find(filename)
-        val modality = match?.groupValues?.get(1)
-
-        // Return if it's a known modality
-        if (modality != null && knownModalities.any { it.equals(modality, ignoreCase = true) }) {
-            return modality.uppercase()
+        return knownModalities.firstOrNull { modality ->
+            upperFilename.contains(modality)
         }
-
-        // Fallback: extract whatever is between last `_` and `.nii`
-        return ""
     }
 
 
@@ -230,28 +222,6 @@ class InterfaceModel : ViewModel() {
     private val _maxSelectedImageIndex = MutableStateFlow<Map<String, Float>>(emptyMap())
     val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
 
-    fun applyAutoWindowing(voxelSlice: List<List<Float>>): BufferedImage {
-        val allValues = voxelSlice.flatten()
-        val min = allValues.minOrNull() ?: 0f
-        val max = allValues.maxOrNull() ?: 1f
-        val range = max - min
-
-        val height = voxelSlice.size
-        val width = voxelSlice.firstOrNull()?.size ?: 0
-        val image = BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY)
-        val raster = image.raster
-
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val value = voxelSlice[y][x].coerceIn(min, max)
-                val scaled = ((value - min) / range * 255f).toInt().coerceIn(0, 255)
-                raster.setSample(x, y, 0, scaled)
-            }
-        }
-
-        return image
-    }
-
 
     fun transformToCoronalSlices(voxelVolume: List<List<List<Float>>>): List<List<List<Float>>> {
         val depth = voxelVolume.size
@@ -282,127 +252,36 @@ class InterfaceModel : ViewModel() {
     }
 
 
-
-    fun preloadSlicesInBackground(images: NiftiData) {
-        CoroutineScope(Dispatchers.Default).launch {
-            if (images.coronalVoxelSlices.isEmpty()) {
-                images.coronalVoxelSlices = transformToCoronalSlices(images.voxel_volume)
-            }
-            if (images.imageSlicesCoronal.isEmpty()) {
-                images.imageSlicesCoronal = images.coronalVoxelSlices.map { applyAutoWindowing(it) }
-            }
-
-            if (images.sagittalVoxelSlices.isEmpty()) {
-                images.sagittalVoxelSlices = transformToSagittalSlices(images.voxel_volume)
-            }
-            if (images.imageSlicesSagittal.isEmpty()) {
-                images.imageSlicesSagittal = images.sagittalVoxelSlices.map { applyAutoWindowing(it) }
-            }
-        }
-    }
-
-
-
-
-//    fun getSlicesFromVolume(view: NiftiView, filename: String): Pair<List<List<List<Float>>>, List<BufferedImage>> {
-//        val images = getNiftiImages(filename) ?: return Pair(emptyList(), emptyList())
-//        val voxelVolume = images.voxel_volume
-//
-//        return when (view) {
-//            NiftiView.AXIAL -> {
-//                val axialSlices = voxelVolume
-//                if (images.imageSlicesAxial.isEmpty()) {
-//                    images.imageSlicesAxial = axialSlices.map { applyAutoWindowing(it) }
-//                }
-//                Pair(axialSlices, images.imageSlicesAxial)
-//            }
-//
-//            NiftiView.CORONAL -> {
-//                val depth = voxelVolume.size
-//                val height = voxelVolume[0].size
-//                val width = voxelVolume[0][0].size
-//
-//                val coronalSlices = List(height) { y ->
-//                    List(depth) { z ->
-//                        List(width) { x ->
-//                            voxelVolume[z][y][x]
-//                        }
-//                    }
-//                }
-//
-//                if (images.coronalVoxelSlices.isEmpty()) {
-//                    images.coronalVoxelSlices = transformToCoronalSlices(voxelVolume)
-//                }
-//
-//
-//                Pair(coronalSlices, images.imageSlicesCoronal)
-//            }
-//
-//            NiftiView.SAGITTAL -> {
-//                val depth = voxelVolume.size
-//                val height = voxelVolume[0].size
-//                val width = voxelVolume[0][0].size
-//
-//                val sagittalSlices = List(width) { x ->
-//                    List(depth) { z ->
-//                        List(height) { y ->
-//                            voxelVolume[z][y][x]
-//                        }
-//                    }
-//                }
-//
-//                if (images.imageSlicesSagittal.isEmpty()) {
-//                    images.imageSlicesSagittal = sagittalSlices.map { applyAutoWindowing(it) }
-//                }
-//
-//                Pair(sagittalSlices, images.imageSlicesSagittal)
-//            }
-//        }
-//    }
-
-    fun getSlicesFromVolume(view: NiftiView, filename: String): Pair<List<List<List<Float>>>, List<BufferedImage>> {
-        val images = getNiftiImages(filename) ?: return Pair(emptyList(), emptyList())
+    fun getSlicesFromVolume(view: NiftiView, filename: String): List<List<List<Float>>> {
+        val images = getNiftiImages(filename) ?: return emptyList()
         val voxelVolume = images.voxel_volume
 
         return when (view) {
             NiftiView.AXIAL -> {
                 val axialSlices = voxelVolume
-                if (images.imageSlicesAxial.isEmpty()) {
-                    images.imageSlicesAxial = axialSlices.map { applyAutoWindowing(it) }
-                }
-                Pair(axialSlices, images.imageSlicesAxial)
+                axialSlices
             }
 
             NiftiView.CORONAL -> {
                 if (images.coronalVoxelSlices.isEmpty()) {
                     images.coronalVoxelSlices = transformToCoronalSlices(voxelVolume)
                 }
-                if (images.imageSlicesCoronal.isEmpty()) {
-                    images.imageSlicesCoronal = images.coronalVoxelSlices.map { applyAutoWindowing(it) }
-                }
-                Pair(images.coronalVoxelSlices, images.imageSlicesCoronal)
+
+                images.coronalVoxelSlices
             }
 
             NiftiView.SAGITTAL -> {
                 if (images.sagittalVoxelSlices.isEmpty()) {
                     images.sagittalVoxelSlices = transformToSagittalSlices(voxelVolume)
                 }
-                if (images.imageSlicesSagittal.isEmpty()) {
-                    images.imageSlicesSagittal = images.sagittalVoxelSlices.map { applyAutoWindowing(it) }
-                }
-                Pair(images.sagittalVoxelSlices, images.imageSlicesSagittal)
+
+                images.sagittalVoxelSlices
             }
         }
     }
 
 
-
-
-
-
-
-
-    private val _scrollStep = MutableStateFlow(0f) // Holds the global scroll step as Float
+    private val _scrollStep = MutableStateFlow(0f)
     val scrollStep: StateFlow<Float> = _scrollStep
 
     fun getImageIndices(filename: String): StateFlow<Triple<Int, Int, Int>> {
@@ -433,12 +312,12 @@ class InterfaceModel : ViewModel() {
 
 
     fun incrementScrollPosition() {
-        _scrollStep.update { it + 0.5f } // **Finer step increments**
+        _scrollStep.update { it + 0.5f }
     }
 
     fun setScrollPosition(value: Float) {
         _scrollStep.update { current ->
-            if (current != value) value else current // **Avoid redundant updates**
+            if (current != value) value else current
         }
     }
 
@@ -467,17 +346,15 @@ class InterfaceModel : ViewModel() {
         val x = floor(position.x / scaleFactor).toInt()
         val y = floor(position.y / scaleFactor).toInt()
 
-        // Out-of-bounds check
         val outOfBounds = x < 0 || x >= imageWidth || y < 0 || y >= imageHeight
         if (outOfBounds) return null
 
-        // Prevent crash if voxelSlice is misaligned
         val voxelValue = voxelSlice.getOrNull(y)?.getOrNull(x) ?: 0f
+        //println("Voxel XY: ($x, $y) Value: $voxelValue")
 
         return VoxelData(x, y, position, voxelValue)
     }
 
-    // Data class to store voxel information
     data class VoxelData(val x: Int, val y: Int, val position: Offset, val voxelValue: Float)
 
     var hoverPosition = mutableStateOf<Point?>(null)
@@ -487,9 +364,6 @@ class InterfaceModel : ViewModel() {
         private set
 
     var cursorPosition = mutableStateOf(Offset.Zero)
-        private set
-
-    var isHovering = mutableStateOf(false)
         private set
 
     var lastX = mutableStateOf<Int?>(null)
@@ -507,7 +381,6 @@ class InterfaceModel : ViewModel() {
         hoverPosition.value = Point(data.x, data.y)
         voxelValue.value = data.voxelValue
         cursorPosition.value = localPosition
-        isHovering.value = true
 
     }
 
@@ -516,12 +389,19 @@ class InterfaceModel : ViewModel() {
         scaleFactor: Float,
         width: Int,
         height: Int,
-        currentVoxelSlice: List<List<Float>> // ← make sure this is passed in!
+        currentVoxelSlice: List<List<Float>>
     ) {
+
         val voxelData = getVoxelInfo(position, scaleFactor, width, height, currentVoxelSlice)
         if (voxelData != null) {
             setHoverData(voxelData, position)
+            //println("Pointer: (${position.x}, ${position.y})")
+
         }
+    }
+
+    fun selectVoxel(it: InterfaceModel.VoxelData) {
+
     }
 }
 

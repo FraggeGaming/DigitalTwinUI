@@ -2,8 +2,10 @@ package org.thesis.project
 
 import CardMenu
 import CardWithCheckboxes
-import navigationButtons
-import androidx.compose.foundation.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,30 +19,37 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import buttonWithCheckboxSet
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import menuCard
+import navigationButtons
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import java.awt.Point
+import java.awt.image.BufferedImage
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
-import buttonWithCheckboxSet
-import java.awt.image.BufferedImage
 
 
 @Composable
@@ -52,15 +61,17 @@ fun App() {
         val navController = rememberNavController()
         NavHost(navController, startDestination = "main") {
 
-            composable("upload"){
+            composable("upload") {
                 uploadData(interfaceModel = interfaceModel, navMenu = { navigationButtons(navController, "upload") })
             }
 
-            composable("modelSelect"){
-                modelSelect(interfaceModel = interfaceModel, navMenu = { navigationButtons(navController, "modelSelect") })
+            composable("modelSelect") {
+                modelSelect(
+                    interfaceModel = interfaceModel,
+                    navMenu = { navigationButtons(navController, "modelSelect") })
             }
 
-            composable("main"){
+            composable("main") {
 
 
                 imageViewer(interfaceModel = interfaceModel, navMenu = { navigationButtons(navController, "main") })
@@ -86,14 +97,19 @@ fun FileUploadComponent(
                     onDragStart = { isDragging = true },
                     onDragCancel = { isDragging = false },
                     onDragEnd = { isDragging = false },
-                    onDrag = {_, _ ->}
+                    onDrag = { _, _ -> }
                 )
             }
             .clickable { selectFile(filePathFlow) }, // Handle click to open file picker
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Upload, contentDescription = "Upload", tint = Color.DarkGray, modifier = Modifier.size(48.dp))
+            Icon(
+                Icons.Default.Upload,
+                contentDescription = "Upload",
+                tint = Color.DarkGray,
+                modifier = Modifier.size(48.dp)
+            )
             Text("Drag & Drop or Click to Upload", textAlign = TextAlign.Center)
         }
     }
@@ -118,13 +134,15 @@ fun selectFile(filePathFlow: MutableStateFlow<String?>) {
 }
 
 @Composable
-fun uploadData(interfaceModel: InterfaceModel,
-               navMenu: @Composable () -> Unit){
+fun uploadData(
+    interfaceModel: InterfaceModel,
+    navMenu: @Composable () -> Unit
+) {
     val selectedFilePath = remember { MutableStateFlow<String?>(null) }
 
     Box(
         modifier = Modifier.fillMaxWidth()
-    ){
+    ) {
         navMenu()
         Text(text = "Upload Data")
         FileUploadComponent(selectedFilePath)
@@ -132,11 +150,13 @@ fun uploadData(interfaceModel: InterfaceModel,
 }
 
 @Composable
-fun modelSelect(interfaceModel: InterfaceModel,
-                navMenu: @Composable () -> Unit){
+fun modelSelect(
+    interfaceModel: InterfaceModel,
+    navMenu: @Composable () -> Unit
+) {
     Box(
         modifier = Modifier.fillMaxWidth()
-    ){
+    ) {
         navMenu()
         Text(text = "Select model")
     }
@@ -147,7 +167,7 @@ fun modelSelect(interfaceModel: InterfaceModel,
 fun imageViewer(
     interfaceModel: InterfaceModel,
     navMenu: @Composable () -> Unit
-){
+) {
     val selectedData by interfaceModel.selectedData.collectAsState()
     val selectedDistricts by interfaceModel.selectedDistricts.collectAsState()
     val organs by interfaceModel.organs.collectAsState()
@@ -167,9 +187,9 @@ fun imageViewer(
 
     //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
 
-    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\\\CTres.nii.gz"
+    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
 
-    val file2= "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\brain_PET.nii.gz"
+    val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
     //TODO change this to a dynamic path
 
     val title = "Patient_1"
@@ -187,11 +207,13 @@ fun imageViewer(
         leftPanelExpanded = leftPanelExpanded,
         rightPanelWidth = rightPanelWidth,
         rightPanelExpanded = rightPanelExpanded,
-        toggleLeftPanel = {interfaceModel.toggleLeftPanelExpanded()},
-        toggleRightPanel = {interfaceModel.toggleRightPanelExpanded()},
+        toggleLeftPanel = { interfaceModel.toggleLeftPanelExpanded() },
+        toggleRightPanel = { interfaceModel.toggleRightPanelExpanded() },
+
 
 
         leftContent = {
+
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.TopCenter
@@ -259,34 +281,41 @@ fun imageViewer(
                     ) {
                         selectedData.forEach { filename ->
                             Text(filename)
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                selectedViews.forEach { selectedView ->
+                                    val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
+                                    val currentIndex = when (selectedView) {
+                                        NiftiView.AXIAL -> imageIndices.first
+                                        NiftiView.CORONAL -> imageIndices.second
+                                        NiftiView.SAGITTAL -> imageIndices.third
+                                    }
 
+                                    val slices = interfaceModel.getSlicesFromVolume(selectedView, filename)
 
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceEvenly
-                                ) {
-                                    selectedViews.forEach { selectedView ->
-                                        val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
-                                        val currentIndex = when (selectedView) {
-                                            NiftiView.AXIAL -> imageIndices.first
-                                            NiftiView.CORONAL -> imageIndices.second
-                                            NiftiView.SAGITTAL -> imageIndices.third
-                                        }
+                                    val currentVoxelSlice = voxelSliceToBitmap(slices[currentIndex])
+                                    val mod =  interfaceModel.extractModality(filename)
+                                    if (mod != null) {
+                                        selectedOption = mod
+                                    }
 
-                                        val (slices, image) = interfaceModel.getSlicesFromVolume(selectedView, filename)
+                                    else selectedOption = ""
+                                    key(currentVoxelSlice){
 
-                                        imageDisplay(
-                                            voxelData = slices,
-                                            image = image,
-                                            index = currentIndex,
-                                            label = selectedView,
+                                        VoxelImageDisplay(
+                                            currentVoxelSlice,
+                                            slices[currentIndex],
                                             scaleFactor = 1f,
-                                            selectedSettings = selectedSettings,
-                                            modality = interfaceModel.extractModality(filename) ?: "",
-                                            interfaceModel = interfaceModel
+                                            interfaceModel,
+                                            selectedOption,
+                                            selectedSettings
                                         )
+
                                     }
                                 }
+                            }
                         }
                     }
                 }
@@ -307,22 +336,35 @@ fun imageViewer(
                         menuCard(
 
                             content = listOf(
-                                { Row {
-                                    buttonWithCheckboxSet(selectedViews, NiftiView.AXIAL, interfaceModel::updateSelectedViews)
-
-                                }
-                                },
-
                                 {
-                                    Row{
-                                        buttonWithCheckboxSet(selectedViews, NiftiView.CORONAL, interfaceModel::updateSelectedViews)
+                                    Row {
+                                        buttonWithCheckboxSet(
+                                            selectedViews,
+                                            NiftiView.AXIAL,
+                                            interfaceModel::updateSelectedViews
+                                        )
 
                                     }
                                 },
 
                                 {
                                     Row {
-                                        buttonWithCheckboxSet(selectedViews, NiftiView.SAGITTAL, interfaceModel::updateSelectedViews)
+                                        buttonWithCheckboxSet(
+                                            selectedViews,
+                                            NiftiView.CORONAL,
+                                            interfaceModel::updateSelectedViews
+                                        )
+
+                                    }
+                                },
+
+                                {
+                                    Row {
+                                        buttonWithCheckboxSet(
+                                            selectedViews,
+                                            NiftiView.SAGITTAL,
+                                            interfaceModel::updateSelectedViews
+                                        )
 
                                     }
                                 },
@@ -380,8 +422,7 @@ fun imageViewer(
                     }
                 }
             }
-        }
-        ,
+        },
         rightContent = {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -396,7 +437,7 @@ fun imageViewer(
                             .align(Alignment.Start),
                         contentAlignment = Alignment.Center
                     ) {
-                        IconButton(onClick = { interfaceModel.toggleRightPanelExpanded()}) {
+                        IconButton(onClick = { interfaceModel.toggleRightPanelExpanded() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Collapse Right")
                         }
                     }
@@ -412,7 +453,7 @@ fun imageViewer(
 
 
 
-                    if (selectedSettings.contains("pixel") && selectedOption == ""){
+                    if (selectedSettings.contains("pixel") && selectedOption == "") {
                         RadioButtonList(
                             selectedOption = selectedOption,
                             onRadioSelected = { option ->
@@ -433,14 +474,10 @@ fun imageViewer(
 }
 
 
-
-
-
-
 @Composable
 fun RadioButtonList(
-    selectedOption: String, // Currently selected option
-    onRadioSelected: (String) -> Unit // Callback for handling selection
+    selectedOption: String,
+    onRadioSelected: (String) -> Unit
 ) {
     val options = listOf("CT", "PET", "MRI")
     //TODO change to enum from model
@@ -506,95 +543,125 @@ fun ScrollSlider(
 }
 
 
+
+
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun imageDisplay(
-    voxelData: List<List<List<Float>>>,
-    image: List<BufferedImage>,
-    index: Int,
-    label: NiftiView,
+fun VoxelImageDisplay(
+    bitmap: ImageBitmap,
+    voxelSlice: List<List<Float>>,
     scaleFactor: Float = 1f,
-    selectedSettings: Set<String>,
+    interfaceModel: InterfaceModel,
     modality: String,
-    interfaceModel: InterfaceModel
+    selectedSettings: Set<String>,
+    modifier: Modifier = Modifier
 ) {
-    if (voxelData.isEmpty() || voxelData.size <= index) {
-        Text("No images")
-        return
-    }
-
-
-    val currentVoxelSlice = voxelData[index]
-    val bitmap = image[index].toComposeImageBitmap()
-
-    var isHoveringLocal by remember { mutableStateOf(false) }
-    // This will store the layout position of the Box
     var layoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    var scaleFactorState by remember { mutableStateOf(scaleFactor) }
+    var hoverVoxelValue by remember { mutableStateOf<Float?>(null) }
+    var hoverVoxelPosition by remember { mutableStateOf<Point?>(null) }
+    var cursorPosition by remember { mutableStateOf(Offset.Zero) }
+    var isHovering by remember { mutableStateOf(false) }
+    var globalCursorPosition by remember { mutableStateOf(Offset.Zero) }
 
-    println(modality)
+
+    Box(
+        modifier = modifier
+            .onGloballyPositioned { layoutCoordinates = it }
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val pointer = event.changes.first()
+                        val localPos = pointer.position
+                        cursorPosition = localPos
 
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("$label - Slice $index")
 
-        key(currentVoxelSlice) {
-            Box(
-                modifier = Modifier
-                    .size((bitmap.width * scaleFactorState).dp, (bitmap.height * scaleFactorState).dp)
-                    .onGloballyPositioned { coordinates -> layoutCoordinates = coordinates } // Get layout coordinates
-                    .pointerInput(currentVoxelSlice) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val event = awaitPointerEvent()
-                                val position = event.changes.first().position
+                        layoutCoordinates?.let {
+                            val imageWidth = bitmap.width
+                            val imageHeight = bitmap.height
 
-                                // Use layout coordinates if available
-                                val localPosition = layoutCoordinates?.localPositionOf(layoutCoordinates!!, position) ?: position
-
-                                interfaceModel.updatePointerPosition(
-                                    position = localPosition,
-                                    scaleFactor = scaleFactorState,
-                                    width = (bitmap.height).toInt(),
-                                    height = (bitmap.width ).toInt(),
-                                    currentVoxelSlice = currentVoxelSlice
-                                )
-                            }
-                        }
-
-                    }
-                    .onPointerEvent(PointerEventType.Move) {
-                    }
-                    .onPointerEvent(PointerEventType.Enter) {
-                        isHoveringLocal = true
-                    }
-                    .onPointerEvent(PointerEventType.Exit) {
-                        isHoveringLocal = false
-                    }
-            ) {
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = "$label Image",
-                    modifier = Modifier.size((bitmap.width * scaleFactorState).dp, (bitmap.height * scaleFactorState).dp)
-                )
-
-                if (selectedSettings.contains("pixel") && isHoveringLocal && interfaceModel.isHovering.value) {
-                    interfaceModel.hoverPosition.value?.let { pos ->
-                        interfaceModel.voxelValue.value?.let { value ->
-                            val formattedValue = formatVoxelValue(value, modality)
-                            println("modality: $modality")
-                            println(formattedValue)
-                            HoverPopup(
-                                cursorPosition = interfaceModel.cursorPosition.value,
-                                hoverPosition = pos,
-                                string = formattedValue
+                            val voxelData = interfaceModel.getVoxelInfo(
+                                position = localPos,
+                                scaleFactor = scaleFactor,
+                                imageWidth = imageWidth,
+                                imageHeight = imageHeight,
+                                voxelSlice = voxelSlice
                             )
+
+                            if (voxelData != null) {
+                                hoverVoxelValue = voxelData.voxelValue
+                                hoverVoxelPosition = Point(voxelData.x, voxelData.y)
+                            } else {
+                                hoverVoxelValue = null
+                                hoverVoxelPosition = null
+                            }
+
+                            // On Click → update selection globally
+                            if (pointer.pressed && pointer.changedToDown()) {
+                                voxelData?.let { interfaceModel.selectVoxel(it) }
+                            }
                         }
                     }
                 }
             }
+            .onPointerEvent(PointerEventType.Enter) {
+                isHovering = true
+            }
+            .onPointerEvent(PointerEventType.Exit) {
+                isHovering = false
+                hoverVoxelValue = null
+                hoverVoxelPosition = null
+            }
+            .size((bitmap.width * scaleFactor).dp, (bitmap.height * scaleFactor).dp)
+    ) {
+        Column {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Voxel image",
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                if (selectedSettings.contains("pixel") && hoverVoxelValue != null && hoverVoxelPosition != null && isHovering) {
+                    println("Hover voxel value: $hoverVoxelValue")
+                    println("Hover voxel position: $hoverVoxelPosition")
+                    println("modality: $modality")
+                    HoverPopup(
+                        cursorPosition = cursorPosition,
+                        hoverPosition = hoverVoxelPosition!!,
+                        string = (formatVoxelValue(hoverVoxelValue!!, modality))
+                    )
+                }
+            }
         }
     }
+}
+
+
+fun voxelSliceToBitmap(slice: List<List<Float>>): ImageBitmap {
+    val height = slice.size
+    val width = slice[0].size
+
+    // Flatten and find min/max
+    val allValues = slice.flatten()
+    val min = allValues.minOrNull() ?: 0f
+    val max = allValues.maxOrNull() ?: 1f
+    val range = (max - min).takeIf { it != 0f } ?: 1f
+
+    // Create BufferedImage (grayscale)
+    val image = BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY)
+    val raster = image.raster
+
+    for (y in 0 until height) {
+        for (x in 0 until width) {
+            val value = slice[y][x]
+            val normalized = ((value - min) / range * 255f).toInt().coerceIn(0, 255)
+            raster.setSample(x, y, 0, normalized)
+        }
+    }
+
+    return image.toComposeImageBitmap()
 }
 
 
@@ -620,12 +687,6 @@ fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, string: String) {
         }
     }
 }
-
-
-
-
-
-
 
 
 fun formatVoxelValue(value: Float, modality: String): String {
