@@ -1,28 +1,19 @@
 package org.thesis.project.Model
 
 import NiftiData
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import parseNiftiImages
 import removeNiiExtension
 import runNiftiParser
 import java.awt.Point
-import java.awt.image.BufferedImage
 import java.io.File
 import kotlin.math.floor
+import kotlin.math.sqrt
 
 enum class NiftiView(val displayName: String) {
     AXIAL("Axial"),
@@ -110,7 +101,6 @@ class InterfaceModel : ViewModel() {
             upperFilename.contains(modality)
         }
     }
-
 
 
     //Add or update an entry in the mapping
@@ -310,7 +300,6 @@ class InterfaceModel : ViewModel() {
     }
 
 
-
     fun incrementScrollPosition() {
         _scrollStep.update { it + 0.5f }
     }
@@ -357,51 +346,34 @@ class InterfaceModel : ViewModel() {
 
     data class VoxelData(val x: Int, val y: Int, val position: Offset, val voxelValue: Float)
 
-    var hoverPosition = mutableStateOf<Point?>(null)
-        private set
+    data class SelectedPoints(
+        val point1: Point? = null,
+        val point2: Point? = null
+    )
 
-    var voxelValue = mutableStateOf<Float?>(null)
-        private set
-
-    var cursorPosition = mutableStateOf(Offset.Zero)
-        private set
-
-    var lastX = mutableStateOf<Int?>(null)
-        private set
-
-    var lastY = mutableStateOf<Int?>(null)
-        private set
+    private val _selectedPoints = MutableStateFlow(SelectedPoints())
+    val selectedPoints: StateFlow<SelectedPoints> = _selectedPoints
 
 
-    private fun setHoverData(data: VoxelData, localPosition: Offset) {
+    /**
+     * Calculates the voxel-space distance, optionally scaled with pixelSpacing (e.g., in mm).
+     *
+     * @param pixelSpacingX: distance between voxels in X direction (e.g. mm per pixel)
+     * @param pixelSpacingY: distance between voxels in Y direction
+     * @return Distance in scaled units (e.g., mm), or null if points are missing
+     */
+    fun calculateVoxelDistance(
+        point1: Point?,
+        point2: Point?,
+        pixelSpacingX: Float = 1f,
+        pixelSpacingY: Float = 1f
+    ): Double? {
+        if (point1 == null || point2 == null) return null
 
-        lastX.value = data.x
-        lastY.value = data.y
+        val dx = (point1.x - point2.x) * pixelSpacingX
+        val dy = (point1.y - point2.y) * pixelSpacingY
 
-        hoverPosition.value = Point(data.x, data.y)
-        voxelValue.value = data.voxelValue
-        cursorPosition.value = localPosition
-
-    }
-
-    fun updatePointerPosition(
-        position: Offset,
-        scaleFactor: Float,
-        width: Int,
-        height: Int,
-        currentVoxelSlice: List<List<Float>>
-    ) {
-
-        val voxelData = getVoxelInfo(position, scaleFactor, width, height, currentVoxelSlice)
-        if (voxelData != null) {
-            setHoverData(voxelData, position)
-            //println("Pointer: (${position.x}, ${position.y})")
-
-        }
-    }
-
-    fun selectVoxel(it: InterfaceModel.VoxelData) {
-
+        return sqrt(dx * dx + dy * dy.toDouble())
     }
 }
 
