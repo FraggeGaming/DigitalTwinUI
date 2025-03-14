@@ -8,39 +8,53 @@ import java.util.*
 import javax.imageio.ImageIO
 
 fun runNiftiParser(niftiPath: String): String {
-    //val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
-    val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
-
+    val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
+    //val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"    val exeFile = File(exePath)
     val exeFile = File(exePath)
-    if (!exeFile.exists()) {
-        throw RuntimeException("Executable not found at: $exePath")
-    }
+
+    if (!exeFile.exists()) throw RuntimeException("Executable not found at: $exePath")
 
     val process = ProcessBuilder(exePath, niftiPath)
-        .redirectErrorStream(true)
+        .redirectErrorStream(false) // Better to read stdout and stderr separately
         .start()
 
-    val output = process.inputStream.bufferedReader().readText()
-    val errorOutput = process.errorStream.bufferedReader().readText()
-    process.waitFor()
+    val stdout = StringBuilder()
+    val stderr = StringBuilder()
 
-    if (errorOutput.isNotEmpty()) {
-        println("Error running NIfTI parser:\n$errorOutput")
+    val stdoutThread = Thread {
+        process.inputStream.bufferedReader().useLines { lines ->
+            lines.forEach { line ->
+                stdout.appendLine(line)
+            }
+        }
     }
 
-    return output
+    val stderrThread = Thread {
+        process.errorStream.bufferedReader().useLines { lines ->
+            lines.forEach { line ->
+                stderr.appendLine(line)
+            }
+        }
+    }
+
+    stdoutThread.start()
+    stderrThread.start()
+
+    stdoutThread.join()
+    stderrThread.join()
+
+    val exitCode = process.waitFor()
+    if (stderr.isNotEmpty()) {
+        println("NIfTI parser stderr:\n${stderr.trim()}")
+    }
+
+    if (exitCode != 0) {
+        throw RuntimeException("Parser failed with exit code $exitCode")
+    }
+
+    return stdout.toString()
 }
 
-fun base64ToBufferedImage(base64: String): BufferedImage? {
-    return try {
-        val imageBytes = Base64.getDecoder().decode(base64)
-        val inputStream = ByteArrayInputStream(imageBytes)
-        ImageIO.read(inputStream)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
 
 @Serializable
 data class NiftiData(
@@ -50,7 +64,7 @@ data class NiftiData(
     val voxel_volume: List<List<List<Float>>>,
 
     @Transient
-    val modality: String = "CT",
+    val modality: String = "",
 
     @Transient var coronalVoxelSlices: List<List<List<Float>>> = emptyList(),
     @Transient var sagittalVoxelSlices: List<List<List<Float>>> = emptyList()

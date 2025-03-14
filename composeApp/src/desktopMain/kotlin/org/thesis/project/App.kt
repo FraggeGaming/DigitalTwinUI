@@ -40,6 +40,7 @@ import androidx.navigation.compose.rememberNavController
 import buttonWithCheckboxSet
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import menuCard
 import navigationButtons
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -180,22 +181,22 @@ fun imageViewer(
     val selectedViews by interfaceModel.selectedViews.collectAsState()
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
 
+    val fileMapping by interfaceModel.fileMapping.collectAsState()
     //Takes the file path and parses the nifti
-    //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+    val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
 
 
-    //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
+    val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
 
-    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+    //val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
 
-    val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
+    //val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
     //TODO change this to a dynamic path
 
     val title = "Patient_1"
-    val inputFiles = listOf(file1) // Example input NIfTI files
-    val outputFiles = listOf(file2) // Example output NIfTI files
+    val inputFiles = listOf(niftiFile) // Example input NIfTI files
+    val outputFiles = listOf(niftiFile1) // Example output NIfTI files
 
-    interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
     interfaceModel.updateSelectedViews(NiftiView.AXIAL, true)
 
     MainPanelLayout(
@@ -225,7 +226,7 @@ fun imageViewer(
                     navMenu()
 
                     CardMenu(
-                        fileKeys = interfaceModel.getFileMappingKeys(),
+                        fileKeys = fileMapping.keys.toList(),
                         selectedData = selectedData,
                         getFileMapping = interfaceModel::getFileMapping,
                         onCheckboxChanged = { label, isChecked ->
@@ -418,6 +419,15 @@ fun imageViewer(
 
             ) {
                 Column {
+                    val coroutineScope = rememberCoroutineScope()
+
+                    Button(onClick = {
+                        coroutineScope.launch {
+                            interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
+                        }
+                    }) {
+                        Text("Parse NIfTI")
+                    }
                     // Collapse Button
                     Box(
                         modifier = Modifier
@@ -564,7 +574,7 @@ fun VoxelImageDisplay(
             }
 
 
-            // HOVER TRACKING: MOVE EVENTS
+            //HOVER TRACKING: MOVE EVENTS
             .onPointerEvent(PointerEventType.Move) { event ->
                 if (isHovering) {
                     val localPos = event.changes.first().position
@@ -616,7 +626,7 @@ fun VoxelImageDisplay(
                         .height((bitmap.height * scaleFactor).dp)
                 )
 
-                // Debug info
+
 //                println("selectedSettings.contains(pixel): ${selectedSettings.contains("pixel")}")
 //                println("hoveringValue: $hoverVoxelValue")
 //                println("hoveringVoxelPOS: $hoverVoxelPosition")

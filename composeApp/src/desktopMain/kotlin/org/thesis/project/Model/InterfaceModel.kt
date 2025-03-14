@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import parseNiftiImages
 import removeNiiExtension
@@ -42,55 +43,51 @@ class InterfaceModel : ViewModel() {
     val fileMapping: StateFlow<Map<String, Pair<List<String>, List<String>>>> = _fileMapping
 
 
-    fun parseNiftiData(title: String, inputNiftiFile: List<String>, outputNiftiFile: List<String>) {
+    suspend fun parseNiftiData(title: String, inputNiftiFile: List<String>, outputNiftiFile: List<String>) {
 
-        val inputFilenames = mutableListOf<String>()
-        val outputFilenames = mutableListOf<String>()
-
-        inputNiftiFile.forEach { file ->
-
-
-            println("Running NIfTI Parser for: $file")
-
-            val output = runNiftiParser(file)
-
-            output.let {
-                val niftiData = extractModality(file)?.let { it1 -> parseNiftiImages(it, it1) }
-                println("Parsing: $file")
-                val fileName = removeNiiExtension(File(file).nameWithoutExtension)
-
-                if (niftiData != null) {
-                    inputFilenames.add(fileName)
-                    storeNiftiImages(fileName, niftiData)
-                }
-                println("Stored NIfTI images for: $fileName")
-            }
-        }
-
-        outputNiftiFile.forEach { file ->
-
-            println("Running NIfTI Parser for: $file")
-
-            val output = runNiftiParser(file)
-
-            output.let {
-                val niftiData = extractModality(file)?.let { it1 -> parseNiftiImages(it, it1) }
-                val fileName = removeNiiExtension(File(file).nameWithoutExtension)
-
-
-                if (niftiData != null) {
-                    outputFilenames.add(fileName)
-                    storeNiftiImages(fileName, niftiData)
-
-                }
-                println("Stored NIfTI images for: $fileName")
-            }
-        }
+        val inputFilenames = loadNifti(inputNiftiFile)
+        val outputFilenames = loadNifti(outputNiftiFile)
 
         println("Added mapping for $title : $inputFilenames, $outputFilenames")
         addFileMapping(title, inputFilenames, outputFilenames)
+    }
+
+    suspend fun loadNifti(niftiStorage: List<String>): MutableList<String> {
+        val fileNames = mutableListOf<String>()
+        coroutineScope {
+            niftiStorage.map { file ->
+                launch(Dispatchers.IO) {
+                    println("Running NIfTI Parser for: $file")
+                    val output = runNiftiParser(file)
+                    val niftiData = extractModality(file)?.let { parseNiftiImages(output, it) }
+                    val fileName = removeNiiExtension(File(file).nameWithoutExtension)
+
+                    niftiData?.let {
+                        synchronized(fileNames) { fileNames.add(fileName) }
+                        storeNiftiImages(fileName, it)
+                        preloadSlices(it)
+                        println("Stored NIfTI images for: $fileName")
+                    }
+                }
+            }.joinAll()
+        }
+
+        return fileNames
+    }
 
 
+    fun preloadSlices(niftiData: NiftiData){
+
+        val voxelVolume = niftiData.voxel_volume
+
+        if (niftiData.coronalVoxelSlices.isEmpty()) {
+            niftiData.coronalVoxelSlices = transformToCoronalSlices(voxelVolume)
+        }
+
+
+        if (niftiData.sagittalVoxelSlices.isEmpty()) {
+            niftiData.sagittalVoxelSlices = transformToSagittalSlices(voxelVolume)
+        }
     }
 
     fun extractModality(filename: String): String? {
@@ -376,7 +373,3 @@ class InterfaceModel : ViewModel() {
         return sqrt(dx * dx + dy * dy.toDouble())
     }
 }
-
-
-
-
