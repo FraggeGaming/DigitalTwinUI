@@ -255,7 +255,7 @@ class InterfaceModel : ViewModel() {
 
 
     fun incrementScrollPosition() {
-        _scrollStep.update { it + 0.5f }
+        _scrollStep.update { it + 1f }
     }
 
     fun setScrollPosition(value: Float) {
@@ -265,7 +265,7 @@ class InterfaceModel : ViewModel() {
     }
 
     fun decrementScrollPosition() {
-        _scrollStep.update { (it - 0.5f).coerceAtLeast(0f) } // **Finer decrement**
+        _scrollStep.update { (it - 1f).coerceAtLeast(0f) } // **Finer decrement**
     }
 
 
