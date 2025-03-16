@@ -1,13 +1,19 @@
 package org.thesis.project.Model
 
 import NiftiData
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import org.thesis.project.Components.VoxelImageUIState
 import parseNiftiImages
 import removeNiiExtension
 import runNiftiParser
@@ -58,14 +64,19 @@ class InterfaceModel : ViewModel() {
             niftiStorage.map { file ->
                 launch(Dispatchers.IO) {
                     println("Running NIfTI Parser for: $file")
-                    val output = runNiftiParser(file)
-                    val niftiData = extractModality(file)?.let { parseNiftiImages(output, it) }
+                    //val output = runNiftiParser(file)
+
+                    val outputJson = runNiftiParser(
+                        file,
+                        "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\ouput"
+                    )
+                    val niftiData = extractModality(file)?.let { parseNiftiImages(outputJson, it) }
+
                     val fileName = removeNiiExtension(File(file).nameWithoutExtension)
 
                     niftiData?.let {
                         synchronized(fileNames) { fileNames.add(fileName) }
                         storeNiftiImages(fileName, it)
-                        preloadSlices(it)
                         println("Stored NIfTI images for: $fileName")
                     }
                 }
@@ -75,20 +86,6 @@ class InterfaceModel : ViewModel() {
         return fileNames
     }
 
-
-    fun preloadSlices(niftiData: NiftiData){
-
-        val voxelVolume = niftiData.voxel_volume
-
-        if (niftiData.coronalVoxelSlices.isEmpty()) {
-            niftiData.coronalVoxelSlices = transformToCoronalSlices(voxelVolume)
-        }
-
-
-        if (niftiData.sagittalVoxelSlices.isEmpty()) {
-            niftiData.sagittalVoxelSlices = transformToSagittalSlices(voxelVolume)
-        }
-    }
 
     fun extractModality(filename: String): String? {
         val knownModalities = listOf("CT", "PET", "MR", "MRI", "T1", "T2", "FLAIR")
@@ -210,59 +207,22 @@ class InterfaceModel : ViewModel() {
     val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
 
 
-    fun transformToCoronalSlices(voxelVolume: List<List<List<Float>>>): List<List<List<Float>>> {
-        val depth = voxelVolume.size
-        val height = voxelVolume[0].size
-        val width = voxelVolume[0][0].size
+    fun getSlicesFromVolume(view: NiftiView, filename: String): Pair<Array<Array<Array<Float>>>, Float> {
+        val images = getNiftiImages(filename) ?: return Pair(emptyArray(), 1f)
+        val spacing = images.voxelSpacing
 
-        return List(height) { y ->
-            List(depth) { z ->
-                List(width) { x ->
-                    voxelVolume[z][y][x]
-                }
-            }
-        }
-    }
-
-    fun transformToSagittalSlices(voxelVolume: List<List<List<Float>>>): List<List<List<Float>>> {
-        val depth = voxelVolume.size
-        val height = voxelVolume[0].size
-        val width = voxelVolume[0][0].size
-
-        return List(width) { x ->
-            List(depth) { z ->
-                List(height) { y ->
-                    voxelVolume[z][y][x]
-                }
-            }
-        }
-    }
-
-
-    fun getSlicesFromVolume(view: NiftiView, filename: String): List<List<List<Float>>> {
-        val images = getNiftiImages(filename) ?: return emptyList()
-        val voxelVolume = images.voxel_volume
-
+        //because of transpose when parsing nifti, (Z, Y, X) → (X, Y, Z), but we don't transpose spacing
         return when (view) {
             NiftiView.AXIAL -> {
-                val axialSlices = voxelVolume
-                axialSlices
+                images.voxelVolume to spacing[2]
             }
 
             NiftiView.CORONAL -> {
-                if (images.coronalVoxelSlices.isEmpty()) {
-                    images.coronalVoxelSlices = transformToCoronalSlices(voxelVolume)
-                }
-
-                images.coronalVoxelSlices
+                images.coronalVoxelSlices to spacing[1]
             }
 
             NiftiView.SAGITTAL -> {
-                if (images.sagittalVoxelSlices.isEmpty()) {
-                    images.sagittalVoxelSlices = transformToSagittalSlices(voxelVolume)
-                }
-
-                images.sagittalVoxelSlices
+                images.sagittalVoxelSlices to spacing[0]
             }
         }
     }
@@ -273,14 +233,11 @@ class InterfaceModel : ViewModel() {
 
     fun getImageIndices(filename: String): StateFlow<Triple<Int, Int, Int>> {
         return combine(scrollStep, _niftiImages) { step, imagesMap ->
-            val images = imagesMap[filename]
-            if (images == null) {
-                return@combine Triple(0, 0, 0)
-            }
+            val images = imagesMap[filename] ?: return@combine Triple(0, 0, 0)
 
-            val axialSize = images.voxel_volume.size
-            val coronalSize = images.voxel_volume[0].size
-            val sagittalSize = images.voxel_volume[0][0].size
+            val axialSize = images.voxelVolume.size
+            val coronalSize = images.voxelVolume[0].size
+            val sagittalSize = images.voxelVolume[0][0].size
 
             val maxLength = listOf(axialSize, coronalSize, sagittalSize).maxOrNull() ?: 1
 
@@ -321,13 +278,57 @@ class InterfaceModel : ViewModel() {
         }
     }
 
+    fun calculateDistance(
+        uiState: MutableState<VoxelImageUIState>,
+        position: Offset,
+        scaleFactor: Float,
+        bitmap: ImageBitmap,
+        pixelSpacing: Float,
+        voxelSlice: Array<Array<Float>>
+    ) {
+        val voxelData = getVoxelInfo(
+            position = position,
+            scaleFactor = scaleFactor,
+            imageWidth = bitmap.width,
+            imageHeight = bitmap.height,
+            voxelSlice = voxelSlice
+        )
+
+
+        voxelData?.let { data ->
+            val newPoint = Point(data.x, data.y)
+
+            // Update points based on current state
+            val updatedState = when {
+                uiState.value.point1 == null -> uiState.value.copy(point1 = newPoint)
+                uiState.value.point2 == null -> uiState.value.copy(point2 = newPoint)
+                else -> uiState.value.copy(point1 = newPoint, point2 = null)
+            }
+
+            // Recalculate distance if both points are set
+            val distance = if (updatedState.point1 != null && updatedState.point2 != null) {
+                calculateVoxelDistance(
+                    updatedState.point1,
+                    updatedState.point2,
+                    pixelSpacing,
+                    pixelSpacing
+                )
+            } else null
+
+            // Update the final state with the distance
+            uiState.value = updatedState.copy(distance = distance)
+        }
+    }
+
+    //add to interface model
+
 
     fun getVoxelInfo(
         position: Offset,
         scaleFactor: Float,
         imageWidth: Int,
         imageHeight: Int,
-        voxelSlice: List<List<Float>>
+        voxelSlice: Array<Array<Float>>
     ): VoxelData? {
         val x = floor(position.x / scaleFactor).toInt()
         val y = floor(position.y / scaleFactor).toInt()
@@ -342,15 +343,6 @@ class InterfaceModel : ViewModel() {
     }
 
     data class VoxelData(val x: Int, val y: Int, val position: Offset, val voxelValue: Float)
-
-    data class SelectedPoints(
-        val point1: Point? = null,
-        val point2: Point? = null
-    )
-
-    private val _selectedPoints = MutableStateFlow(SelectedPoints())
-    val selectedPoints: StateFlow<SelectedPoints> = _selectedPoints
-
 
     /**
      * Calculates the voxel-space distance, optionally scaled with pixelSpacing (e.g., in mm).

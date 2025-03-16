@@ -2,12 +2,10 @@ package org.thesis.project
 
 import CardMenu
 import CardWithCheckboxes
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -18,21 +16,17 @@ import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -44,10 +38,10 @@ import kotlinx.coroutines.launch
 import menuCard
 import navigationButtons
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.thesis.project.Components.voxelImageDisplay
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import java.awt.Point
-import java.awt.image.BufferedImage
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -183,19 +177,19 @@ fun imageViewer(
 
     val fileMapping by interfaceModel.fileMapping.collectAsState()
     //Takes the file path and parses the nifti
-    val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+    //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
 
 
-    val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
+    //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
 
-    //val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
 
-    //val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
+    val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
     //TODO change this to a dynamic path
 
     val title = "Patient_1"
-    val inputFiles = listOf(niftiFile) // Example input NIfTI files
-    val outputFiles = listOf(niftiFile1) // Example output NIfTI files
+    val inputFiles = listOf(file1) // Example input NIfTI files
+    val outputFiles = listOf(file2) // Example output NIfTI files
 
     interfaceModel.updateSelectedViews(NiftiView.AXIAL, true)
 
@@ -272,41 +266,81 @@ fun imageViewer(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         selectedData.forEach { filename ->
-                            Text(filename)
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f), // ✅ Now weight works!
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                selectedViews.forEach { selectedView ->
-                                    val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
-                                    val currentIndex = when (selectedView) {
-                                        NiftiView.AXIAL -> imageIndices.first
-                                        NiftiView.CORONAL -> imageIndices.second
-                                        NiftiView.SAGITTAL -> imageIndices.third
-                                    }
+                                Text(
+                                    text = filename,
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    style = MaterialTheme.typography.h3
+                                )
 
-                                    val slices = interfaceModel.getSlicesFromVolume(selectedView, filename)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(4.dp),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    selectedViews.forEach { selectedView ->
+                                        val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
+                                        val currentIndex = when (selectedView) {
+                                            NiftiView.AXIAL -> imageIndices.first
+                                            NiftiView.CORONAL -> imageIndices.second
+                                            NiftiView.SAGITTAL -> imageIndices.third
+                                        }
 
-                                    val currentVoxelSlice = voxelSliceToBitmap(slices[currentIndex])
-                                    val mod = interfaceModel.extractModality(filename)
-
-                                    if (mod != null) {
-                                        VoxelImageDisplay(
-                                            currentVoxelSlice,
-                                            slices[currentIndex],
-                                            scaleFactor = 1f,
-                                            interfaceModel,
-                                            mod,
+                                        val (slices, spacing) = interfaceModel.getSlicesFromVolume(
+                                            selectedView,
+                                            filename
                                         )
+                                        val modality = interfaceModel.extractModality(filename)
+
+                                        if (modality != null && slices.isNotEmpty()) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(4.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                Text(
+                                                    text = "${selectedView.displayName} - Slice $currentIndex",
+                                                    style = MaterialTheme.typography.h5,
+                                                    modifier = Modifier.padding(bottom = 4.dp)
+                                                )
+
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxHeight()
+                                                        .aspectRatio(1f)
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .background(Color.LightGray)
+                                                ) {
+                                                    voxelImageDisplay(
+                                                        voxelSlice = slices[currentIndex],
+                                                        interfaceModel = interfaceModel,
+                                                        modality = modality,
+                                                        pixelSpacing = spacing
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+
+
                 }
 
                 Row(
@@ -495,198 +529,6 @@ fun ScrollSlider(
     }
 }
 
-
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-fun VoxelImageDisplay(
-    bitmap: ImageBitmap,
-    voxelSlice: List<List<Float>>,
-    scaleFactor: Float = 1f,
-    interfaceModel: InterfaceModel,
-    modality: String,
-
-    modifier: Modifier = Modifier
-) {
-    var layoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    var hoverVoxelValue by remember { mutableStateOf<Float?>(null) }
-    var hoverVoxelPosition by remember { mutableStateOf<Point?>(null) }
-    var cursorPosition by remember { mutableStateOf(Offset.Zero) }
-    var isHovering by remember { mutableStateOf(false) }
-
-    var point1 by remember { mutableStateOf<Point?>(null) }
-    var point2 by remember { mutableStateOf<Point?>(null) }
-    val selectedSettings by interfaceModel.selectedSettings.collectAsState()
-
-    var distance by remember { mutableStateOf<Double?>(null) }
-
-    Box(
-        modifier = modifier
-            .onGloballyPositioned { layoutCoordinates = it }
-            .background(Color.Red.copy(alpha = 0.2f)) // TEMP!
-            // CLICK HANDLER (separate gesture)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { localPos ->
-                        layoutCoordinates?.let { layout ->
-                            if (selectedSettings.contains("measure")) {
-                                print("TEST11111")
-                                val imageWidth = bitmap.width
-                                val imageHeight = bitmap.height
-
-                                val voxelData = interfaceModel.getVoxelInfo(
-                                    position = localPos,
-                                    scaleFactor = scaleFactor,
-                                    imageWidth = imageWidth,
-                                    imageHeight = imageHeight,
-                                    voxelSlice = voxelSlice
-                                )
-
-                                voxelData?.let {
-                                    val newPoint = Point(it.x, it.y)
-
-                                    if (point1 == null) {
-                                        point1 = newPoint
-                                    } else if (point2 == null) {
-                                        point2 = newPoint
-                                    } else {
-
-                                        point1 = newPoint
-                                        point2 = null
-                                    }
-
-                                    distance = interfaceModel.calculateVoxelDistance(point1, point2, 1f, 1f)
-
-                                }
-
-                            } else {
-                                println(selectedSettings.toList().toString())
-                            }
-                        }
-
-
-                    },
-                    onLongPress = {
-                        point1 = null
-                        point2 = null
-                        distance = null
-                    }
-                )
-            }
-
-
-            //HOVER TRACKING: MOVE EVENTS
-            .onPointerEvent(PointerEventType.Move) { event ->
-                if (isHovering) {
-                    val localPos = event.changes.first().position
-                    cursorPosition = localPos
-
-                    layoutCoordinates?.let {
-                        val imageWidth = bitmap.width
-                        val imageHeight = bitmap.height
-
-                        val voxelData = interfaceModel.getVoxelInfo(
-                            position = localPos,
-                            scaleFactor = scaleFactor,
-                            imageWidth = imageWidth,
-                            imageHeight = imageHeight,
-                            voxelSlice = voxelSlice
-                        )
-
-                        if (voxelData != null) {
-                            hoverVoxelValue = voxelData.voxelValue
-                            hoverVoxelPosition = Point(voxelData.x, voxelData.y)
-                        } else {
-                            hoverVoxelValue = null
-                            hoverVoxelPosition = null
-                        }
-                    }
-                }
-            }
-
-            .onPointerEvent(PointerEventType.Enter) {
-                isHovering = true
-            }
-
-            .onPointerEvent(PointerEventType.Exit) {
-                isHovering = false
-                hoverVoxelValue = null
-                hoverVoxelPosition = null
-            }
-
-            .width((bitmap.width * scaleFactor).dp)
-            .height((bitmap.height * scaleFactor).dp)
-    ) {
-        Column {
-            Box() {
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = "Voxel image",
-                    modifier = Modifier
-                        .width((bitmap.width * scaleFactor).dp)
-                        .height((bitmap.height * scaleFactor).dp)
-                )
-
-
-//                println("selectedSettings.contains(pixel): ${selectedSettings.contains("pixel")}")
-//                println("hoveringValue: $hoverVoxelValue")
-//                println("hoveringVoxelPOS: $hoverVoxelPosition")
-//                println("cursorPosition: $cursorPosition")
-//                println("isHovering: $isHovering")
-
-                if (selectedSettings.contains("pixel") && hoverVoxelValue != null && hoverVoxelPosition != null && isHovering) {
-                    println("Hover voxel value: $hoverVoxelValue")
-                    println("Hover voxel position: $hoverVoxelPosition")
-                    println("modality: $modality")
-
-                    HoverPopup(
-                        cursorPosition = cursorPosition,
-                        hoverPosition = hoverVoxelPosition!!,
-                        string = formatVoxelValue(hoverVoxelValue!!, modality)
-                    )
-                }
-
-                if (selectedSettings.contains("measure") && distance != null) {
-                    Text(
-                        text = "Distance: ${"%.2f".format(distance)} mm",
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .background(Color.Black.copy(alpha = 0.5f)) // test visibility
-                            .padding(8.dp),
-                        color = Color.White
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-fun voxelSliceToBitmap(slice: List<List<Float>>): ImageBitmap {
-    val height = slice.size
-    val width = slice[0].size
-
-    // Flatten and find min/max
-    val allValues = slice.flatten()
-    val min = allValues.minOrNull() ?: 0f
-    val max = allValues.maxOrNull() ?: 1f
-    val range = (max - min).takeIf { it != 0f } ?: 1f
-
-    // Create BufferedImage (grayscale)
-    val image = BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY)
-    val raster = image.raster
-
-    for (y in 0 until height) {
-        for (x in 0 until width) {
-            val value = slice[y][x]
-            val normalized = ((value - min) / range * 255f).toInt().coerceIn(0, 255)
-            raster.setSample(x, y, 0, normalized)
-        }
-    }
-
-    return image.toComposeImageBitmap()
-}
-
-
 /**
  * Small popup card showing hover pixel values.
  */
@@ -694,6 +536,7 @@ fun voxelSliceToBitmap(slice: List<List<Float>>): ImageBitmap {
 fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, string: String) {
     Card(
         modifier = Modifier
+            .zIndex(10f)
             .offset(
                 x = cursorPosition.x.dp + 10.dp,
                 y = cursorPosition.y.dp + 10.dp
