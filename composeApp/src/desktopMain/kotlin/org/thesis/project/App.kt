@@ -290,7 +290,6 @@ fun imageViewer(
                     )
                     {
                         menuCard(
-
                             content = listOf(
                                 {
                                     Row {
@@ -299,10 +298,8 @@ fun imageViewer(
                                             NiftiView.AXIAL,
                                             interfaceModel::updateSelectedViews
                                         )
-
                                     }
                                 },
-
                                 {
                                     Row {
                                         buttonWithCheckboxSet(
@@ -310,7 +307,6 @@ fun imageViewer(
                                             NiftiView.CORONAL,
                                             interfaceModel::updateSelectedViews
                                         )
-
                                     }
                                 },
 
@@ -321,7 +317,6 @@ fun imageViewer(
                                             NiftiView.SAGITTAL,
                                             interfaceModel::updateSelectedViews
                                         )
-
                                     }
                                 },
 
@@ -381,8 +376,7 @@ fun imageViewer(
         },
         rightContent = {
             Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.TopCenter
+                modifier = Modifier.fillMaxSize(),
 
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -395,19 +389,6 @@ fun imageViewer(
                     }) {
                         Text("Parse NIfTI")
                     }
-                    // Collapse Button
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.Start),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        IconButton(onClick = { interfaceModel.toggleRightPanelExpanded() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Collapse Right")
-                        }
-                    }
-
-                    Text("Right Panel")
 
                     ScrollSlider(
                         selectedData = interfaceModel.selectedData,
@@ -490,15 +471,11 @@ fun imageGrid(
 
                                     Card(
                                         modifier = Modifier.size(imageWidth)
-                                            .padding(8.dp),
+                                            .padding(8.dp) .background(Color.LightGray),
                                         shape = RoundedCornerShape(12.dp),
                                         elevation =  8.dp
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(Color.LightGray)
-                                        ) {
+
                                             if (modality != null) {
                                                 voxelImageDisplay(
                                                     voxelSlice = slices[currentIndex],
@@ -507,7 +484,7 @@ fun imageGrid(
                                                     pixelSpacing = spacingPx
                                                 )
                                             }
-                                        }
+
                                     }
                                 }
                             }

@@ -106,7 +106,7 @@ fun MainPanelLayout(
             // Right Resizer
             Box(
                 modifier = Modifier.fillMaxHeight(),
-                contentAlignment = Alignment.CenterStart
+                contentAlignment = Alignment.TopCenter
             ) {
                 HorizontalResizer { delta ->
                     rightWidth = (rightWidth - delta).coerceIn(minPanelWidth, maxPanelWidth)
@@ -119,24 +119,39 @@ fun MainPanelLayout(
                     .width(rightWidth.coerceIn(minPanelWidth, maxPanelWidth)) // Constrain width
                     .verticalScroll(rightScrollState)
                     .background(Color.LightGray),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.TopCenter
             ) {
-                rightContent()
-
+                Column(modifier = Modifier.fillMaxSize().align(Alignment.TopStart)) {
+                    TextButton(
+                        modifier = Modifier
+                            .width(48.dp)
+                          ,
+                        onClick = {
+                            toggleRightPanel()
+                        }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Collapse Right")
+                    }
+                    rightContent()
+                }
 
             }
         }
         else {
-            Box(
+
+            TextButton(
                 modifier = Modifier
                     .width(48.dp)
                     .background(Color.DarkGray),
-                contentAlignment = Alignment.TopEnd
-            ) {
-                IconButton(onClick = { toggleRightPanel() }) {
-                    Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
+                onClick = {
+                    toggleRightPanel()
                 }
+            ) {
+
+                Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
+
             }
+
         }
     }
 }

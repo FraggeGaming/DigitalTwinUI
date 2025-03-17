@@ -55,7 +55,7 @@ fun parseNiftiImages(jsonMeta: String, modality: String): NiftiData {
         width = meta.width,
         height = meta.height,
         depth = meta.depth,
-        voxelSpacing = meta.voxel_spacing, // <-- ADDED
+        voxelSpacing = meta.voxel_spacing,
         voxelVolume = volume,
         modality = modality,
         coronalVoxelSlices = coronalVoxel,
@@ -94,7 +94,7 @@ fun transformToSagittalSlices(voxelVolume: Array<Array<Array<Float>>>): Array<Ar
 fun loadNpyVoxelVolume(npyPath: String): Array<Array<Array<Float>>> {
     val file = File(npyPath)
     val ndArray = Nd4j.createFromNpyFile(file)
-    val shape = ndArray.shape()  // LongArray
+    val shape = ndArray.shape()
 
     val width = shape[0].toInt()
     val height = shape[1].toInt()
@@ -112,5 +112,5 @@ fun loadNpyVoxelVolume(npyPath: String): Array<Array<Array<Float>>> {
 
 
 fun removeNiiExtension(filename: String): String {
-    return filename.removeSuffix(".nii").removeSuffix(".nii.gz") // Handles both .nii and .nii.gz
+    return filename.removeSuffix(".nii").removeSuffix(".nii.gz")
 }
