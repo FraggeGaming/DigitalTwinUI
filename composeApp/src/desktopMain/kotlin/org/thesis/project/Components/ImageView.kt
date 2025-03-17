@@ -5,6 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,12 +23,15 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import org.thesis.project.HoverPopup
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.zIndex
 import org.thesis.project.Model.InterfaceModel
-import org.thesis.project.formatVoxelValue
 import java.awt.Point
 import java.awt.image.BufferedImage
 
@@ -41,7 +46,8 @@ fun voxelImageDisplay(
 ) {
     val uiState = remember { mutableStateOf(VoxelImageUIState()) }
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
-    val bitmap = voxelSliceToBitmap(voxelSlice)
+    val windowing by interfaceModel.windowing.collectAsState()
+    val bitmap = voxelSliceToBitmap(voxelSlice, windowing.center, windowing.width)
 
     var imageLayoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var boxCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -187,6 +193,7 @@ fun voxelImageDisplay(
                 hoverPosition = uiState.value.hoverVoxelPosition!!,
                 string = formatVoxelValue(uiState.value.hoverVoxelValue!!, modality)
             )
+
         }
 
         if (selectedSettings.contains("measure") && uiState.value.distance != null) {
@@ -213,9 +220,17 @@ data class VoxelImageUIState(
     var distance: Double? = null
 )
 
-fun voxelSliceToBitmap(slice: Array<Array<Float>>): ImageBitmap {
+fun voxelSliceToBitmap(
+    slice: Array<Array<Float>>,
+    windowCenter: Float,
+    windowWidth: Float
+): ImageBitmap {
     val height = slice.size
     val width = slice[0].size
+
+    val windowMin = windowCenter - windowWidth / 2f
+    val windowMax = windowCenter + windowWidth / 2f
+    val windowRange = windowMax - windowMin
 
     // Flatten and find min/max
     val allValues = slice.flatten()
@@ -230,8 +245,12 @@ fun voxelSliceToBitmap(slice: Array<Array<Float>>): ImageBitmap {
     for (y in 0 until height) {
         for (x in 0 until width) {
             val value = slice[y][x]
-            val normalized = ((value - min) / range * 255f).toInt().coerceIn(0, 255)
-            raster.setSample(x, y, 0, normalized)
+            val pixel = when {
+                value <= windowMin -> 0
+                value >= windowMax -> 255
+                else -> ((value - windowMin) / windowRange * 255f).toInt()
+            }
+            raster.setSample(x, y, 0, pixel)
         }
     }
 
@@ -272,4 +291,41 @@ fun mapToImageCoordinatesAspectAware(
     val mappedY = (relativeY / renderHeight) * bitmap.height
 
     return Offset(mappedX, mappedY)
+}
+
+/**
+ * Small popup card showing hover pixel values.
+ */
+@Composable
+fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, string: String) {
+    Popup(
+        offset = IntOffset(
+            x = cursorPosition.x.toInt() + 10,
+            y = cursorPosition.y.toInt() + 10
+        ),
+        properties = PopupProperties(
+            focusable = false
+        ), onPreviewKeyEvent = { false }, onKeyEvent = { false }) {
+        Card(
+            elevation = 8.dp,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text("X: ${hoverPosition.x}, Y: ${hoverPosition.y}", fontSize = 10.sp, fontWeight = FontWeight.Normal)
+                Text("Value: $string", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+
+fun formatVoxelValue(value: Float, modality: String): String {
+    return when (modality.uppercase()) {
+        "CT" -> "HU: ${value.toInt()}"
+        "MRI" -> "Signal Intensity: ${"%.3f".format(value)}"
+        "PET" -> "PET Intensity: ${"%.1f".format(value)}" // not SUV if unscaled
+        else -> "Value: ${"%.3f".format(value)}"
+    }
 }

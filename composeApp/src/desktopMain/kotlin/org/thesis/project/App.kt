@@ -22,11 +22,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
+import androidx.compose.foundation.layout.FlowRow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -41,7 +39,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.thesis.project.Components.voxelImageDisplay
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
-import java.awt.Point
+import androidx.compose.ui.platform.LocalDensity
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -157,6 +155,7 @@ fun modelSelect(
 }
 
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun imageViewer(
     interfaceModel: InterfaceModel,
@@ -271,73 +270,7 @@ fun imageViewer(
                             .padding(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        selectedData.forEach { filename ->
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f), // ✅ Now weight works!
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = filename,
-                                    modifier = Modifier.padding(vertical = 4.dp),
-                                    style = MaterialTheme.typography.h3
-                                )
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(4.dp),
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    selectedViews.forEach { selectedView ->
-                                        val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
-                                        val currentIndex = when (selectedView) {
-                                            NiftiView.AXIAL -> imageIndices.first
-                                            NiftiView.CORONAL -> imageIndices.second
-                                            NiftiView.SAGITTAL -> imageIndices.third
-                                        }
-
-                                        val (slices, spacing) = interfaceModel.getSlicesFromVolume(
-                                            selectedView,
-                                            filename
-                                        )
-                                        val modality = interfaceModel.extractModality(filename)
-
-                                        if (modality != null && slices.isNotEmpty()) {
-                                            Column(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .padding(4.dp),
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                Text(
-                                                    text = "${selectedView.displayName} - Slice $currentIndex",
-                                                    style = MaterialTheme.typography.h5,
-                                                    modifier = Modifier.padding(bottom = 4.dp)
-                                                )
-
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxHeight()
-                                                        .aspectRatio(1f)
-                                                        .clip(RoundedCornerShape(12.dp))
-                                                        .background(Color.LightGray)
-                                                ) {
-                                                    voxelImageDisplay(
-                                                        voxelSlice = slices[currentIndex],
-                                                        interfaceModel = interfaceModel,
-                                                        modality = modality,
-                                                        pixelSpacing = spacing
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        imageGrid(selectedData, selectedViews, interfaceModel)
                     }
 
 
@@ -452,7 +385,7 @@ fun imageViewer(
                 contentAlignment = Alignment.TopCenter
 
             ) {
-                Column {
+                Column(modifier = Modifier.padding(16.dp)) {
                     val coroutineScope = rememberCoroutineScope()
 
                     Button(onClick = {
@@ -482,10 +415,158 @@ fun imageViewer(
                         maxIndexMap = interfaceModel.maxSelectedImageIndex,
                         onUpdate = { value -> interfaceModel.setScrollPosition(value) } // Convert Int -> Float
                     )
+
+                    windowControls(interfaceModel)
                 }
             }
         }
     )
+}
+
+@Composable
+fun imageGrid(
+    selectedData: Set<String>,
+    selectedViews: Set<NiftiView>,
+    interfaceModel: InterfaceModel,
+) {
+    val spacing = 12.dp
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        val containerWidth = maxWidth
+        val containerHeight = maxHeight
+        val rowCount = selectedData.size
+        val rowHeight = containerHeight / rowCount
+
+        Column(
+            //verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            selectedData.forEach { filename ->
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(rowHeight),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val imageCount = selectedViews.size.coerceAtLeast(1)
+                        val imageWidth = if (imageCount == 1) containerWidth else (containerWidth - spacing * (imageCount - 1)) / imageCount
+
+                        selectedViews.forEach { selectedView ->
+                            val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
+                            val currentIndex = when (selectedView) {
+                                NiftiView.AXIAL -> imageIndices.first
+                                NiftiView.CORONAL -> imageIndices.second
+                                NiftiView.SAGITTAL -> imageIndices.third
+                            }
+
+                            val (slices, spacingPx) = interfaceModel.getSlicesFromVolume(selectedView, filename)
+                            val modality = interfaceModel.extractModality(filename)
+
+                            Box(
+                                modifier = Modifier
+                                    .width(imageWidth)
+                                    .height(rowHeight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.wrapContentSize()
+                                ) {
+                                    Text(
+                                        text = "${selectedView.displayName} - Slice $currentIndex",
+                                        style = MaterialTheme.typography.h6
+                                    )
+
+                                    Card(
+                                        modifier = Modifier.size(imageWidth)
+                                            .padding(8.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        elevation =  8.dp
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color.LightGray)
+                                        ) {
+                                            if (modality != null) {
+                                                voxelImageDisplay(
+                                                    voxelSlice = slices[currentIndex],
+                                                    interfaceModel = interfaceModel,
+                                                    modality = modality,
+                                                    pixelSpacing = spacingPx
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun windowControls(interfaceModel: InterfaceModel) {
+    val windowing by interfaceModel.windowing.collectAsState()
+    var selectedPresetLabel by remember { mutableStateOf("CT - Brain") }
+
+    Column{
+        Text("Windowing Presets", style = MaterialTheme.typography.h5)
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            interfaceModel.windowPresets.forEach { (label, preset) ->
+                Button(
+                    onClick = {
+                        selectedPresetLabel = label
+                        interfaceModel.setPreset(preset)
+                    },
+                    colors = if (label == selectedPresetLabel)
+                        ButtonDefaults.buttonColors()
+                    else
+                        ButtonDefaults.outlinedButtonColors()
+                ) {
+                    Text(label)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Text("Window Center: ${windowing.center.toInt()}")
+        Slider(
+            value = windowing.center,
+            onValueChange = { interfaceModel.setWindowing(it, windowing.width) },
+            valueRange = -1000f..1000f,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Text("Window Width: ${windowing.width.toInt()}")
+        Slider(
+            value = windowing.width,
+            onValueChange = { interfaceModel.setWindowing(windowing.center, it) },
+            valueRange = 1f..2500f,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
 
 
@@ -512,12 +593,7 @@ fun ScrollSlider(
                 onUpdate(newValue)
             },
             valueRange = 0f..maxValue,
-            steps = 0,
-            colors = SliderDefaults.colors(
-                thumbColor = Color.Gray,
-                activeTrackColor = Color.Blue,
-                inactiveTrackColor = Color.Green,
-            )
+            steps = 0
         )
         Text(text = "Step: ${currentScrollStep.toInt()} / ${maxValue.toInt()}")
     }
@@ -529,39 +605,7 @@ fun ScrollSlider(
     }
 }
 
-/**
- * Small popup card showing hover pixel values.
- */
-@Composable
-fun HoverPopup(cursorPosition: Offset, hoverPosition: Point, string: String) {
-    Card(
-        modifier = Modifier
-            .zIndex(10f)
-            .offset(
-                x = cursorPosition.x.dp + 10.dp,
-                y = cursorPosition.y.dp + 10.dp
-            ),
-        elevation = 8.dp, // Adds elevation to make it float
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Text("X: ${hoverPosition.x}, Y: ${hoverPosition.y}", fontSize = 10.sp, fontWeight = FontWeight.Normal)
-            Text("Value: $string", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
 
-
-fun formatVoxelValue(value: Float, modality: String): String {
-    return when (modality.uppercase()) {
-        "CT" -> "HU: ${value.toInt()}"
-        "MRI" -> "Signal Intensity: ${"%.3f".format(value)}"
-        "PET" -> "PET Intensity: ${"%.1f".format(value)}" // not SUV if unscaled
-        else -> "Value: ${"%.3f".format(value)}"
-    }
-}
 
 
 

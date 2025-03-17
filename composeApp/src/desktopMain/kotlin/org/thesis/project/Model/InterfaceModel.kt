@@ -21,6 +21,7 @@ import java.awt.Point
 import java.io.File
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlinx.coroutines.async
 
 enum class NiftiView(val displayName: String) {
     AXIAL("Axial"),
@@ -50,15 +51,19 @@ class InterfaceModel : ViewModel() {
 
 
     suspend fun parseNiftiData(title: String, inputNiftiFile: List<String>, outputNiftiFile: List<String>) {
+        coroutineScope {
+            val inputDeferred = async(Dispatchers.IO) { loadNifti(inputNiftiFile) }
+            val outputDeferred = async(Dispatchers.IO) { loadNifti(outputNiftiFile) }
 
-        val inputFilenames = loadNifti(inputNiftiFile)
-        val outputFilenames = loadNifti(outputNiftiFile)
+            val inputFilenames = inputDeferred.await()
+            val outputFilenames = outputDeferred.await()
 
-        println("Added mapping for $title : $inputFilenames, $outputFilenames")
-        addFileMapping(title, inputFilenames, outputFilenames)
+            println("Added mapping for $title : $inputFilenames, $outputFilenames")
+            addFileMapping(title, inputFilenames, outputFilenames)
+        }
     }
 
-    suspend fun loadNifti(niftiStorage: List<String>): MutableList<String> {
+    private suspend fun loadNifti(niftiStorage: List<String>): MutableList<String> {
         val fileNames = mutableListOf<String>()
         coroutineScope {
             niftiStorage.map { file ->
@@ -364,4 +369,31 @@ class InterfaceModel : ViewModel() {
 
         return sqrt(dx * dx + dy * dy.toDouble())
     }
+
+
+    val windowPresets = mapOf(
+        "CT - Brain" to WindowingParams(40f, 80f),
+        "CT - Lung" to WindowingParams(-600f, 1500f),
+        "CT - Bone" to WindowingParams(400f, 2000f),
+        "PET SUV" to WindowingParams(5f, 10f)
+    )
+
+    data class WindowingParams(
+        val center: Float,
+        val width: Float
+    )
+
+
+
+    private val _windowing = MutableStateFlow(WindowingParams(center = 40f, width = 80f))
+    val windowing: StateFlow<WindowingParams> = _windowing.asStateFlow()
+
+    fun setWindowing(center: Float, width: Float) {
+        _windowing.value = WindowingParams(center, width)
+    }
+
+    fun setPreset(preset: WindowingParams) {
+        _windowing.value = preset
+    }
+
 }
