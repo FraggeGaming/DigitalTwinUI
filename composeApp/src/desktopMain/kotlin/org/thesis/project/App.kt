@@ -127,6 +127,10 @@ fun uploadData(
 ) {
     val selectedFilePath = remember { MutableStateFlow<String?>(null) }
 
+    Column(modifier = Modifier.fillMaxSize()) {
+
+    }
+
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -141,6 +145,10 @@ fun modelSelect(
     interfaceModel: InterfaceModel,
     navMenu: @Composable () -> Unit
 ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+
+    }
+
     Box(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -187,192 +195,157 @@ fun imageViewer(
 
     interfaceModel.updateSelectedViews(NiftiView.AXIAL, true)
 
-    MainPanelLayout(
-        leftPanelWidth = leftPanelWidth,
-        leftPanelExpanded = leftPanelExpanded,
-        rightPanelWidth = rightPanelWidth,
-        rightPanelExpanded = rightPanelExpanded,
-        toggleLeftPanel = { interfaceModel.toggleLeftPanelExpanded() },
-        toggleRightPanel = { interfaceModel.toggleRightPanelExpanded() },
-
-
-        leftContent = {
-
-
-            navMenu()
-
-            CardMenu(
-                fileKeys = fileMapping.keys.toList(),
-                selectedData = selectedData,
-                getFileMapping = interfaceModel::getFileMapping,
-                onCheckboxChanged = { label, isChecked ->
-                    interfaceModel.updateSelectedData(label, isChecked)
-                }
-            )
-
-            CardWithCheckboxes(
-                selectedDistricts,
-                items = organs,
-                onCheckboxChanged = { organ, isChecked ->
-                    interfaceModel.updateSelectedDistrict(organ, isChecked)
-                }
-            )
-
-        },
-        centerContent = {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .background(Color(0xFF0050A0)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Left side
+            Row(
+                modifier = Modifier.padding(start = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    val event = awaitPointerEvent()
-                                    if (event.type == PointerEventType.Scroll) {
-                                        val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
-                                        if (scrollDelta.y > 0f) {
-                                            interfaceModel.decrementScrollPosition()
-                                        } else if (scrollDelta.y < 0f) {
-                                            interfaceModel.incrementScrollPosition()
+                Text(
+                    text = "Title",
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Android, // Replace with your logo icon
+                    contentDescription = "App Logo",
+                    tint = Color.White
+                )
+            }
+
+            // Middle space using Box with centered content
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Model Name", color = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.Android, // Replace with your logo
+                        contentDescription = "Logo",
+                        tint = Color.White
+                    )
+                }
+            }
+
+            // Right side: info icon + toggle button
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.padding(end = 16.dp)
+            ) {
+                IconButton(onClick = { /* show info */ }) {
+                    Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
+                }
+
+                IconButton(
+                    onClick = { interfaceModel.toggleRightPanelExpanded() }
+                ) {
+                    Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
+                }
+            }
+        }
+
+        MainPanelLayout(
+            leftPanelWidth = leftPanelWidth,
+            leftPanelExpanded = leftPanelExpanded,
+            rightPanelWidth = rightPanelWidth,
+            rightPanelExpanded = rightPanelExpanded,
+            toggleLeftPanel = { interfaceModel.toggleLeftPanelExpanded() },
+            toggleRightPanel = { interfaceModel.toggleRightPanelExpanded() },
+
+            leftContent = {
+
+
+                navMenu()
+
+                CardMenu(
+                    fileKeys = fileMapping.keys.toList(),
+                    selectedData = selectedData,
+                    getFileMapping = interfaceModel::getFileMapping,
+                    onCheckboxChanged = { label, isChecked ->
+                        interfaceModel.updateSelectedData(label, isChecked)
+                    }
+                )
+
+                CardWithCheckboxes(
+                    selectedDistricts,
+                    items = organs,
+                    onCheckboxChanged = { organ, isChecked ->
+                        interfaceModel.updateSelectedDistrict(organ, isChecked)
+                    }
+                )
+
+            },
+            centerContent = {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val event = awaitPointerEvent()
+                                        if (event.type == PointerEventType.Scroll) {
+                                            val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
+                                            if (scrollDelta.y > 0f) {
+                                                interfaceModel.decrementScrollPosition()
+                                            } else if (scrollDelta.y < 0f) {
+                                                interfaceModel.incrementScrollPosition()
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    imageGrid(selectedData, selectedViews, interfaceModel)
-                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        imageGrid(selectedData, selectedViews, interfaceModel)
+                    }
 
-                Row(
-                    modifier = Modifier
-                        .width(800.dp)
-                        .height(100.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Box(
-                        modifier = Modifier
-                            .padding(16.dp)
+                    menuCard(
+                        selectedViews = selectedViews,
+                        interfaceModel = interfaceModel,
+                        selectedSettings = selectedSettings,
                     )
-                    {
-                        menuCard(
-                            content = listOf(
-                                {
-                                    Row {
-                                        buttonWithCheckboxSet(
-                                            selectedViews,
-                                            NiftiView.AXIAL,
-                                            interfaceModel::updateSelectedViews
-                                        )
-                                    }
-                                },
-                                {
-                                    Row {
-                                        buttonWithCheckboxSet(
-                                            selectedViews,
-                                            NiftiView.CORONAL,
-                                            interfaceModel::updateSelectedViews
-                                        )
-                                    }
-                                },
+                }
+            },
+            rightContent = {
 
-                                {
-                                    Row {
-                                        buttonWithCheckboxSet(
-                                            selectedViews,
-                                            NiftiView.SAGITTAL,
-                                            interfaceModel::updateSelectedViews
-                                        )
-                                    }
-                                },
+                val coroutineScope = rememberCoroutineScope()
 
-                                {
-                                    Box(
-                                        modifier = Modifier
-                                            .width(1.dp)
-                                            .height(50.dp)
-                                            .background(Color.Gray)
-                                    )
-                                },
-
-                                {
-
-                                    //TODO change to enum
-                                    TextButton(
-                                        onClick = {
-                                            val isCurrentlyChecked = selectedSettings.contains("measure")
-                                            interfaceModel.updateSelectedSettings("measure", !isCurrentlyChecked)
-                                        },
-                                        colors = ButtonDefaults.textButtonColors(
-                                            backgroundColor = if (selectedSettings.contains("measure")) Color.Gray else Color.Transparent, // Change background
-                                            contentColor = Color.Unspecified
-                                        ),
-                                        elevation = null, // Removes elevation
-                                        modifier = Modifier.padding(0.dp) // Removes extra padding
-                                    ) {
-                                        Icon(Icons.Default.Straighten, contentDescription = "Measure")
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Measure")
-                                    }
-                                },
-
-                                {
-                                    TextButton(
-                                        onClick = {
-                                            val isCurrentlyChecked = selectedSettings.contains("pixel")
-                                            interfaceModel.updateSelectedSettings("pixel", !isCurrentlyChecked)
-                                        },
-                                        colors = ButtonDefaults.textButtonColors(
-                                            backgroundColor = if (selectedSettings.contains("pixel")) Color.Gray else Color.Transparent, // Change background
-                                            contentColor = Color.Unspecified
-                                        ),
-                                        elevation = null, // Removes elevation
-                                        modifier = Modifier.padding(0.dp) // Removes extra padding
-                                    ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Pixel intensity")
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Pixel intensity")
-                                    }
-                                }
-                            )
+                Button(onClick = {
+                    coroutineScope.launch {
+                        interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
+                    }
+                }) {
+                    Text("Parse NIfTI")
+                }
+                standardCard (
+                    content ={
+                        ScrollSlider(
+                            selectedData = interfaceModel.selectedData,
+                            scrollStep = interfaceModel.scrollStep,
+                            maxIndexMap = interfaceModel.maxSelectedImageIndex,
+                            onUpdate = { value -> interfaceModel.setScrollPosition(value) } // Convert Int -> Float
                         )
                     }
-                }
+                )
+
+
+                windowControls(interfaceModel)
+
             }
-        },
-        rightContent = {
-
-            val coroutineScope = rememberCoroutineScope()
-
-            Button(onClick = {
-                coroutineScope.launch {
-                    interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
-                }
-            }) {
-                Text("Parse NIfTI")
-            }
-            standardCard (
-                content ={
-                    ScrollSlider(
-                        selectedData = interfaceModel.selectedData,
-                        scrollStep = interfaceModel.scrollStep,
-                        maxIndexMap = interfaceModel.maxSelectedImageIndex,
-                        onUpdate = { value -> interfaceModel.setScrollPosition(value) } // Convert Int -> Float
-                    )
-                }
-            )
-
-
-            windowControls(interfaceModel)
-
-        }
-    )
+        )
+    }
 }
 
 @Composable

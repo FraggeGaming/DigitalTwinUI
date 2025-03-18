@@ -13,9 +13,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import java.awt.Cursor
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -41,6 +44,7 @@ fun MainPanelLayout(
 
     var leftWidth by remember { mutableStateOf(leftPanelWidth) }
     var rightWidth by remember { mutableStateOf(rightPanelWidth) }
+
 
     Row(modifier = Modifier.fillMaxSize()) {
         val leftScrollState = rememberScrollState()
@@ -122,22 +126,32 @@ fun MainPanelLayout(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF0050A0)) // same blue color as before
+                        .background(Color(0xFF0050A0))
                         .clickable { toggleRightPanel() }
-                        .padding(vertical = 8.dp, horizontal = 12.dp), // replicate button padding
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
+                        .drawBehind {
+                            // Draw top border
+                            drawLine(
+                                color = Color.LightGray,
+                                start = Offset(0f, 0f),
+                                end = Offset(size.width, 0f),
+                                strokeWidth = 1.dp.toPx()
+                            )
+                        }
+                        .padding(vertical = 8.dp, horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        imageVector = Icons.Default.Close,
                         contentDescription = "Collapse Right",
                         tint = Color.White
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Settings and Controls",
-                        color = Color.White
-                    )
+
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Settings and Controls",
+                            color = Color.White
+                        )
+                    }
                 }
 
                     Column(
@@ -155,22 +169,22 @@ fun MainPanelLayout(
 
         }
 
-        else {
-
-            TextButton(
-                modifier = Modifier
-                    .width(48.dp)
-                    .background(Color.DarkGray),
-                onClick = {
-                    toggleRightPanel()
-                }
-            ) {
-
-                Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
-
-            }
-
-        }
+//        else {
+//
+//            TextButton(
+//                modifier = Modifier
+//                    .width(48.dp)
+//                    .background(Color(0xFF0050A0)),
+//                onClick = {
+//                    toggleRightPanel()
+//                }
+//            ) {
+//
+//                Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
+//
+//            }
+//
+//        }
     }
 }
 
@@ -182,7 +196,7 @@ fun HorizontalResizer(onResize: (Dp) -> Unit) {
         modifier = Modifier
             .width(5.dp)
             .fillMaxHeight()
-            .background(Color.DarkGray, RoundedCornerShape(2.dp))
+            .background(Color.DarkGray)
             .pointerHoverIcon(PointerIcon(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)))
             .pointerInput(Unit) {
                 detectHorizontalDragGestures { _, dragAmount ->

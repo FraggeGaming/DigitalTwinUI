@@ -5,6 +5,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -12,7 +14,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import org.thesis.project.standardCard
 
@@ -26,7 +30,7 @@ fun CardWithCheckboxes(
     modifier: Modifier = Modifier
 ) {
 
-    standardCard (
+    standardCard(
         modifier = modifier,
         contentAlignment = Alignment.CenterHorizontally,
         content = {
@@ -188,13 +192,15 @@ fun buttonWithCheckboxSet(
     selectedData: Set<NiftiView>,
     label: NiftiView,
     onCheckboxChanged: (NiftiView, Boolean) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         TextButton(
+            modifier = modifier,
             //modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.textButtonColors(
                 backgroundColor = Color.Transparent,
-                contentColor = LocalContentColor.current
+                contentColor = Color.White,
             ),
             onClick = {
                 val isCurrentlyChecked = selectedData.contains(label)
@@ -205,7 +211,12 @@ fun buttonWithCheckboxSet(
                 checked = selectedData.contains(label),
                 onCheckedChange = { isChecked ->
                     onCheckboxChanged(label, isChecked)
-                }
+                },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = Color.White,
+                    uncheckedColor = Color.White,
+                    checkmarkColor = Color(0xFF0050A0)
+                )
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(text = label.displayName)
@@ -260,13 +271,13 @@ fun modalities(
 fun CardMenu(
     selectedData: Set<String>,
     fileKeys: List<String>,
-    getFileMapping: (String) -> Pair<List<String>, List<String>>?, // ✅ Uses List<String> instead of List<Pair<String, String>>
+    getFileMapping: (String) -> Pair<List<String>, List<String>>?,
     onCheckboxChanged: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var expandedMenu by remember { mutableStateOf<String?>(null) }
 
-    standardCard (
+    standardCard(
         modifier = modifier,
         content = {
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
@@ -408,7 +419,6 @@ fun CardMenu(
 }
 
 
-
 @Composable
 fun MenuButton(
     mainLabel: String,
@@ -451,9 +461,6 @@ fun activeSelected(
 
         val rows = selectedData.toList().chunked(chunkSize)
 
-
-
-
         if (chunkSize == 2) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -469,7 +476,7 @@ fun activeSelected(
                             modifier = Modifier.weight(1f),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (rowItems.size >= 1) {
+                            if (rowItems.isNotEmpty()) {
                                 selectedButtonRemove(
                                     modifier = Modifier,
                                     text = rowItems[0],
@@ -569,38 +576,99 @@ fun selectedButtonRemove(modifier: Modifier = Modifier, text: String, onclick: (
 }
 
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun menuCard(
     modifier: Modifier = Modifier,
-    content: List<@Composable () -> Unit>
+    selectedViews: Set<NiftiView>,
+    interfaceModel: InterfaceModel,
+    selectedSettings: Set<String>,
+    //content: List<@Composable () -> Unit>
 ) {
+    val buttonHeight = 60.dp
+    var buttonWidth = 160.dp
 
     Card(
-        modifier = modifier,
+        modifier = modifier.padding(16.dp),
         elevation = 8.dp,
-
+        contentColor = Color.White
+    ) {
+        FlowRow(
+            modifier = Modifier
+                .wrapContentSize()
+                .background(Color(0xFF0050A0), shape = RoundedCornerShape(8.dp)),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-
-        ) {
-            content.forEach { composable ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        composable()
-                    }
-
-                }
-
+            listOf(
+                NiftiView.AXIAL,
+                NiftiView.CORONAL,
+                NiftiView.SAGITTAL
+            ).forEach { view ->
+                buttonWithCheckboxSet(
+                    selectedData = selectedViews,
+                    label = view,
+                    onCheckboxChanged = interfaceModel::updateSelectedViews,
+                    modifier = Modifier
+                        .width(buttonWidth)
+                        .height(buttonHeight)
+                )
             }
 
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(buttonHeight)
+                    .background(Color.Gray)
+            )
+
+            TextButton(
+                modifier = Modifier
+                    .width(buttonWidth)
+                    .height(buttonHeight),
+                onClick = {
+                    val isChecked = selectedSettings.contains("measure")
+                    interfaceModel.updateSelectedSettings("measure", !isChecked)
+                },
+                colors = ButtonDefaults.textButtonColors(
+                    backgroundColor = if (selectedSettings.contains("measure")) Color(0xFF80A7D0) else Color.Transparent,
+                    contentColor = if (selectedSettings.contains("measure")) Color.Black else Color.White
+                )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Straighten, contentDescription = "Measure")
+                    Spacer(Modifier.width(4.dp))
+                    Text("Measure")
+                }
+            }
+
+            TextButton(
+                modifier = Modifier
+                    .width(buttonWidth)
+                    .height(buttonHeight),
+                onClick = {
+                    val isChecked = selectedSettings.contains("pixel")
+                    interfaceModel.updateSelectedSettings("pixel", !isChecked)
+                },
+                colors = ButtonDefaults.textButtonColors(
+                    backgroundColor = if (selectedSettings.contains("pixel")) Color(0xFF80A7D0) else Color.Transparent,
+                    contentColor = if (selectedSettings.contains("pixel")) Color.Black else Color.White
+                )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "Pixel Value")
+                    Spacer(Modifier.width(4.dp))
+                    Text("Pixel Intensity")
+                }
+            }
         }
     }
 }
