@@ -14,8 +14,10 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.thesis.project.Model.NiftiView
+import org.thesis.project.standardCard
 
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CardWithCheckboxes(
     selectedData: Set<String>,
@@ -24,101 +26,131 @@ fun CardWithCheckboxes(
     modifier: Modifier = Modifier
 ) {
 
-    Card(
+    standardCard (
         modifier = modifier,
-        elevation = 8.dp
-    ) {
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            if (maxWidth > 300.dp) {
-                Column(
-                    verticalArrangement = Arrangement.SpaceEvenly,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Row {
-                        Text(text = "Select Districts")
-                    }
-                    //Align in a 2 column grid
-                    items.chunked(2).forEach { rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            //.border(1.dp, Color.Red)
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
+        contentAlignment = Alignment.CenterHorizontally,
+        content = {
+//            BoxWithConstraints(
+//                modifier = Modifier.fillMaxWidth(),
+//                contentAlignment = Alignment.Center
+//            ) {
+//                if (maxWidth > 300.dp) {
+//                    Column(
+//                        verticalArrangement = Arrangement.SpaceEvenly,
+//                        horizontalAlignment = Alignment.CenterHorizontally,
+//                        modifier = Modifier.padding(16.dp)
+//                    ) {
+//                        Row {
+//                            Text(text = "Select Districts")
+//                        }
+//                        //Align in a 2 column grid
+//                        items.chunked(2).forEach { rowItems ->
+//                            Row(
+//                                modifier = Modifier.fillMaxWidth(),
+//                                //.border(1.dp, Color.Red)
+//                                horizontalArrangement = Arrangement.Center,
+//                                verticalAlignment = Alignment.CenterVertically,
+//
+//                                ) {
+//                                rowItems.forEach { label ->
+//                                    Row(
+//                                        verticalAlignment = Alignment.CenterVertically,
+//                                        horizontalArrangement = Arrangement.Start,
+//                                        modifier = Modifier.weight(1f)
+//                                            .clickable {
+//                                                val isCurrentlyChecked = selectedData.contains(label)
+//                                                // Toggle the checkbox state
+//                                                onCheckboxChanged(label, !isCurrentlyChecked)
+//                                            }
+//                                        //.border(1.dp, Color.Blue)
+//                                    ) {
+//                                        Checkbox(
+//                                            checked = selectedData.contains(label),
+//                                            onCheckedChange = { isChecked ->
+//                                                onCheckboxChanged(label, isChecked)
+//                                            }
+//                                        )
+//                                        Spacer(modifier = Modifier.width(4.dp))
+//                                        Text(text = label)
+//                                    }
+//                                }
+//
+//                                //So that the last checkbox (if odd number) does not get centered
+//                                if (rowItems.size == 1) {
+//                                    Spacer(modifier = Modifier.weight(1f))
+//                                }
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    Column(
+//                        verticalArrangement = Arrangement.spacedBy(0.dp),
+//                        horizontalAlignment = Alignment.CenterHorizontally,
+//                        modifier = Modifier.padding(16.dp)//.border(1.dp, Color.Red)
+//                    ) {
+//                        Row {
+//                            Text(text = "Select Districts")
+//                        }
+//                        //Align in a 2 column grid
+//
+//                        items.forEach { label ->
+//                            Row(
+//                                modifier = Modifier.fillMaxWidth().clickable {
+//                                    val isCurrentlyChecked = selectedData.contains(label)
+//                                    // Toggle the checkbox state
+//                                    onCheckboxChanged(label, !isCurrentlyChecked)
+//                                },//.border(1.dp, Color.Blue),
+//                                verticalAlignment = Alignment.CenterVertically,
+//                                horizontalArrangement = Arrangement.Start,
+//
+//
+//                                //.border(1.dp, Color.Blue)
+//                            ) {
+//                                Checkbox(
+//                                    checked = selectedData.contains(label),
+//                                    onCheckedChange = { isChecked ->
+//                                        onCheckboxChanged(label, isChecked)
+//                                    }
+//                                )
+//                                Spacer(modifier = Modifier.width(4.dp))
+//                                Text(text = label)
+//                            }
+//                        }
+//                    }
+//                }
+//
+//            }
 
-                            ) {
-                            rowItems.forEach { label ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Start,
-                                    modifier = Modifier.weight(1f)
-                                        .clickable {
-                                            val isCurrentlyChecked = selectedData.contains(label)
-                                            // Toggle the checkbox state
-                                            onCheckboxChanged(label, !isCurrentlyChecked)
-                                        }
-                                    //.border(1.dp, Color.Blue)
-                                ) {
-                                    Checkbox(
-                                        checked = selectedData.contains(label),
-                                        onCheckedChange = { isChecked ->
-                                            onCheckboxChanged(label, isChecked)
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(text = label)
-                                }
+
+            Text(text = "Select Districts")
+
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items.forEach { label ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable {
+                                val isChecked = selectedData.contains(label)
+                                onCheckboxChanged(label, !isChecked)
                             }
-
-                            //So that the last checkbox (if odd number) does not get centered
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
+                    ) {
+                        Checkbox(
+                            checked = selectedData.contains(label),
+                            onCheckedChange = { isChecked ->
+                                onCheckboxChanged(label, isChecked)
                             }
-                        }
-                    }
-                }
-            } else {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(0.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp)//.border(1.dp, Color.Red)
-                ) {
-                    Row {
-                        Text(text = "Select Districts")
-                    }
-                    //Align in a 2 column grid
-
-                    items.forEach { label ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                val isCurrentlyChecked = selectedData.contains(label)
-                                // Toggle the checkbox state
-                                onCheckboxChanged(label, !isCurrentlyChecked)
-                            },//.border(1.dp, Color.Blue),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start,
-
-
-                            //.border(1.dp, Color.Blue)
-                        ) {
-                            Checkbox(
-                                checked = selectedData.contains(label),
-                                onCheckedChange = { isChecked ->
-                                    onCheckboxChanged(label, isChecked)
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(text = label)
-                        }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(label)
                     }
                 }
             }
-
         }
-    }
+    )
 }
 
 @Composable
@@ -234,146 +266,147 @@ fun CardMenu(
 ) {
     var expandedMenu by remember { mutableStateOf<String?>(null) }
 
-    Card(
+    standardCard (
         modifier = modifier,
-        elevation = 8.dp,
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val boxMaxWidth = maxWidth
+        content = {
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val boxMaxWidth = maxWidth
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Select files to view",
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    //modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Select files to view",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
 
-                if (boxMaxWidth < 300.dp) {
-                    // Vertical list of menu items
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        fileKeys.forEach { mainLabel ->
-                            val isSelected = expandedMenu == mainLabel
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(0.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                MenuButton(
-                                    mainLabel = mainLabel,
-                                    isSelected = isSelected,
-                                    onClick = { expandedMenu = if (isSelected) null else mainLabel },
-                                    widthFraction = 1f,
-                                    shapeSelected = RoundedCornerShape(
-                                        topStart = 8.dp,
-                                        bottomStart = 0.dp,
-                                        topEnd = 8.dp,
-                                        bottomEnd = 0.dp
-                                    )
-                                )
-                                if (isSelected) {
-                                    getFileMapping(mainLabel)?.let { (inputList, outputList) ->
-
-                                        modalities(
-                                            selectedData = selectedData, // ✅ Inputs are now correctly mapped
-                                            mainLabels = inputList,
-                                            subLabels = outputList, // ✅ Outputs go into modalities
-                                            onCheckboxChanged = onCheckboxChanged,
-                                            shape = RoundedCornerShape(
-                                                topStart = 0.dp,
-                                                bottomStart = 8.dp,
-                                                topEnd = 0.dp,
-                                                bottomEnd = 8.dp
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // Wide layout
-                    if (expandedMenu == null) {
+                    if (boxMaxWidth < 300.dp) {
+                        // Vertical list of menu items
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             fileKeys.forEach { mainLabel ->
-                                MenuButton(
-                                    mainLabel = mainLabel,
-                                    isSelected = false,
-                                    onClick = { expandedMenu = mainLabel },
-                                    widthFraction = 1f,
-                                    shapeSelected = RoundedCornerShape(8.dp)
-                                )
-                            }
-                        }
-                    } else {
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            Column(
-                                modifier = Modifier.weight(0.4f),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                fileKeys.forEach { mainLabel ->
-                                    val isSelected = expandedMenu == mainLabel
+                                val isSelected = expandedMenu == mainLabel
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
                                     MenuButton(
                                         mainLabel = mainLabel,
                                         isSelected = isSelected,
                                         onClick = { expandedMenu = if (isSelected) null else mainLabel },
-                                        widthFraction = if (isSelected) 1f else 0.8f,
+                                        widthFraction = 1f,
                                         shapeSelected = RoundedCornerShape(
                                             topStart = 8.dp,
-                                            bottomStart = 8.dp,
-                                            topEnd = 0.dp,
+                                            bottomStart = 0.dp,
+                                            topEnd = 8.dp,
                                             bottomEnd = 0.dp
                                         )
                                     )
+                                    if (isSelected) {
+                                        getFileMapping(mainLabel)?.let { (inputList, outputList) ->
+
+                                            modalities(
+                                                selectedData = selectedData, // ✅ Inputs are now correctly mapped
+                                                mainLabels = inputList,
+                                                subLabels = outputList, // ✅ Outputs go into modalities
+                                                onCheckboxChanged = onCheckboxChanged,
+                                                shape = RoundedCornerShape(
+                                                    topStart = 0.dp,
+                                                    bottomStart = 8.dp,
+                                                    topEnd = 0.dp,
+                                                    bottomEnd = 8.dp
+                                                )
+                                            )
+                                        }
+                                    }
                                 }
                             }
+                        }
+                    } else {
+                        // Wide layout
+                        if (expandedMenu == null) {
                             Column(
-                                modifier = Modifier.weight(0.6f),
-                                verticalArrangement = Arrangement.Top,
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                expandedMenu?.let { selectedMainLabel ->
-                                    getFileMapping(selectedMainLabel)?.let { (inputList, outputList) ->
-                                        modalities(
-                                            selectedData = selectedData, // ✅ Inputs are now correctly mapped
-                                            mainLabels = inputList,
-                                            subLabels = outputList, // ✅ Outputs go into modalities
-                                            onCheckboxChanged = onCheckboxChanged,
-                                            shape = RoundedCornerShape(
-                                                topStart = 0.dp,
+                                fileKeys.forEach { mainLabel ->
+                                    MenuButton(
+                                        mainLabel = mainLabel,
+                                        isSelected = false,
+                                        onClick = { expandedMenu = mainLabel },
+                                        widthFraction = 1f,
+                                        shapeSelected = RoundedCornerShape(8.dp)
+                                    )
+                                }
+                            }
+                        } else {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Column(
+                                    modifier = Modifier.weight(0.4f),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    fileKeys.forEach { mainLabel ->
+                                        val isSelected = expandedMenu == mainLabel
+                                        MenuButton(
+                                            mainLabel = mainLabel,
+                                            isSelected = isSelected,
+                                            onClick = { expandedMenu = if (isSelected) null else mainLabel },
+                                            widthFraction = if (isSelected) 1f else 0.8f,
+                                            shapeSelected = RoundedCornerShape(
+                                                topStart = 8.dp,
                                                 bottomStart = 8.dp,
                                                 topEnd = 0.dp,
-                                                bottomEnd = 8.dp
+                                                bottomEnd = 0.dp
                                             )
                                         )
+                                    }
+                                }
+                                Column(
+                                    modifier = Modifier.weight(0.6f),
+                                    verticalArrangement = Arrangement.Top,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    expandedMenu?.let { selectedMainLabel ->
+                                        getFileMapping(selectedMainLabel)?.let { (inputList, outputList) ->
+                                            modalities(
+                                                selectedData = selectedData, // ✅ Inputs are now correctly mapped
+                                                mainLabels = inputList,
+                                                subLabels = outputList, // ✅ Outputs go into modalities
+                                                onCheckboxChanged = onCheckboxChanged,
+                                                shape = RoundedCornerShape(
+                                                    topStart = 0.dp,
+                                                    bottomStart = 8.dp,
+                                                    topEnd = 0.dp,
+                                                    bottomEnd = 8.dp
+                                                )
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                activeSelected(
-                    selectedData = selectedData,
-                    onCheckboxChanged = onCheckboxChanged,
-                )
+                    activeSelected(
+                        selectedData = selectedData,
+                        onCheckboxChanged = onCheckboxChanged,
+                    )
+                }
             }
         }
-    }
+    )
+
 }
+
 
 
 @Composable

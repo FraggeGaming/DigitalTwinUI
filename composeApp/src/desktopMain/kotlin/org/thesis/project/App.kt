@@ -10,21 +10,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Straighten
-import androidx.compose.material.icons.filled.Upload
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.filled.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,7 +34,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.thesis.project.Components.voxelImageDisplay
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -203,39 +198,25 @@ fun imageViewer(
 
         leftContent = {
 
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.TopCenter
 
-            ) {
-                Column(
-                    modifier = Modifier
-                        .width(400.dp)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            navMenu()
 
-                    navMenu()
-
-                    CardMenu(
-                        fileKeys = fileMapping.keys.toList(),
-                        selectedData = selectedData,
-                        getFileMapping = interfaceModel::getFileMapping,
-                        onCheckboxChanged = { label, isChecked ->
-                            interfaceModel.updateSelectedData(label, isChecked)
-                        }
-                    )
-
-                    CardWithCheckboxes(
-                        selectedDistricts,
-                        items = organs,
-                        onCheckboxChanged = { organ, isChecked ->
-                            interfaceModel.updateSelectedDistrict(organ, isChecked)
-                        }
-                    )
+            CardMenu(
+                fileKeys = fileMapping.keys.toList(),
+                selectedData = selectedData,
+                getFileMapping = interfaceModel::getFileMapping,
+                onCheckboxChanged = { label, isChecked ->
+                    interfaceModel.updateSelectedData(label, isChecked)
                 }
-            }
+            )
+
+            CardWithCheckboxes(
+                selectedDistricts,
+                items = organs,
+                onCheckboxChanged = { organ, isChecked ->
+                    interfaceModel.updateSelectedDistrict(organ, isChecked)
+                }
+            )
 
         },
         centerContent = {
@@ -264,16 +245,7 @@ fun imageViewer(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        imageGrid(selectedData, selectedViews, interfaceModel)
-                    }
-
-
+                    imageGrid(selectedData, selectedViews, interfaceModel)
                 }
 
                 Row(
@@ -375,31 +347,30 @@ fun imageViewer(
             }
         },
         rightContent = {
-            Box(
-                modifier = Modifier.fillMaxSize(),
 
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    val coroutineScope = rememberCoroutineScope()
+            val coroutineScope = rememberCoroutineScope()
 
-                    Button(onClick = {
-                        coroutineScope.launch {
-                            interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
-                        }
-                    }) {
-                        Text("Parse NIfTI")
-                    }
-
+            Button(onClick = {
+                coroutineScope.launch {
+                    interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
+                }
+            }) {
+                Text("Parse NIfTI")
+            }
+            standardCard (
+                content ={
                     ScrollSlider(
                         selectedData = interfaceModel.selectedData,
                         scrollStep = interfaceModel.scrollStep,
                         maxIndexMap = interfaceModel.maxSelectedImageIndex,
                         onUpdate = { value -> interfaceModel.setScrollPosition(value) } // Convert Int -> Float
                     )
-
-                    windowControls(interfaceModel)
                 }
-            }
+            )
+
+
+            windowControls(interfaceModel)
+
         }
     )
 }
@@ -410,20 +381,15 @@ fun imageGrid(
     selectedViews: Set<NiftiView>,
     interfaceModel: InterfaceModel,
 ) {
-    val spacing = 12.dp
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
     ) {
-        val containerWidth = maxWidth
         val containerHeight = maxHeight
-        val rowCount = selectedData.size
-        val rowHeight = containerHeight / rowCount
 
         Column(
-            //verticalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier.fillMaxSize()
         ) {
             selectedData.forEach { filename ->
@@ -434,13 +400,10 @@ fun imageGrid(
 
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(rowHeight),
+                            .fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val imageCount = selectedViews.size.coerceAtLeast(1)
-                        val imageWidth = if (imageCount == 1) containerWidth else (containerWidth - spacing * (imageCount - 1)) / imageCount
 
                         selectedViews.forEach { selectedView ->
                             val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
@@ -453,30 +416,28 @@ fun imageGrid(
                             val (slices, spacingPx) = interfaceModel.getSlicesFromVolume(selectedView, filename)
                             val modality = interfaceModel.extractModality(filename)
 
-                            Box(
+                            Column(
                                 modifier = Modifier
-                                    .width(imageWidth)
-                                    .height(rowHeight),
-                                contentAlignment = Alignment.Center
+                                    .weight(1f)
+                                    .height(containerHeight/selectedData.size)
+                                    .padding(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.wrapContentSize()
-                                ) {
-                                    Text(
-                                        text = "${selectedView.displayName} - Slice $currentIndex",
-                                        style = MaterialTheme.typography.h6
-                                    )
 
-                                    Card(
-                                        modifier = Modifier.size(imageWidth)
-                                            .padding(8.dp) .background(Color.LightGray),
-                                        shape = RoundedCornerShape(12.dp),
-                                        elevation =  8.dp
-                                    ) {
+                                standardCard(
+                                    modifier = Modifier
+                                        .wrapContentSize()
+                                        .aspectRatio(1f),
 
-                                            if (modality != null) {
+                                    contentAlignment = Alignment.CenterHorizontally,
+                                    content = {
+                                        Text(
+                                            text = "${selectedView.displayName} - Slice $currentIndex",
+                                            style = MaterialTheme.typography.h6
+                                        )
+                                        if (modality != null) {
+
                                                 voxelImageDisplay(
                                                     voxelSlice = slices[currentIndex],
                                                     interfaceModel = interfaceModel,
@@ -484,65 +445,122 @@ fun imageGrid(
                                                     pixelSpacing = spacingPx
                                                 )
                                             }
-
-                                    }
-                                }
+                                        }
+                                )
                             }
                         }
                     }
                 }
             }
         }
+
+
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+
 @Composable
 fun windowControls(interfaceModel: InterfaceModel) {
     val windowing by interfaceModel.windowing.collectAsState()
-    var selectedPresetLabel by remember { mutableStateOf("CT - Brain") }
+    var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
+    var expanded by remember { mutableStateOf(false) }
 
-    Column{
-        Text("Windowing Presets", style = MaterialTheme.typography.h5)
 
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            interfaceModel.windowPresets.forEach { (label, preset) ->
-                Button(
-                    onClick = {
-                        selectedPresetLabel = label
-                        interfaceModel.setPreset(preset)
-                    },
-                    colors = if (label == selectedPresetLabel)
-                        ButtonDefaults.buttonColors()
-                    else
-                        ButtonDefaults.outlinedButtonColors()
-                ) {
-                    Text(label)
+    standardCard (
+        content ={
+            Text("Windowing Presets")
+            val icon = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown
+
+
+            Box {
+                Button(onClick = { expanded = true }) {
+                    Text(selectedPresetLabel ?: "Select Preset")
+                    Spacer(Modifier.width(8.dp))
+                    Icon(icon, contentDescription = if (expanded) "Collapse" else "Expand")
+                }
+
+                if (expanded) { // 🔥 Ensure this check, Compose sometimes bugs otherwise
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        interfaceModel.windowPresets.forEach { (label, preset) ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    selectedPresetLabel = label
+                                    interfaceModel.setPreset(preset)
+                                    expanded = false
+                                }
+
+                            ){
+                                Text(label)
+                            }
+                        }
+                    }
                 }
             }
+
+            scrollWithTitle(
+                title = "Window Center: ${windowing.center.toInt()}",
+                value = windowing.center,
+                onValueChange = { interfaceModel.setWindowing(it, windowing.width) },
+                valueRange = -1000f..1000f,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            scrollWithTitle(
+                title = "Window Width: ${windowing.width.toInt()}",
+                value = windowing.width,
+                onValueChange = { interfaceModel.setWindowing(windowing.center, it) },
+                valueRange = 1f..2500f,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
+    )
 
-        Spacer(Modifier.height(16.dp))
+}
 
-        Text("Window Center: ${windowing.center.toInt()}")
-        Slider(
-            value = windowing.center,
-            onValueChange = { interfaceModel.setWindowing(it, windowing.width) },
-            valueRange = -1000f..1000f,
-            modifier = Modifier.fillMaxWidth()
-        )
+@Composable
+fun scrollWithTitle(
+    title: String,
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    modifier: Modifier = Modifier
+){
+    Text(title)
+    Slider(
+        value = value,
+        onValueChange = onValueChange,
+        valueRange = valueRange,
+        modifier = modifier
+    )
+}
 
-        Text("Window Width: ${windowing.width.toInt()}")
-        Slider(
-            value = windowing.width,
-            onValueChange = { interfaceModel.setWindowing(windowing.center, it) },
-            valueRange = 1f..2500f,
-            modifier = Modifier.fillMaxWidth()
-        )
+@Composable
+fun standardCard(
+    modifier: Modifier = Modifier,
+    contentPadding: Dp = 12.dp,
+    verticalSpacing: Dp = 8.dp,
+    contentAlignment: Alignment.Horizontal = Alignment.Start,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            //.padding(contentPadding),
+        ,shape = RoundedCornerShape(12.dp),
+        elevation = 8.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+            horizontalAlignment = contentAlignment
+            ) {
+            content()
+        }
     }
 }
 
@@ -563,6 +581,7 @@ fun ScrollSlider(
     var sliderPosition by remember { mutableStateOf(currentScrollStep) }
 
     Column {
+        Text(text = "Slice: ${currentScrollStep.toInt()} / ${maxValue.toInt()}")
         Slider(
             value = sliderPosition,
             onValueChange = { newValue ->
@@ -572,7 +591,7 @@ fun ScrollSlider(
             valueRange = 0f..maxValue,
             steps = 0
         )
-        Text(text = "Step: ${currentScrollStep.toInt()} / ${maxValue.toInt()}")
+
     }
 
     LaunchedEffect(currentScrollStep) {
@@ -581,10 +600,3 @@ fun ScrollSlider(
         }
     }
 }
-
-
-
-
-
-
-

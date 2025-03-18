@@ -6,27 +6,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.unit.dp
 import java.awt.Cursor
 import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 
@@ -56,16 +48,19 @@ fun MainPanelLayout(
 
         // Left Panel
         if (leftPanelExpanded) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(leftWidth.coerceIn(minPanelWidth, maxPanelWidth)) // Constrain width
+                    .width(leftWidth.coerceIn(minPanelWidth, maxPanelWidth))
                     .verticalScroll(leftScrollState)
-                    .background(Color.LightGray),
-                contentAlignment = Alignment.TopCenter
+                    .background(Color.LightGray)
+                    .padding(12.dp), // move padding here
+                verticalArrangement = Arrangement.spacedBy(16.dp), // combine spacing
+                horizontalAlignment = Alignment.Start
             ) {
                 leftContent()
             }
+
 
             // Left Resizer
             Box(
@@ -76,6 +71,7 @@ fun MainPanelLayout(
                     leftWidth = ((leftWidth + delta).coerceIn(minPanelWidth, maxPanelWidth))
                 }
             }
+
         }
         else{
             Box(
@@ -91,12 +87,13 @@ fun MainPanelLayout(
         }
 
         // Center Panel
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxHeight()
                 .weight(1f) // Center panel takes the remaining space
                 .background(Color.White),
-            contentAlignment = Alignment.Center
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.Start
         ) {
             centerContent()
         }
@@ -113,30 +110,51 @@ fun MainPanelLayout(
                 }
             }
 
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(rightWidth.coerceIn(minPanelWidth, maxPanelWidth)) // Constrain width
+                    .width(rightWidth.coerceIn(minPanelWidth, maxPanelWidth))
                     .verticalScroll(rightScrollState)
                     .background(Color.LightGray),
-                contentAlignment = Alignment.TopCenter
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.Start
             ) {
-                Column(modifier = Modifier.fillMaxSize().align(Alignment.TopStart)) {
-                    TextButton(
-                        modifier = Modifier
-                            .width(48.dp)
-                          ,
-                        onClick = {
-                            toggleRightPanel()
-                        }
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Collapse Right")
-                    }
-                    rightContent()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF0050A0)) // same blue color as before
+                        .clickable { toggleRightPanel() }
+                        .padding(vertical = 8.dp, horizontal = 12.dp), // replicate button padding
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Collapse Right",
+                        tint = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Settings and Controls",
+                        color = Color.White
+                    )
                 }
 
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp), // ✅ Restore spacing between items
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        rightContent()
+                    }
+
             }
+
+
         }
+
         else {
 
             TextButton(

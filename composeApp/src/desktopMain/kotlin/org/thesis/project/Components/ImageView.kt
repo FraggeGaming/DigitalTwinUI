@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import androidx.compose.ui.zIndex
 import org.thesis.project.Model.InterfaceModel
 import java.awt.Point
 import java.awt.image.BufferedImage
@@ -56,7 +55,6 @@ fun voxelImageDisplay(
     Box(
         modifier = modifier
             .onGloballyPositioned { boxCoordinates = it }
-            .background(Color.Transparent)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { localPos ->
@@ -117,15 +115,6 @@ fun voxelImageDisplay(
                 )
             }
     ) {
-        // Image + track actual render size
-        Image(
-            bitmap = bitmap,
-            contentDescription = "Voxel image",
-            modifier = Modifier
-                .fillMaxSize()
-                .onSizeChanged { renderedImageSize = it }
-                .onGloballyPositioned { imageLayoutCoordinates = it }
-        )
 
         // Compute actual image rendering area
         val imageAspect = bitmap.width.toFloat() / bitmap.height.toFloat()
@@ -147,6 +136,37 @@ fun voxelImageDisplay(
             offsetX = 0f
             offsetY = ((renderedImageSize.height - renderHeight) / 2f)
         }
+
+//        val cardModifier = if (imageSize.width > 0 && imageSize.height > 0) {
+//            Modifier.size(
+//                width = imageSize.width.dp,
+//                height = imageSize.height.dp
+//            )
+//        } else {
+//            Modifier.fillMaxSize() // allow first card to size itself
+//        }
+//
+//        standardCard(
+//            modifier = cardModifier,
+//
+//            contentAlignment = Alignment.CenterHorizontally,
+//            content = {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Voxel image",
+                    modifier = Modifier.fillMaxSize() //wrapcontent
+                        .onSizeChanged {
+                            renderedImageSize = it
+//                            interfaceModel.setImageCardSize(IntSize(renderWidth, renderHeight))
+//                            println("Voxel image: ${renderWidth} ${renderHeight}")
+                        }
+                        .onGloballyPositioned { imageLayoutCoordinates = it }
+                )
+
+//            }
+//        )
+
+
 
         // Canvas overlay drawn exactly over rendered image
         Canvas(
