@@ -74,7 +74,7 @@ fun uploadData(
     navMenu: @Composable () -> Unit,
     navController: NavHostController
 ) {
-    val uploadedFiles by interfaceModel.uploadedFilesMetadata.collectAsState()
+    val uploadedFiles by interfaceModel.uploadedFileMetadata.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -134,7 +134,7 @@ fun uploadData(
         Text(text = "Upload Data")
         FileUploadComponent(interfaceModel)
 
-        uploadedFiles.forEachIndexed { index, metadata ->
+        uploadedFiles?.let { metadata ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -148,10 +148,10 @@ fun uploadData(
                         value = metadata.title,
                         onValueChange = {
                             val updated = metadata.copy(title = it)
-                            interfaceModel.updateFileMetadata(index, updated)
+                            interfaceModel.updateFileMetadata(updated)
                         },
                         label = { Text("Title") },
-                        isError = uploadedFiles.withIndex().any { (i, item) -> i != index && item.title == metadata.title }
+                        isError = false // no need for duplication check anymore
                     )
 
                     DropdownMenuField(
@@ -160,7 +160,7 @@ fun uploadData(
                         options = listOf("CT", "PET", "MRI"),
                         onSelected = {
                             val updated = metadata.copy(modality = it)
-                            interfaceModel.updateFileMetadata(index, updated)
+                            interfaceModel.updateFileMetadata(updated)
                         }
                     )
 
@@ -170,7 +170,7 @@ fun uploadData(
                         options = listOf("Head", "Lung", "Total Body"),
                         onSelected = {
                             val updated = metadata.copy(region = it)
-                            interfaceModel.updateFileMetadata(index, updated)
+                            interfaceModel.updateFileMetadata(updated)
                         }
                     )
 
@@ -178,7 +178,7 @@ fun uploadData(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = { interfaceModel.removeUploadedFile(index) }) {
+                        TextButton(onClick = { interfaceModel.removeUploadedFile() }) {
                             Text("Remove")
                         }
                     }
@@ -274,22 +274,24 @@ fun modelSelect(
     navMenu: @Composable () -> Unit,
     navController: NavHostController
 ) {
-    val uploadedFiles by interfaceModel.uploadedFilesMetadata.collectAsState()
+    val uploadedFile by interfaceModel.uploadedFileMetadata.collectAsState()
     val models by interfaceModel.mLModels.collectAsState()
 
     val matchingModels = models.filter { model ->
-        uploadedFiles.any { it.modality == model.inputModality }
+        model.inputModality == uploadedFile?.modality
     }
+    val coroutineScope = rememberCoroutineScope()
 
-    uploadedFiles.forEach { file ->
-        standardCard(
-            content = {
-                Text(file.title)
-                Text(file.modality)
-                Text(file.region)
-            }
-        )
-    }
+    standardCard(content = {
+            uploadedFile?.let { Text(it.title) }
+        uploadedFile?.let { Text(it.modality) }
+        uploadedFile?.let { Text(it.region) }
+        }
+    )
+    println(uploadedFile?.title)
+
+
+    println(matchingModels.toString())
 
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -359,12 +361,7 @@ fun modelSelect(
             horizontalAlignment = Alignment.Start
         ) {
             navMenu()
-        }
 
-
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -390,6 +387,10 @@ fun modelSelect(
                                 Button(
                                     onClick = {
                                         println(model)
+                                        coroutineScope.launch {
+                                            interfaceModel.runModel(model)
+                                            navController.navigate("main")
+                                        }
                                     }
                                 ) {
                                     Text("Select Model")
@@ -399,22 +400,27 @@ fun modelSelect(
                     )
                 }
             }
+
+            Button(
+                onClick = {
+                    navController.navigate("main")
+                    //run backend
+                          },
+                shape = RectangleShape,
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Color(0xFF0050A0), // Blue background
+                    contentColor = Color.White
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                //.fillMaxHeight()
+            ) {
+                Text("Run model", textAlign = TextAlign.Center)
+            }
         }
 
 
-        Button(
-            onClick = { navController.navigate("main") },
-            shape = RectangleShape,
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = Color(0xFF0050A0), // Blue background
-                contentColor = Color.White
-            ),
-            modifier = Modifier
-                .weight(1f)
-            //.fillMaxHeight()
-        ) {
-            Text("2. Model Select", textAlign = TextAlign.Center)
-        }
+
 
 
         //show all models that have inputModalty that has the same modality as the uploadedfiles.modality
@@ -447,19 +453,19 @@ fun imageViewer(
     val fileMapping by interfaceModel.fileMapping.collectAsState()
 
     //Takes the file path and parses the nifti
-    val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+    //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
 
 
-    val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
+    //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
 
-    //val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
 
-    //val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
+    val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
     //TODO change this to a dynamic path
 
     val title = "Patient_1"
-    val inputFiles = listOf(niftiFile) //Example input NIfTI files
-    val outputFiles = listOf(niftiFile1) //Example output NIfTI files
+    val inputFiles = listOf(file1) //Example input NIfTI files
+    val outputFiles = listOf(file2) //Example output NIfTI files
 
     interfaceModel.updateSelectedViews(NiftiView.AXIAL, true)
 
@@ -585,15 +591,15 @@ fun imageViewer(
             },
             rightContent = {
 
-                val coroutineScope = rememberCoroutineScope()
-
-                Button(onClick = {
-                    coroutineScope.launch {
-                        interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
-                    }
-                }) {
-                    Text("Parse NIfTI")
-                }
+//                val coroutineScope = rememberCoroutineScope()
+//
+//                Button(onClick = {
+//                    coroutineScope.launch {
+//                        interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
+//                    }
+//                }) {
+//                    Text("Parse NIfTI")
+//                }
                 standardCard (
                     content ={
                         ScrollSlider(
@@ -651,8 +657,7 @@ fun imageGrid(
                                 NiftiView.SAGITTAL -> imageIndices.third
                             }
 
-                            val (slices, spacingPx) = interfaceModel.getSlicesFromVolume(selectedView, filename)
-                            val modality = interfaceModel.extractModality(filename)
+                            val (slices, spacingPx, modality) = interfaceModel.getSlicesFromVolume(selectedView, filename)
 
                             Column(
                                 modifier = Modifier
@@ -674,16 +679,13 @@ fun imageGrid(
                                             text = "${selectedView.displayName} - Slice $currentIndex",
                                             style = MaterialTheme.typography.h6
                                         )
-                                        if (modality != null) {
-
-                                                voxelImageDisplay(
-                                                    voxelSlice = slices[currentIndex],
-                                                    interfaceModel = interfaceModel,
-                                                    modality = modality,
-                                                    pixelSpacing = spacingPx
-                                                )
-                                            }
-                                        }
+                                        voxelImageDisplay(
+                                            voxelSlice = slices[currentIndex],
+                                            interfaceModel = interfaceModel,
+                                            modality = modality,
+                                            pixelSpacing = spacingPx
+                                        )
+                                    }
                                 )
                             }
                         }

@@ -5,15 +5,11 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
 import org.thesis.project.Components.VoxelImageUIState
 import parseNiftiImages
 import removeNiiExtension
@@ -22,7 +18,6 @@ import java.awt.Point
 import java.io.File
 import kotlin.math.floor
 import kotlin.math.sqrt
-import kotlinx.coroutines.async
 import java.nio.file.Paths
 
 enum class NiftiView(val displayName: String) {
@@ -55,57 +50,48 @@ class InterfaceModel : ViewModel() {
 
 
 
-    suspend fun parseNiftiData(title: String, inputNiftiFile: List<String>, outputNiftiFile: List<String>) {
-        coroutineScope {
-            val inputDeferred = async(Dispatchers.IO) { loadNifti(inputNiftiFile) }
-            val outputDeferred = async(Dispatchers.IO) { loadNifti(outputNiftiFile) }
+//    suspend fun parseNiftiData(title: String, inputNiftiFile: List<UploadFileMetadata>, outputNiftiFile: List<String>) {
+//        coroutineScope {
+//            val inputDeferred = async(Dispatchers.IO) { loadNifti(inputNiftiFile) }
+//            val outputDeferred = async(Dispatchers.IO) { loadNifti(outputNiftiFile) }
+//
+//            val inputFilenames = inputDeferred.await()
+//            val outputFilenames = outputDeferred.await()
+//
+//            println("Added mapping for $title : $inputFilenames, $outputFilenames")
+//            addFileMapping(title, inputFilenames, outputFilenames)
+//        }
+//    }
 
-            val inputFilenames = inputDeferred.await()
-            val outputFilenames = outputDeferred.await()
+    private suspend fun loadNifti(niftiStorage: UploadFileMetadata): String = withContext(Dispatchers.IO) {
+        try {
+            println("Running NIfTI Parser for: ${niftiStorage.filePath}")
+            System.out.flush()
 
-            println("Added mapping for $title : $inputFilenames, $outputFilenames")
-            addFileMapping(title, inputFilenames, outputFilenames)
-        }
-    }
+            val outPath = Paths.get("src/desktopMain/resources/output")
+            println("After output path val")
+            System.out.flush()
 
-    private suspend fun loadNifti(niftiStorage: List<String>): MutableList<String> {
-        val fileNames = mutableListOf<String>()
-        coroutineScope {
-            niftiStorage.map { file ->
-                launch(Dispatchers.IO) {
-                    println("Running NIfTI Parser for: $file")
-                    //val output = runNiftiParser(file)
-                    val outPath = Paths.get("src/desktopMain/resources/output");
+            val outputJson = runNiftiParser(niftiStorage.filePath, outPath.toAbsolutePath().toString())
+            val niftiData = parseNiftiImages(outputJson, niftiStorage)
 
-                    val outputJson = runNiftiParser(
-                        file,
-                        outPath.toAbsolutePath().toString()
-                        //"C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\output"
-                        //"G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\ouput"
-                    )
-                    val niftiData = extractModality(file)?.let { parseNiftiImages(outputJson, it) }
+            println("NIFTI: $niftiData")
+            System.out.flush()
 
-                    val fileName = removeNiiExtension(File(file).nameWithoutExtension)
+            val fileName = removeNiiExtension(File(niftiStorage.filePath).nameWithoutExtension)
+            println(fileName)
 
-                    niftiData?.let {
-                        synchronized(fileNames) { fileNames.add(fileName) }
-                        storeNiftiImages(fileName, it)
-                        println("Stored NIfTI images for: $fileName")
-                    }
-                }
-            }.joinAll()
-        }
+            storeNiftiImages(fileName, niftiData)
+            println("Stored NIfTI images for: $fileName")
+            System.out.flush()
 
-        return fileNames
-    }
-
-
-    fun extractModality(filename: String): String? {
-        val knownModalities = listOf("CT", "PET", "MR", "MRI", "T1", "T2", "FLAIR")
-        val upperFilename = filename.uppercase()
-
-        return knownModalities.firstOrNull { modality ->
-            upperFilename.contains(modality)
+            println("Returning filename: $fileName")
+            fileName
+        } catch (e: Exception) {
+            println("ERROR in NIfTI load: ${e.message}")
+            e.printStackTrace()
+            System.out.flush()
+            ""
         }
     }
 
@@ -220,22 +206,22 @@ class InterfaceModel : ViewModel() {
     val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
 
 
-    fun getSlicesFromVolume(view: NiftiView, filename: String): Pair<Array<Array<Array<Float>>>, Float> {
-        val images = getNiftiImages(filename) ?: return Pair(emptyArray(), 1f)
+    fun getSlicesFromVolume(view: NiftiView, filename: String): Triple<Array<Array<Array<Float>>>, Float, String> {
+        val images = getNiftiImages(filename) ?: return Triple(emptyArray(), 1f, "")
         val spacing = images.voxelSpacing
 
         //because of transpose when parsing nifti, (Z, Y, X) → (X, Y, Z), but we don't transpose spacing
         return when (view) {
             NiftiView.AXIAL -> {
-                images.voxelVolume to spacing[2]
+                Triple(images.voxelVolume, spacing[2], images.modality)
             }
 
             NiftiView.CORONAL -> {
-                images.coronalVoxelSlices to spacing[1]
+                Triple(images.coronalVoxelSlices, spacing[1], images.modality)
             }
 
             NiftiView.SAGITTAL -> {
-                images.sagittalVoxelSlices to spacing[0]
+                Triple( images.sagittalVoxelSlices, spacing[0], images.modality)
             }
         }
     }
@@ -422,23 +408,50 @@ class InterfaceModel : ViewModel() {
         var region: String, // e.g., “Head”, “Lung”, “Total Body”
     )
 
-    private val _uploadedFilesMetadata = MutableStateFlow<List<UploadFileMetadata>>(emptyList())
-    val uploadedFilesMetadata: StateFlow<List<UploadFileMetadata>> = _uploadedFilesMetadata.asStateFlow()
+    private val _uploadedFileMetadata = MutableStateFlow<UploadFileMetadata?>(null)
+    val uploadedFileMetadata: StateFlow<UploadFileMetadata?> = _uploadedFileMetadata.asStateFlow()
 
     fun addFileForUpload(filePath: String) {
-        val newFile = UploadFileMetadata(filePath, title = "", modality = "", region = "")
-        _uploadedFilesMetadata.value = _uploadedFilesMetadata.value + newFile
+        _uploadedFileMetadata.value = UploadFileMetadata(filePath, title = "", modality = "", region = "")
     }
 
-    fun updateFileMetadata(index: Int, newData: UploadFileMetadata) {
-        _uploadedFilesMetadata.value = _uploadedFilesMetadata.value.toMutableList().apply {
-            set(index, newData)
+    fun updateFileMetadata(newData: UploadFileMetadata) {
+        _uploadedFileMetadata.value = newData
+    }
+
+    fun removeUploadedFile() {
+        _uploadedFileMetadata.value = null
+    }
+
+    suspend fun runModel(model: AIModel) = coroutineScope {
+
+        println("Model: $model")
+
+        if (uploadedFileMetadata.value == null) return@coroutineScope
+
+        println("Simulate backend")
+        println("No backend... setting output same as input")
+
+        val inputDeferred = async(Dispatchers.IO) { loadNifti(uploadedFileMetadata.value!!) }
+        val input = inputDeferred.await()
+        println("TESTING, $input")
+
+
+        // outputFiles.add((uploadedFileMetadata.value!!.filePath))
+        //val outputDeferred = async(Dispatchers.IO) { loadNifti(outputNiftiFile) }
+
+        val output = input// Placeholder until real model output is ready
+
+
+        val title = uploadedFileMetadata.value?.title
+        println("TEST: $title")
+        println("Added mapping for $title : ${listOf(input)}, ${listOf(output)}")
+        System.out.flush()
+        if (title != null) {
+            addFileMapping(title, listOf(input), listOf(output))
         }
-    }
-
-    fun removeUploadedFile(index: Int) {
-        _uploadedFilesMetadata.value = _uploadedFilesMetadata.value.toMutableList().apply {
-            removeAt(index)
+        else{
+            println("no title, could not add to mapping")
         }
     }
 

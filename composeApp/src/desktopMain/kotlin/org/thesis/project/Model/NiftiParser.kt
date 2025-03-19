@@ -1,6 +1,7 @@
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import org.nd4j.linalg.factory.Nd4j
+import org.thesis.project.Model.InterfaceModel.UploadFileMetadata
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -9,6 +10,7 @@ fun runNiftiParser(niftiPath: String, outputDir: String): String {
     val path = Paths.get("src/desktopMain/resources/executables/nifti_visualize.exe");
     //val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
     //val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
+    println("running process")
     val process = ProcessBuilder(path.toAbsolutePath().toString(), niftiPath, outputDir)
         .redirectErrorStream(true)
         .start()
@@ -34,8 +36,9 @@ data class NiftiData(
     val height: Int,
     val depth: Int,
     val voxelSpacing: List<Float>,
-    val voxelVolume: Array<Array<Array<Float>>>,
     val modality: String = "",
+    var region: String = "",
+    val voxelVolume: Array<Array<Array<Float>>>,
     var coronalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(),
     var sagittalVoxelSlices: Array<Array<Array<Float>>> = emptyArray()
 )
@@ -48,7 +51,7 @@ data class NiftiData(
 
 private val json = Json { ignoreUnknownKeys = true }
 
-fun parseNiftiImages(jsonMeta: String, modality: String): NiftiData {
+fun parseNiftiImages(jsonMeta: String, metaData: UploadFileMetadata): NiftiData {
     val meta = json.decodeFromString<NiftiMeta>(jsonMeta)
     val volume = loadNpyVoxelVolume(meta.npy_path)
 
@@ -61,8 +64,9 @@ fun parseNiftiImages(jsonMeta: String, modality: String): NiftiData {
         height = meta.height,
         depth = meta.depth,
         voxelSpacing = meta.voxel_spacing,
+        modality = metaData.modality,
+        region = metaData.region,
         voxelVolume = volume,
-        modality = modality,
         coronalVoxelSlices = coronalVoxel,
         sagittalVoxelSlices = sagittalVoxel
     )
