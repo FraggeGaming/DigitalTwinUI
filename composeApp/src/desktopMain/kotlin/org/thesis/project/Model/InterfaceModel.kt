@@ -23,6 +23,7 @@ import java.io.File
 import kotlin.math.floor
 import kotlin.math.sqrt
 import kotlinx.coroutines.async
+import java.nio.file.Paths
 
 enum class NiftiView(val displayName: String) {
     AXIAL("Axial"),
@@ -51,6 +52,9 @@ class InterfaceModel : ViewModel() {
     val fileMapping: StateFlow<Map<String, Pair<List<String>, List<String>>>> = _fileMapping
 
 
+
+
+
     suspend fun parseNiftiData(title: String, inputNiftiFile: List<String>, outputNiftiFile: List<String>) {
         coroutineScope {
             val inputDeferred = async(Dispatchers.IO) { loadNifti(inputNiftiFile) }
@@ -71,10 +75,13 @@ class InterfaceModel : ViewModel() {
                 launch(Dispatchers.IO) {
                     println("Running NIfTI Parser for: $file")
                     //val output = runNiftiParser(file)
+                    val outPath = Paths.get("src/desktopMain/resources/output");
 
                     val outputJson = runNiftiParser(
                         file,
-                        "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\ouput"
+                        outPath.toAbsolutePath().toString()
+                        //"C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\output"
+                        //"G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\ouput"
                     )
                     val niftiData = extractModality(file)?.let { parseNiftiImages(outputJson, it) }
 
@@ -326,8 +333,6 @@ class InterfaceModel : ViewModel() {
         }
     }
 
-    //add to interface model
-
 
     fun getVoxelInfo(
         position: Offset,
@@ -372,6 +377,8 @@ class InterfaceModel : ViewModel() {
     }
 
 
+    //Windowing
+
     val windowPresets = mapOf(
         "CT - Brain" to WindowingParams(40f, 80f),
         "CT - Lung" to WindowingParams(-600f, 1500f),
@@ -384,8 +391,6 @@ class InterfaceModel : ViewModel() {
         val width: Float
     )
 
-
-
     private val _windowing = MutableStateFlow(WindowingParams(center = 40f, width = 80f))
     val windowing: StateFlow<WindowingParams> = _windowing.asStateFlow()
 
@@ -396,5 +401,77 @@ class InterfaceModel : ViewModel() {
     fun setPreset(preset: WindowingParams) {
         _windowing.value = preset
     }
+
+    //Upload screen TODO remove and replace with a dataclass that has all the info
+
+    private val _filesToUpload = MutableStateFlow(listOf<String>())
+    val filesToUpload: StateFlow<List<String>> = _filesToUpload.asStateFlow()
+
+    fun addFileToUpload(file: String) {
+        _filesToUpload.value += file
+    }
+
+    fun removeFileToUpload(file: String) {
+        _filesToUpload.value -= file
+    }
+
+    data class UploadFileMetadata(
+        val filePath: String,
+        var title: String, // ->key to the niftidata for input and output
+        var modality: String,
+        var region: String, // e.g., “Head”, “Lung”, “Total Body”
+    )
+
+    private val _uploadedFilesMetadata = MutableStateFlow<List<UploadFileMetadata>>(emptyList())
+    val uploadedFilesMetadata: StateFlow<List<UploadFileMetadata>> = _uploadedFilesMetadata.asStateFlow()
+
+    fun addFileForUpload(filePath: String) {
+        val newFile = UploadFileMetadata(filePath, title = "", modality = "", region = "")
+        _uploadedFilesMetadata.value = _uploadedFilesMetadata.value + newFile
+    }
+
+    fun updateFileMetadata(index: Int, newData: UploadFileMetadata) {
+        _uploadedFilesMetadata.value = _uploadedFilesMetadata.value.toMutableList().apply {
+            set(index, newData)
+        }
+    }
+
+    fun removeUploadedFile(index: Int) {
+        _uploadedFilesMetadata.value = _uploadedFilesMetadata.value.toMutableList().apply {
+            removeAt(index)
+        }
+    }
+
+    data class AIModel(
+        val title: String,
+        val description: String,
+        val inputModality: String,
+        val outputModality: String,
+    )
+
+
+    private val _mLModels = MutableStateFlow<List<AIModel>>(emptyList())
+    val mLModels: StateFlow<List<AIModel>> = _mLModels.asStateFlow()
+
+
+    init {
+        val demoModels = listOf(
+            AIModel(
+                title = "CT to PET",
+                description = "Segmentation of brain tumor from CT scans.",
+                inputModality = "CT",
+                outputModality = "PET"
+            ),
+            AIModel(
+                title = "PET to CT",
+                description = "Detection of lung nodules from PET images.",
+                inputModality = "CT",
+                outputModality = "PETs"
+            ),
+        )
+
+        _mLModels.value = demoModels
+    }
+
 
 }

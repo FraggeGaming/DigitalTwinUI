@@ -2,11 +2,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import org.nd4j.linalg.factory.Nd4j
 import java.io.File
+import java.nio.file.Path
+import java.nio.file.Paths
 
 fun runNiftiParser(niftiPath: String, outputDir: String): String {
+    val path = Paths.get("src/desktopMain/resources/executables/nifti_visualize.exe");
     //val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
-    val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
-    val process = ProcessBuilder(exePath, niftiPath, outputDir)
+    //val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
+    val process = ProcessBuilder(path.toAbsolutePath().toString(), niftiPath, outputDir)
         .redirectErrorStream(true)
         .start()
 
@@ -14,7 +17,7 @@ fun runNiftiParser(niftiPath: String, outputDir: String): String {
     val exitCode = process.waitFor()
     if (exitCode != 0) throw RuntimeException("NIfTI parser failed")
 
-    return output //width/height/depth/npy_path
+    return output
 }
 
 @Serializable
@@ -43,8 +46,10 @@ data class NiftiData(
 //    return baseData.copy(modality = modality)
 //}
 
+private val json = Json { ignoreUnknownKeys = true }
+
 fun parseNiftiImages(jsonMeta: String, modality: String): NiftiData {
-    val meta = Json { ignoreUnknownKeys = true }.decodeFromString<NiftiMeta>(jsonMeta)
+    val meta = json.decodeFromString<NiftiMeta>(jsonMeta)
     val volume = loadNpyVoxelVolume(meta.npy_path)
 
 
