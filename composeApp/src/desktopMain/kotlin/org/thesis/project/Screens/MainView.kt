@@ -18,8 +18,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import buttonWithCheckboxSet
-import org.thesis.project.*
 import org.thesis.project.Components.*
+import org.thesis.project.MainPanelLayout
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import org.thesis.project.Model.Settings
@@ -65,7 +65,8 @@ fun imageViewer(
     Column(modifier = Modifier.fillMaxSize()) {
 
 
-        topAppBar(title = "App Name" , modelName = "Model Name"
+        topAppBar(
+            title = "App Name", modelName = "Model Name"
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -162,8 +163,8 @@ fun imageViewer(
 //                }) {
 //                    Text("Parse NIfTI")
 //                }
-                standardCard (
-                    content ={
+                standardCard(
+                    content = {
                         scrollSlider(
                             selectedData = interfaceModel.imageController.selectedData,
                             scrollStep = interfaceModel.imageController.scrollStep,
@@ -212,19 +213,23 @@ fun imageGrid(
                     ) {
 
                         selectedViews.forEach { selectedView ->
-                            val imageIndices by interfaceModel.imageController.getImageIndices(filename).collectAsState()
+                            val imageIndices by interfaceModel.imageController.getImageIndices(filename)
+                                .collectAsState()
                             val currentIndex = when (selectedView) {
                                 NiftiView.AXIAL -> imageIndices.first
                                 NiftiView.CORONAL -> imageIndices.second
                                 NiftiView.SAGITTAL -> imageIndices.third
                             }
 
-                            val (slices, spacingPx, modality) = interfaceModel.niftiRepo.getSlicesFromVolume(selectedView, filename)
+                            val (slices, spacingPx, modality) = interfaceModel.niftiRepo.getSlicesFromVolume(
+                                selectedView,
+                                filename
+                            )
 
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(containerHeight/selectedData.size)
+                                    .height(containerHeight / selectedData.size)
                                     .padding(8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
@@ -364,8 +369,8 @@ fun windowControls(interfaceModel: InterfaceModel) {
     var expanded by remember { mutableStateOf(false) }
 
 
-    standardCard (
-        content ={
+    standardCard(
+        content = {
             Text("Windowing Presets")
             val icon = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown
 
@@ -390,7 +395,7 @@ fun windowControls(interfaceModel: InterfaceModel) {
                                     expanded = false
                                 }
 
-                            ){
+                            ) {
                                 Text(label)
                             }
                         }
