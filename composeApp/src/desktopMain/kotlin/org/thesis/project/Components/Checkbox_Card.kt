@@ -13,11 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.Measured
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
+import org.thesis.project.Model.Settings
 import org.thesis.project.standardCard
 
 
@@ -582,7 +584,7 @@ fun menuCard(
     modifier: Modifier = Modifier,
     selectedViews: Set<NiftiView>,
     interfaceModel: InterfaceModel,
-    selectedSettings: Set<String>,
+    selectedSettings: Set<Settings>,
     //content: List<@Composable () -> Unit>
 ) {
     val buttonHeight = 60.dp
@@ -608,7 +610,7 @@ fun menuCard(
                 buttonWithCheckboxSet(
                     selectedData = selectedViews,
                     label = view,
-                    onCheckboxChanged = interfaceModel::updateSelectedViews,
+                    onCheckboxChanged = interfaceModel.imageController::updateSelectedViews,
                     modifier = Modifier
                         .width(buttonWidth)
                         .height(buttonHeight)
@@ -627,12 +629,12 @@ fun menuCard(
                     .width(buttonWidth)
                     .height(buttonHeight),
                 onClick = {
-                    val isChecked = selectedSettings.contains("measure")
-                    interfaceModel.updateSelectedSettings("measure", !isChecked)
+                    val isChecked = selectedSettings.contains(Settings.MEASUREMENT)
+                    interfaceModel.updateSelectedSettings(Settings.MEASUREMENT, !isChecked)
                 },
                 colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = if (selectedSettings.contains("measure")) Color(0xFF80A7D0) else Color.Transparent,
-                    contentColor = if (selectedSettings.contains("measure")) Color.Black else Color.White
+                    backgroundColor = if (selectedSettings.contains(Settings.MEASUREMENT)) Color(0xFF80A7D0) else Color.Transparent,
+                    contentColor = if (selectedSettings.contains(Settings.MEASUREMENT)) Color.Black else Color.White
                 )
             ) {
                 Row(
@@ -640,9 +642,9 @@ fun menuCard(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Straighten, contentDescription = "Measure")
+                    Icon(Icons.Default.Straighten, contentDescription = Settings.MEASUREMENT.settingName)
                     Spacer(Modifier.width(4.dp))
-                    Text("Measure")
+                    Text(Settings.MEASUREMENT.settingName)
                 }
             }
 
@@ -651,12 +653,12 @@ fun menuCard(
                     .width(buttonWidth)
                     .height(buttonHeight),
                 onClick = {
-                    val isChecked = selectedSettings.contains("pixel")
-                    interfaceModel.updateSelectedSettings("pixel", !isChecked)
+                    val isChecked = selectedSettings.contains(Settings.PIXEL)
+                    interfaceModel.updateSelectedSettings(Settings.PIXEL, !isChecked)
                 },
                 colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = if (selectedSettings.contains("pixel")) Color(0xFF80A7D0) else Color.Transparent,
-                    contentColor = if (selectedSettings.contains("pixel")) Color.Black else Color.White
+                    backgroundColor = if (selectedSettings.contains(Settings.PIXEL)) Color(0xFF80A7D0) else Color.Transparent,
+                    contentColor = if (selectedSettings.contains(Settings.PIXEL)) Color.Black else Color.White
                 )
             ) {
                 Row(
@@ -664,9 +666,9 @@ fun menuCard(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Pixel Value")
+                    Icon(Icons.Default.Edit, contentDescription = Settings.PIXEL.settingName)
                     Spacer(Modifier.width(4.dp))
-                    Text("Pixel Intensity")
+                    Text(Settings.PIXEL.settingName)
                 }
             }
         }

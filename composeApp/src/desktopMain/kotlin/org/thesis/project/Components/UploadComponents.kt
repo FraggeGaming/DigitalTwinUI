@@ -53,7 +53,7 @@ fun FileUploadComponent(
             .clickable {
                 val selectedFiles = selectFilesMultipleAWT()
                 selectedFiles.forEach { path ->
-                    interfaceModel.addFileForUpload(path)
+                    interfaceModel.fileUploader.addFile(path)
                     println(path)
                 }
             },

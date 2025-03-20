@@ -3,7 +3,6 @@ package org.thesis.project
 import CardMenu
 import CardWithCheckboxes
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -23,7 +22,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import menuCard
@@ -35,8 +33,6 @@ import org.thesis.project.Model.NiftiView
 import androidx.compose.ui.unit.Dp
 import androidx.navigation.NavHostController
 import org.thesis.project.Components.FileUploadComponent
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
 
 
 @Composable
@@ -67,6 +63,63 @@ fun App() {
     }
 }
 
+@Composable
+fun topAppBar(title: String, modelName: String,  extraContent: @Composable () -> Unit = {}) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .background(Color(0xFF0050A0)),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.Default.Android,
+                contentDescription = "App Logo",
+                tint = Color.White
+            )
+        }
+
+        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(modelName, color = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Android,
+                    contentDescription = "Logo",
+                    tint = Color.White
+                )
+            }
+        }
+
+        extraContent()
+
+//        Row(
+//            verticalAlignment = Alignment.CenterVertically,
+//            horizontalArrangement = Arrangement.End,
+//            modifier = Modifier.padding(end = 16.dp)
+//        ) {
+//            IconButton(onClick = { /* show info */ }) {
+//                Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
+//            }
+//
+//            IconButton(
+//                onClick = { interfaceModel.toggleRightPanelExpanded() }
+//            ) {
+//                Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
+//            }
+//        }
+    }
+}
+
 
 @Composable
 fun uploadData(
@@ -74,60 +127,10 @@ fun uploadData(
     navMenu: @Composable () -> Unit,
     navController: NavHostController
 ) {
-    val uploadedFiles by interfaceModel.uploadedFileMetadata.collectAsState()
+    val uploadedFiles by interfaceModel.fileUploader.uploadedFileMetadata.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(Color(0xFF0050A0)),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                modifier = Modifier.padding(start = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Title",
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.Android,
-                    contentDescription = "App Logo",
-                    tint = Color.White
-                )
-            }
-
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Model Name", color = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Default.Android,
-                        contentDescription = "Logo",
-                        tint = Color.White
-                    )
-                }
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End,
-                modifier = Modifier.padding(end = 16.dp)
-            ) {
-                IconButton(onClick = { /* show info */ }) {
-                    Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
-                }
-
-                IconButton(
-                    onClick = { interfaceModel.toggleRightPanelExpanded() }
-                ) {
-                    Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
-                }
-            }
-        }
+        topAppBar(title = "App Name" , modelName = "Model Name")
 
 
         navMenu()
@@ -148,7 +151,7 @@ fun uploadData(
                         value = metadata.title,
                         onValueChange = {
                             val updated = metadata.copy(title = it)
-                            interfaceModel.updateFileMetadata(updated)
+                            interfaceModel.fileUploader.updateMetadata(updated)
                         },
                         label = { Text("Title") },
                         isError = false // no need for duplication check anymore
@@ -160,7 +163,7 @@ fun uploadData(
                         options = listOf("CT", "PET", "MRI"),
                         onSelected = {
                             val updated = metadata.copy(modality = it)
-                            interfaceModel.updateFileMetadata(updated)
+                            interfaceModel.fileUploader.updateMetadata(updated)
                         }
                     )
 
@@ -170,7 +173,7 @@ fun uploadData(
                         options = listOf("Head", "Lung", "Total Body"),
                         onSelected = {
                             val updated = metadata.copy(region = it)
-                            interfaceModel.updateFileMetadata(updated)
+                            interfaceModel.fileUploader.updateMetadata(updated)
                         }
                     )
 
@@ -178,7 +181,7 @@ fun uploadData(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = { interfaceModel.removeUploadedFile() }) {
+                        TextButton(onClick = { interfaceModel.fileUploader.removeFile() }) {
                             Text("Remove")
                         }
                     }
@@ -274,8 +277,8 @@ fun modelSelect(
     navMenu: @Composable () -> Unit,
     navController: NavHostController
 ) {
-    val uploadedFile by interfaceModel.uploadedFileMetadata.collectAsState()
-    val models by interfaceModel.mLModels.collectAsState()
+    val uploadedFile by interfaceModel.fileUploader.uploadedFileMetadata.collectAsState()
+    val models by interfaceModel.modelRunner.mLModels.collectAsState()
 
     val matchingModels = models.filter { model ->
         model.inputModality == uploadedFile?.modality
@@ -295,57 +298,7 @@ fun modelSelect(
 
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(Color(0xFF0050A0)),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                modifier = Modifier.padding(start = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Title",
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.Android,
-                    contentDescription = "App Logo",
-                    tint = Color.White
-                )
-            }
-
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Model Name", color = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Default.Android,
-                        contentDescription = "Logo",
-                        tint = Color.White
-                    )
-                }
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End,
-                modifier = Modifier.padding(end = 16.dp)
-            ) {
-                IconButton(onClick = { /* show info */ }) {
-                    Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
-                }
-
-                IconButton(
-                    onClick = { interfaceModel.toggleRightPanelExpanded() }
-                ) {
-                    Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
-                }
-            }
-        }
+        topAppBar(title = "App Name" , modelName = "Model Name")
 
 
         val scrollState = rememberScrollState()
@@ -388,7 +341,7 @@ fun modelSelect(
                                     onClick = {
                                         println(model)
                                         coroutineScope.launch {
-                                            interfaceModel.runModel(model)
+                                            interfaceModel.modelRunner.runModel(model)
                                             navController.navigate("main")
                                         }
                                     }
@@ -437,20 +390,20 @@ fun imageViewer(
     navMenu: @Composable () -> Unit,
     navController: NavHostController
 ) {
-    val selectedData by interfaceModel.selectedData.collectAsState()
+    val selectedData by interfaceModel.imageController.selectedData.collectAsState()
     val selectedDistricts by interfaceModel.selectedDistricts.collectAsState()
     val organs by interfaceModel.organs.collectAsState()
 
-    val leftPanelWidth by interfaceModel.leftPanelWidth.collectAsState()
-    val rightPanelWidth by interfaceModel.rightPanelWidth.collectAsState()
-    val leftPanelExpanded by interfaceModel.leftPanelExpanded.collectAsState()
-    val rightPanelExpanded by interfaceModel.rightPanelExpanded.collectAsState()
+    val leftPanelWidth by interfaceModel.panelLayout.leftPanelWidth.collectAsState()
+    val rightPanelWidth by interfaceModel.panelLayout.rightPanelWidth.collectAsState()
+    val leftPanelExpanded by interfaceModel.panelLayout.leftPanelExpanded.collectAsState()
+    val rightPanelExpanded by interfaceModel.panelLayout.rightPanelExpanded.collectAsState()
 
 
-    val selectedViews by interfaceModel.selectedViews.collectAsState()
+    val selectedViews by interfaceModel.imageController.selectedViews.collectAsState()
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
 
-    val fileMapping by interfaceModel.fileMapping.collectAsState()
+    val fileMapping by interfaceModel.niftiRepo.fileMapping.collectAsState()
 
     //Takes the file path and parses the nifti
     //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
@@ -458,53 +411,22 @@ fun imageViewer(
 
     //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
 
-    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+//    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
+//
+//    val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
+//    //TODO change this to a dynamic path
+//
+//    val title = "Patient_1"
+//    val inputFiles = listOf(file1) //Example input NIfTI files
+//    val outputFiles = listOf(file2) //Example output NIfTI files
 
-    val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
-    //TODO change this to a dynamic path
-
-    val title = "Patient_1"
-    val inputFiles = listOf(file1) //Example input NIfTI files
-    val outputFiles = listOf(file2) //Example output NIfTI files
-
-    interfaceModel.updateSelectedViews(NiftiView.AXIAL, true)
+    interfaceModel.imageController.updateSelectedViews(NiftiView.AXIAL, true)
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(Color(0xFF0050A0)),
-            verticalAlignment = Alignment.CenterVertically,
+
+
+        topAppBar(title = "App Name" , modelName = "Model Name"
         ) {
-            Row(
-                modifier = Modifier.padding(start = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Title",
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.Android,
-                    contentDescription = "App Logo",
-                    tint = Color.White
-                )
-            }
-
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Model Name", color = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.Default.Android,
-                        contentDescription = "Logo",
-                        tint = Color.White
-                    )
-                }
-            }
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End,
@@ -515,7 +437,7 @@ fun imageViewer(
                 }
 
                 IconButton(
-                    onClick = { interfaceModel.toggleRightPanelExpanded() }
+                    onClick = { interfaceModel.panelLayout.toggleRightPanelExpanded() }
                 ) {
                     Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
                 }
@@ -527,8 +449,8 @@ fun imageViewer(
             leftPanelExpanded = leftPanelExpanded,
             rightPanelWidth = rightPanelWidth,
             rightPanelExpanded = rightPanelExpanded,
-            toggleLeftPanel = { interfaceModel.toggleLeftPanelExpanded() },
-            toggleRightPanel = { interfaceModel.toggleRightPanelExpanded() },
+            toggleLeftPanel = { interfaceModel.panelLayout.toggleLeftPanelExpanded() },
+            toggleRightPanel = { interfaceModel.panelLayout.toggleRightPanelExpanded() },
 
             leftContent = {
 
@@ -538,9 +460,9 @@ fun imageViewer(
                 CardMenu(
                     fileKeys = fileMapping.keys.toList(),
                     selectedData = selectedData,
-                    getFileMapping = interfaceModel::getFileMapping,
+                    getFileMapping = interfaceModel.niftiRepo::getFileMapping,
                     onCheckboxChanged = { label, isChecked ->
-                        interfaceModel.updateSelectedData(label, isChecked)
+                        interfaceModel.imageController.updateSelectedData(label, isChecked)
                     }
                 )
 
@@ -569,9 +491,9 @@ fun imageViewer(
                                         if (event.type == PointerEventType.Scroll) {
                                             val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
                                             if (scrollDelta.y > 0f) {
-                                                interfaceModel.decrementScrollPosition()
+                                                interfaceModel.imageController.decrementScrollPosition()
                                             } else if (scrollDelta.y < 0f) {
-                                                interfaceModel.incrementScrollPosition()
+                                                interfaceModel.imageController.incrementScrollPosition()
                                             }
                                         }
                                     }
@@ -603,10 +525,10 @@ fun imageViewer(
                 standardCard (
                     content ={
                         ScrollSlider(
-                            selectedData = interfaceModel.selectedData,
-                            scrollStep = interfaceModel.scrollStep,
-                            maxIndexMap = interfaceModel.maxSelectedImageIndex,
-                            onUpdate = { value -> interfaceModel.setScrollPosition(value) } // Convert Int -> Float
+                            selectedData = interfaceModel.imageController.selectedData,
+                            scrollStep = interfaceModel.imageController.scrollStep,
+                            maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
+                            onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
                         )
                     }
                 )
@@ -650,14 +572,14 @@ fun imageGrid(
                     ) {
 
                         selectedViews.forEach { selectedView ->
-                            val imageIndices by interfaceModel.getImageIndices(filename).collectAsState()
+                            val imageIndices by interfaceModel.imageController.getImageIndices(filename).collectAsState()
                             val currentIndex = when (selectedView) {
                                 NiftiView.AXIAL -> imageIndices.first
                                 NiftiView.CORONAL -> imageIndices.second
                                 NiftiView.SAGITTAL -> imageIndices.third
                             }
 
-                            val (slices, spacingPx, modality) = interfaceModel.getSlicesFromVolume(selectedView, filename)
+                            val (slices, spacingPx, modality) = interfaceModel.niftiRepo.getSlicesFromVolume(selectedView, filename)
 
                             Column(
                                 modifier = Modifier
@@ -701,7 +623,7 @@ fun imageGrid(
 
 @Composable
 fun windowControls(interfaceModel: InterfaceModel) {
-    val windowing by interfaceModel.windowing.collectAsState()
+    val windowing by interfaceModel.imageController.windowing.collectAsState()
     var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
     var expanded by remember { mutableStateOf(false) }
 
@@ -724,11 +646,11 @@ fun windowControls(interfaceModel: InterfaceModel) {
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        interfaceModel.windowPresets.forEach { (label, preset) ->
+                        interfaceModel.imageController.windowPresets.forEach { (label, preset) ->
                             DropdownMenuItem(
                                 onClick = {
                                     selectedPresetLabel = label
-                                    interfaceModel.setPreset(preset)
+                                    interfaceModel.imageController.setPreset(preset)
                                     expanded = false
                                 }
 
@@ -743,7 +665,7 @@ fun windowControls(interfaceModel: InterfaceModel) {
             scrollWithTitle(
                 title = "Window Center: ${windowing.center.toInt()}",
                 value = windowing.center,
-                onValueChange = { interfaceModel.setWindowing(it, windowing.width) },
+                onValueChange = { interfaceModel.imageController.setWindowing(it, windowing.width) },
                 valueRange = -1000f..1000f,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -751,7 +673,7 @@ fun windowControls(interfaceModel: InterfaceModel) {
             scrollWithTitle(
                 title = "Window Width: ${windowing.width.toInt()}",
                 value = windowing.width,
-                onValueChange = { interfaceModel.setWindowing(windowing.center, it) },
+                onValueChange = { interfaceModel.imageController.setWindowing(windowing.center, it) },
                 valueRange = 1f..2500f,
                 modifier = Modifier.fillMaxWidth()
             )

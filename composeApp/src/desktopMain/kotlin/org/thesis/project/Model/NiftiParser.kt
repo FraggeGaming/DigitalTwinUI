@@ -1,9 +1,11 @@
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import org.nd4j.linalg.factory.Nd4j
-import org.thesis.project.Model.InterfaceModel.UploadFileMetadata
+import org.thesis.project.Model.FileUploadController
+import org.thesis.project.Model.InterfaceModel
+import org.thesis.project.Model.NiftiData
+import org.thesis.project.Model.UploadFileMetadata
 import java.io.File
-import java.nio.file.Path
 import java.nio.file.Paths
 
 fun runNiftiParser(niftiPath: String, outputDir: String): String {
@@ -31,17 +33,7 @@ data class NiftiMeta(
     val npy_path: String
 )
 
-data class NiftiData(
-    val width: Int,
-    val height: Int,
-    val depth: Int,
-    val voxelSpacing: List<Float>,
-    val modality: String = "",
-    var region: String = "",
-    val voxelVolume: Array<Array<Array<Float>>>,
-    var coronalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(),
-    var sagittalVoxelSlices: Array<Array<Array<Float>>> = emptyArray()
-)
+
 
 //fun parseNiftiImages(jsonData: String, modality: String): NiftiData {
 //    val json = Json { ignoreUnknownKeys = true }

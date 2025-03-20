@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import org.thesis.project.Model.InterfaceModel
+import org.thesis.project.Model.Settings
 import java.awt.Point
 import java.awt.image.BufferedImage
 
@@ -45,7 +46,7 @@ fun voxelImageDisplay(
 ) {
     val uiState = remember { mutableStateOf(VoxelImageUIState()) }
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
-    val windowing by interfaceModel.windowing.collectAsState()
+    val windowing by interfaceModel.imageController.windowing.collectAsState()
     val bitmap = voxelSliceToBitmap(voxelSlice, windowing.center, windowing.width)
 
     var imageLayoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -58,13 +59,13 @@ fun voxelImageDisplay(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { localPos ->
-                        if (selectedSettings.contains("measure")) {
+                        if (selectedSettings.contains(Settings.MEASUREMENT)) {
                             val correctedPos = mapToImageCoordinatesAspectAware(
                                 rawPointerPos = localPos,
                                 boxSize = renderedImageSize,
                                 bitmap = bitmap
                             )
-                            interfaceModel.calculateDistance(
+                            interfaceModel.imageController.calculateDistance(
                                 uiState,
                                 correctedPos,
                                 1f,
@@ -90,7 +91,7 @@ fun voxelImageDisplay(
                         bitmap = bitmap
                     )
 
-                    val voxelData = interfaceModel.getVoxelInfo(
+                    val voxelData = interfaceModel.imageController.getVoxelInfo(
                         position = correctedPos,
                         scaleFactor = 1f,
                         imageWidth = bitmap.width,
@@ -203,7 +204,7 @@ fun voxelImageDisplay(
         }
 
         if (
-            selectedSettings.contains("pixel") &&
+            selectedSettings.contains(Settings.PIXEL) &&
             uiState.value.hoverVoxelValue != null &&
             uiState.value.hoverVoxelPosition != null &&
             uiState.value.isHovering
@@ -216,7 +217,7 @@ fun voxelImageDisplay(
 
         }
 
-        if (selectedSettings.contains("measure") && uiState.value.distance != null) {
+        if (selectedSettings.contains(Settings.MEASUREMENT) && uiState.value.distance != null) {
             Text(
                 text = "Distance: ${"%.2f".format(uiState.value.distance)} mm",
                 modifier = Modifier
