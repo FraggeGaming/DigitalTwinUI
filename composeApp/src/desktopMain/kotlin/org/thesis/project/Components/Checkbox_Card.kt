@@ -17,10 +17,10 @@ import androidx.compose.ui.layout.Measured
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.thesis.project.Components.standardCard
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
-import org.thesis.project.Model.Settings
-import org.thesis.project.standardCard
+
 
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -36,98 +36,6 @@ fun CardWithCheckboxes(
         modifier = modifier,
         contentAlignment = Alignment.CenterHorizontally,
         content = {
-//            BoxWithConstraints(
-//                modifier = Modifier.fillMaxWidth(),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                if (maxWidth > 300.dp) {
-//                    Column(
-//                        verticalArrangement = Arrangement.SpaceEvenly,
-//                        horizontalAlignment = Alignment.CenterHorizontally,
-//                        modifier = Modifier.padding(16.dp)
-//                    ) {
-//                        Row {
-//                            Text(text = "Select Districts")
-//                        }
-//                        //Align in a 2 column grid
-//                        items.chunked(2).forEach { rowItems ->
-//                            Row(
-//                                modifier = Modifier.fillMaxWidth(),
-//                                //.border(1.dp, Color.Red)
-//                                horizontalArrangement = Arrangement.Center,
-//                                verticalAlignment = Alignment.CenterVertically,
-//
-//                                ) {
-//                                rowItems.forEach { label ->
-//                                    Row(
-//                                        verticalAlignment = Alignment.CenterVertically,
-//                                        horizontalArrangement = Arrangement.Start,
-//                                        modifier = Modifier.weight(1f)
-//                                            .clickable {
-//                                                val isCurrentlyChecked = selectedData.contains(label)
-//                                                // Toggle the checkbox state
-//                                                onCheckboxChanged(label, !isCurrentlyChecked)
-//                                            }
-//                                        //.border(1.dp, Color.Blue)
-//                                    ) {
-//                                        Checkbox(
-//                                            checked = selectedData.contains(label),
-//                                            onCheckedChange = { isChecked ->
-//                                                onCheckboxChanged(label, isChecked)
-//                                            }
-//                                        )
-//                                        Spacer(modifier = Modifier.width(4.dp))
-//                                        Text(text = label)
-//                                    }
-//                                }
-//
-//                                //So that the last checkbox (if odd number) does not get centered
-//                                if (rowItems.size == 1) {
-//                                    Spacer(modifier = Modifier.weight(1f))
-//                                }
-//                            }
-//                        }
-//                    }
-//                } else {
-//                    Column(
-//                        verticalArrangement = Arrangement.spacedBy(0.dp),
-//                        horizontalAlignment = Alignment.CenterHorizontally,
-//                        modifier = Modifier.padding(16.dp)//.border(1.dp, Color.Red)
-//                    ) {
-//                        Row {
-//                            Text(text = "Select Districts")
-//                        }
-//                        //Align in a 2 column grid
-//
-//                        items.forEach { label ->
-//                            Row(
-//                                modifier = Modifier.fillMaxWidth().clickable {
-//                                    val isCurrentlyChecked = selectedData.contains(label)
-//                                    // Toggle the checkbox state
-//                                    onCheckboxChanged(label, !isCurrentlyChecked)
-//                                },//.border(1.dp, Color.Blue),
-//                                verticalAlignment = Alignment.CenterVertically,
-//                                horizontalArrangement = Arrangement.Start,
-//
-//
-//                                //.border(1.dp, Color.Blue)
-//                            ) {
-//                                Checkbox(
-//                                    checked = selectedData.contains(label),
-//                                    onCheckedChange = { isChecked ->
-//                                        onCheckboxChanged(label, isChecked)
-//                                    }
-//                                )
-//                                Spacer(modifier = Modifier.width(4.dp))
-//                                Text(text = label)
-//                            }
-//                        }
-//                    }
-//                }
-//
-//            }
-
-
             Text(text = "Select Districts")
 
             FlowRow(
@@ -578,102 +486,7 @@ fun selectedButtonRemove(modifier: Modifier = Modifier, text: String, onclick: (
 }
 
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun menuCard(
-    modifier: Modifier = Modifier,
-    selectedViews: Set<NiftiView>,
-    interfaceModel: InterfaceModel,
-    selectedSettings: Set<Settings>,
-    //content: List<@Composable () -> Unit>
-) {
-    val buttonHeight = 60.dp
-    var buttonWidth = 160.dp
 
-    Card(
-        modifier = modifier.padding(16.dp),
-        elevation = 8.dp,
-        contentColor = Color.White
-    ) {
-        FlowRow(
-            modifier = Modifier
-                .wrapContentSize()
-                .background(Color(0xFF0050A0), shape = RoundedCornerShape(8.dp)),
-            horizontalArrangement = Arrangement.spacedBy(0.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
-            listOf(
-                NiftiView.AXIAL,
-                NiftiView.CORONAL,
-                NiftiView.SAGITTAL
-            ).forEach { view ->
-                buttonWithCheckboxSet(
-                    selectedData = selectedViews,
-                    label = view,
-                    onCheckboxChanged = interfaceModel.imageController::updateSelectedViews,
-                    modifier = Modifier
-                        .width(buttonWidth)
-                        .height(buttonHeight)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(buttonHeight)
-                    .background(Color.Gray)
-            )
-
-            TextButton(
-                modifier = Modifier
-                    .width(buttonWidth)
-                    .height(buttonHeight),
-                onClick = {
-                    val isChecked = selectedSettings.contains(Settings.MEASUREMENT)
-                    interfaceModel.updateSelectedSettings(Settings.MEASUREMENT, !isChecked)
-                },
-                colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = if (selectedSettings.contains(Settings.MEASUREMENT)) Color(0xFF80A7D0) else Color.Transparent,
-                    contentColor = if (selectedSettings.contains(Settings.MEASUREMENT)) Color.Black else Color.White
-                )
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Straighten, contentDescription = Settings.MEASUREMENT.settingName)
-                    Spacer(Modifier.width(4.dp))
-                    Text(Settings.MEASUREMENT.settingName)
-                }
-            }
-
-            TextButton(
-                modifier = Modifier
-                    .width(buttonWidth)
-                    .height(buttonHeight),
-                onClick = {
-                    val isChecked = selectedSettings.contains(Settings.PIXEL)
-                    interfaceModel.updateSelectedSettings(Settings.PIXEL, !isChecked)
-                },
-                colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = if (selectedSettings.contains(Settings.PIXEL)) Color(0xFF80A7D0) else Color.Transparent,
-                    contentColor = if (selectedSettings.contains(Settings.PIXEL)) Color.Black else Color.White
-                )
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = Settings.PIXEL.settingName)
-                    Spacer(Modifier.width(4.dp))
-                    Text(Settings.PIXEL.settingName)
-                }
-            }
-        }
-    }
-}
 
 
 
