@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Paths
@@ -13,23 +14,32 @@ import removeNiiExtension
 
 class FileUploadController(private val niftiRepo: NiftiRepo,) {
 
-    private val _uploadedFileMetadata = MutableStateFlow<UploadFileMetadata?>(null)
-    val uploadedFileMetadata: StateFlow<UploadFileMetadata?> = _uploadedFileMetadata.asStateFlow()
+    private val _uploadedFileMetadata = MutableStateFlow<List<UploadFileMetadata>>(emptyList())
+    val uploadedFileMetadata: StateFlow<List<UploadFileMetadata>> = _uploadedFileMetadata.asStateFlow()
 
     fun addFile(filePath: String) {
-        _uploadedFileMetadata.value = UploadFileMetadata(filePath, title = "", modality = "", region = "")
+        val newFile = UploadFileMetadata(filePath, title = "", modality = "", region = "")
+        _uploadedFileMetadata.update { it + newFile }
     }
 
-    fun updateMetadata(newData: UploadFileMetadata) {
-        _uploadedFileMetadata.value = newData
+    fun updateMetadata(index: Int, newData: UploadFileMetadata) {
+        _uploadedFileMetadata.update {
+            it.toMutableList().apply {
+                if (index in indices) this[index] = newData
+            }
+        }
     }
 
-    fun removeFile() {
-        _uploadedFileMetadata.value = null
+    fun removeFile(index: Int) {
+        _uploadedFileMetadata.update {
+            it.toMutableList().apply {
+                if (index in indices) removeAt(index)
+            }
+        }
     }
-    suspend fun loadNifti(): String = withContext(Dispatchers.IO) {
+
+    suspend fun loadNifti(niftiStorage: UploadFileMetadata): String = withContext(Dispatchers.IO) {
         try {
-            val niftiStorage = _uploadedFileMetadata.value ?: return@withContext ""
 
             println("Running NIfTI Parser for: ${niftiStorage.filePath}")
             System.out.flush()

@@ -34,22 +34,12 @@ fun selectFilesMultipleAWT(): List<String> {
 fun FileUploadComponent(
     interfaceModel: InterfaceModel
 ) {
-    var isDragging by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(150.dp)
             .background(Color.LightGray, RoundedCornerShape(8.dp))
-            .border(2.dp, if (isDragging) Color.Blue else Color.Gray, RoundedCornerShape(8.dp))
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { isDragging = true },
-                    onDragCancel = { isDragging = false },
-                    onDragEnd = { isDragging = false },
-                    onDrag = { _, _ -> }
-                )
-            }
             .clickable {
                 val selectedFiles = selectFilesMultipleAWT()
                 selectedFiles.forEach { path ->

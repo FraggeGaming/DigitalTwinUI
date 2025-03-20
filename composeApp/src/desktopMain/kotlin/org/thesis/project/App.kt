@@ -10,7 +10,7 @@ import navigationButtons
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Screens.imageViewer
-import org.thesis.project.Screens.modelSelect
+//import org.thesis.project.Screens.modelSelect
 import org.thesis.project.Screens.uploadData
 
 
@@ -31,12 +31,12 @@ fun App() {
                 )
             }
 
-            composable("modelSelect") {
-                modelSelect(
-                    interfaceModel = interfaceModel,
-                    navMenu = { navigationButtons(navController, "modelSelect") }, navController
-                )
-            }
+//            composable("modelSelect") {
+//                modelSelect(
+//                    interfaceModel = interfaceModel,
+//                    navMenu = { navigationButtons(navController, "modelSelect") }, navController
+//                )
+//            }
 
             composable("main") {
 

@@ -153,16 +153,6 @@ fun imageViewer(
                 }
             },
             rightContent = {
-
-//                val coroutineScope = rememberCoroutineScope()
-//
-//                Button(onClick = {
-//                    coroutineScope.launch {
-//                        interfaceModel.parseNiftiData(title, inputFiles, outputFiles)
-//                    }
-//                }) {
-//                    Text("Parse NIfTI")
-//                }
                 standardCard(
                     content = {
                         scrollSlider(
@@ -173,10 +163,7 @@ fun imageViewer(
                         )
                     }
                 )
-
-
                 windowControls(interfaceModel)
-
             }
         )
     }

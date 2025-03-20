@@ -19,7 +19,7 @@ enum class Settings(val settingName: String) {
     override fun toString(): String = settingName
 }
 
-data class UploadFileMetadata(val filePath: String, var title: String, var modality: String, var region: String)
+data class UploadFileMetadata(val filePath: String, var title: String, var modality: String, var region: String, var model: AIModel? = null)
 data class AIModel(val title: String, val description: String, val inputModality: String, val outputModality: String)
 data class NiftiData(val width: Int, val height: Int, val depth: Int, val voxelSpacing: List<Float>, val modality: String = "", var region: String = "", val voxelVolume: Array<Array<Array<Float>>>, var coronalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(), var sagittalVoxelSlices: Array<Array<Array<Float>>> = emptyArray())
 
