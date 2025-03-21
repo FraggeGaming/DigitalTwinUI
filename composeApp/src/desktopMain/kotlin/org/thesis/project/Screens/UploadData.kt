@@ -1,7 +1,6 @@
 package org.thesis.project.Screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -21,7 +20,6 @@ import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
 import org.thesis.project.Components.FileUploadComponent
 import org.thesis.project.Components.standardCard
-import org.thesis.project.Components.topAppBar
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.UploadFileMetadata
 import java.io.File
@@ -45,8 +43,7 @@ fun uploadData(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            topAppBar(title = "App Name" , modelName = "Model Name")
+        Column(modifier = Modifier.padding(12.dp)) {
 
             navMenu()
 
@@ -109,10 +106,19 @@ fun uploadData(
                                             Column(modifier = Modifier.padding(16.dp)) {
                                                 Text(text = metadata.model!!.title, style = MaterialTheme.typography.h6)
                                                 Spacer(modifier = Modifier.height(4.dp))
-                                                Text(text = metadata.model!!.description, style = MaterialTheme.typography.body1)
+                                                Text(
+                                                    text = metadata.model!!.description,
+                                                    style = MaterialTheme.typography.body1
+                                                )
                                                 Spacer(modifier = Modifier.height(8.dp))
-                                                Text("Input Modality: ${metadata.model!!.inputModality}", style = MaterialTheme.typography.caption)
-                                                Text("Output Modality: ${metadata.model!!.outputModality}", style = MaterialTheme.typography.caption)
+                                                Text(
+                                                    "Input Modality: ${metadata.model!!.inputModality}",
+                                                    style = MaterialTheme.typography.caption
+                                                )
+                                                Text(
+                                                    "Output Modality: ${metadata.model!!.outputModality}",
+                                                    style = MaterialTheme.typography.caption
+                                                )
                                             }
                                         }
                                     )
@@ -183,16 +189,29 @@ fun uploadData(
                                                     Column(Modifier.padding(16.dp)) {
                                                         Text(text = model.title, style = MaterialTheme.typography.h6)
                                                         Spacer(modifier = Modifier.height(4.dp))
-                                                        Text(text = model.description, style = MaterialTheme.typography.body1)
+                                                        Text(
+                                                            text = model.description,
+                                                            style = MaterialTheme.typography.body1
+                                                        )
                                                         Spacer(modifier = Modifier.height(8.dp))
-                                                        Text("Input: ${model.inputModality}", style = MaterialTheme.typography.caption)
-                                                        Text("Output: ${model.outputModality}", style = MaterialTheme.typography.caption)
+                                                        Text(
+                                                            "Input: ${model.inputModality}",
+                                                            style = MaterialTheme.typography.caption
+                                                        )
+                                                        Text(
+                                                            "Output: ${model.outputModality}",
+                                                            style = MaterialTheme.typography.caption
+                                                        )
                                                         Spacer(modifier = Modifier.height(12.dp))
                                                         Button(onClick = {
                                                             coroutineScope.launch {
                                                                 val updated = currentlySelected!!.copy(model = model)
-                                                                val fileIndex = uploadedFiles.indexOf(currentlySelected!!)
-                                                                interfaceModel.fileUploader.updateMetadata(fileIndex, updated)
+                                                                val fileIndex =
+                                                                    uploadedFiles.indexOf(currentlySelected!!)
+                                                                interfaceModel.fileUploader.updateMetadata(
+                                                                    fileIndex,
+                                                                    updated
+                                                                )
                                                                 showModelPopup = false
                                                             }
                                                         }) {
@@ -265,7 +284,7 @@ fun DropdownMenuField(
                         expanded = false
                         onSelected(option)
                     }
-                ){
+                ) {
                     Text(option)
                 }
             }

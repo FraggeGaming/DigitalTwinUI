@@ -1,13 +1,16 @@
 package org.thesis.project.Screens
 
-import CardMenu
+import cardMenu
 import CardWithCheckboxes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,7 +21,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import buttonWithCheckboxSet
-import org.thesis.project.Components.*
+import org.thesis.project.Components.scrollSlider
+import org.thesis.project.Components.scrollWithTitle
+import org.thesis.project.Components.standardCard
+import org.thesis.project.Components.voxelImageDisplay
 import org.thesis.project.MainPanelLayout
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
@@ -45,128 +51,89 @@ fun imageViewer(
 
     val fileMapping by interfaceModel.niftiRepo.fileMapping.collectAsState()
 
-    //Takes the file path and parses the nifti
-    //val niftiFile = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
-
-
-    //val niftiFile1 = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\BOX_PET\\liver_PET.nii.gz"
-
-//    val file1 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\CTres.nii.gz"
-//
-//    val file2 = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\testScans\\PET.nii.gz"
-//    //TODO change this to a dynamic path
-//
-//    val title = "Patient_1"
-//    val inputFiles = listOf(file1) //Example input NIfTI files
-//    val outputFiles = listOf(file2) //Example output NIfTI files
-
     interfaceModel.imageController.updateSelectedViews(NiftiView.AXIAL, true)
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    MainPanelLayout(
+        leftPanelWidth = leftPanelWidth,
+        leftPanelExpanded = leftPanelExpanded,
+        rightPanelWidth = rightPanelWidth,
+        rightPanelExpanded = rightPanelExpanded,
+        toggleLeftPanel = { interfaceModel.panelLayout.toggleLeftPanelExpanded() },
+        toggleRightPanel = { interfaceModel.panelLayout.toggleRightPanelExpanded() },
+
+        leftContent = {
 
 
-        topAppBar(
-            title = "App Name", modelName = "Model Name"
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End,
-                modifier = Modifier.padding(end = 16.dp)
+            navMenu()
+
+            cardMenu(
+                fileKeys = fileMapping.keys.toList(),
+                selectedData = selectedData,
+                getFileMapping = interfaceModel.niftiRepo::getFileMapping,
+                onCheckboxChanged = { label, isChecked ->
+                    interfaceModel.imageController.updateSelectedData(label, isChecked)
+                }
+            )
+
+            CardWithCheckboxes(
+                selectedDistricts,
+                items = organs,
+                onCheckboxChanged = { organ, isChecked ->
+                    interfaceModel.updateSelectedDistrict(organ, isChecked)
+                }
+            )
+
+        },
+        centerContent = {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                IconButton(onClick = { /* show info */ }) {
-                    Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
-                }
-
-                IconButton(
-                    onClick = { interfaceModel.panelLayout.toggleRightPanelExpanded() }
-                ) {
-                    Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
-                }
-            }
-        }
-
-        MainPanelLayout(
-            leftPanelWidth = leftPanelWidth,
-            leftPanelExpanded = leftPanelExpanded,
-            rightPanelWidth = rightPanelWidth,
-            rightPanelExpanded = rightPanelExpanded,
-            toggleLeftPanel = { interfaceModel.panelLayout.toggleLeftPanelExpanded() },
-            toggleRightPanel = { interfaceModel.panelLayout.toggleRightPanelExpanded() },
-
-            leftContent = {
-
-
-                navMenu()
-
-                CardMenu(
-                    fileKeys = fileMapping.keys.toList(),
-                    selectedData = selectedData,
-                    getFileMapping = interfaceModel.niftiRepo::getFileMapping,
-                    onCheckboxChanged = { label, isChecked ->
-                        interfaceModel.imageController.updateSelectedData(label, isChecked)
-                    }
-                )
-
-                CardWithCheckboxes(
-                    selectedDistricts,
-                    items = organs,
-                    onCheckboxChanged = { organ, isChecked ->
-                        interfaceModel.updateSelectedDistrict(organ, isChecked)
-                    }
-                )
-
-            },
-            centerContent = {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .pointerInput(Unit) {
-                                awaitPointerEventScope {
-                                    while (true) {
-                                        val event = awaitPointerEvent()
-                                        if (event.type == PointerEventType.Scroll) {
-                                            val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
-                                            if (scrollDelta.y > 0f) {
-                                                interfaceModel.imageController.decrementScrollPosition()
-                                            } else if (scrollDelta.y < 0f) {
-                                                interfaceModel.imageController.incrementScrollPosition()
-                                            }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    if (event.type == PointerEventType.Scroll) {
+                                        val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
+                                        if (scrollDelta.y > 0f) {
+                                            interfaceModel.imageController.decrementScrollPosition()
+                                        } else if (scrollDelta.y < 0f) {
+                                            interfaceModel.imageController.incrementScrollPosition()
                                         }
                                     }
                                 }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        imageGrid(selectedData, selectedViews, interfaceModel)
-                    }
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    imageGrid(selectedData, selectedViews, interfaceModel)
+                }
 
-                    menuCard(
-                        selectedViews = selectedViews,
-                        interfaceModel = interfaceModel,
-                        selectedSettings = selectedSettings,
+                menuCard(
+                    selectedViews = selectedViews,
+                    interfaceModel = interfaceModel,
+                    selectedSettings = selectedSettings,
+                )
+            }
+        },
+        rightContent = {
+            standardCard(
+                content = {
+                    scrollSlider(
+                        selectedData = interfaceModel.imageController.selectedData,
+                        scrollStep = interfaceModel.imageController.scrollStep,
+                        maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
+                        onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
                     )
                 }
-            },
-            rightContent = {
-                standardCard(
-                    content = {
-                        scrollSlider(
-                            selectedData = interfaceModel.imageController.selectedData,
-                            scrollStep = interfaceModel.imageController.scrollStep,
-                            maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
-                            onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
-                        )
-                    }
-                )
-                windowControls(interfaceModel)
-            }
-        )
-    }
+            )
+            windowControls(interfaceModel)
+        }
+    )
 }
 
 @Composable

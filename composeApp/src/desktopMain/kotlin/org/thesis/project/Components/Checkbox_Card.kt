@@ -138,17 +138,19 @@ fun modalities(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .wrapContentSize(Alignment.Center)
             .clip(shape)
-            .background(Color.LightGray)
-            .padding(8.dp)
+            .background(Color(0xFFFFB85F))
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp), // ✅ Restore spacing between items
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "Input",
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Start,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 4.dp)
+                .wrapContentSize(),
+            color = Color.Black
         )
 
         mainLabels.forEach { mainLabel ->
@@ -159,10 +161,9 @@ fun modalities(
         Divider(modifier = Modifier.padding(vertical = 8.dp))
         Text(
             text = "Synthetic output",
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Start,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 4.dp)
+                .wrapContentSize()
         )
         subLabels.forEach { subLabel ->
             buttonWithCheckbox(selectedData, subLabel, onCheckboxChanged)
@@ -172,7 +173,7 @@ fun modalities(
 
 
 @Composable
-fun CardMenu(
+fun cardMenu(
     selectedData: Set<String>,
     fileKeys: List<String>,
     getFileMapping: (String) -> Pair<List<String>, List<String>>?,
@@ -200,15 +201,15 @@ fun CardMenu(
 
                     if (boxMaxWidth < 300.dp) {
                         // Vertical list of menu items
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+//                        Column(
+//                            verticalArrangement = Arrangement.spacedBy(8.dp),
+//                            horizontalAlignment = Alignment.CenterHorizontally,
+//                            modifier = Modifier.fillMaxWidth()
+//                        ) {
                             fileKeys.forEach { mainLabel ->
                                 val isSelected = expandedMenu == mainLabel
                                 Column(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier.wrapContentSize(),
                                     verticalArrangement = Arrangement.spacedBy(0.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
@@ -228,9 +229,9 @@ fun CardMenu(
                                         getFileMapping(mainLabel)?.let { (inputList, outputList) ->
 
                                             modalities(
-                                                selectedData = selectedData, // ✅ Inputs are now correctly mapped
+                                                selectedData = selectedData,
                                                 mainLabels = inputList,
-                                                subLabels = outputList, // ✅ Outputs go into modalities
+                                                subLabels = outputList,
                                                 onCheckboxChanged = onCheckboxChanged,
                                                 shape = RoundedCornerShape(
                                                     topStart = 0.dp,
@@ -242,7 +243,7 @@ fun CardMenu(
                                         }
                                     }
                                 }
-                            }
+//                            }
                         }
                     } else {
                         // Wide layout
@@ -265,7 +266,7 @@ fun CardMenu(
                         } else {
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Column(
-                                    modifier = Modifier.weight(0.4f),
+                                    modifier = Modifier.weight(0.4f).wrapContentSize(),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
@@ -336,7 +337,7 @@ fun MenuButton(
         modifier = Modifier
             .fillMaxWidth(widthFraction)
             .background(
-                color = Color.LightGray,
+                color = Color(0xFFFFB85F),
                 shape = if (isSelected) {
                     shapeSelected
                 } else {

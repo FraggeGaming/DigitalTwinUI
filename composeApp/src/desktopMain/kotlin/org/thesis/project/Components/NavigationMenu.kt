@@ -19,12 +19,12 @@ import org.thesis.project.Model.NiftiView
 fun navigationButtons(navController: NavController, selected: String) {
     Row(
         modifier = Modifier.height(height = 70.dp)
-            .fillMaxWidth(),
+            .width(300.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Button(
             onClick = { navController.navigate("upload") },
-            shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
+            shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = if (selected == "upload") Color(0xFF0050A0) else Color(0xFF0050A0), // Blue background
                 contentColor = Color.White            // White text
@@ -50,7 +50,7 @@ fun navigationButtons(navController: NavController, selected: String) {
 //        }
         Button(
             onClick = { navController.navigate("main") },
-            shape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
+            shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp),
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = if (selected == "main") Color(0xFF0050A0) else Color(0xFF0050A0), // Blue background
                 contentColor = Color.White            // White text
