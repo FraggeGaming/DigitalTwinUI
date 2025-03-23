@@ -6,13 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -317,13 +314,10 @@ fun menuCard(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun windowControls(interfaceModel: InterfaceModel) {
     val windowing by interfaceModel.imageController.windowing.collectAsState()
     var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
-    val expanded by remember { mutableStateOf(false) }
-
 
     standardCard(
         content = {
