@@ -6,7 +6,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.forEach
 
 class ModelRunner(
     private val niftiRepo: NiftiRepo,
@@ -15,6 +14,9 @@ class ModelRunner(
 
     suspend fun runModel() = coroutineScope {
 
+        val input = mutableListOf<String>()
+        val output = mutableListOf<String>()
+
         fileUploader.uploadedFileMetadata.value.forEach { file ->
             println("Model: ${file.model}")
 
@@ -22,26 +24,39 @@ class ModelRunner(
             println("No backend... setting output same as input")
 
             val inputDeferred = async(Dispatchers.IO) { fileUploader.loadNifti(file) }
-            val input = inputDeferred.await()
+            input.add(inputDeferred.await())
             println("TESTING, $input")
 
+            val fileName = file.groundTruthFilePath.substringAfterLast("/")
+
+            //Create new UploadFileMetadata for the ground truth
+            val newGTFile = UploadFileMetadata(
+                filePath = file.groundTruthFilePath,
+                title = "$fileName GT",
+                modality = file.model?.outputModality ?: "",
+                region = file.region,
+                model = file.model,
+                groundTruthFilePath = ""
+            )
+            val inputGT = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }
+            input.add(inputGT.await())
+            println("TESTING, $input")
+
+
+            //TODO run model here
+            //TODO parse nifti
 
             // outputFiles.add((uploadedFileMetadata.value!!.filePath))
             //val outputDeferred = async(Dispatchers.IO) { loadNifti(outputNiftiFile) }
 
-            val output = input// Placeholder until real model output is ready
+            //val output = input// Placeholder until real model output is ready
 
 
             val title = file.title
             println("TEST: $title")
-            println("Added mapping for $title : ${listOf(input)}, ${listOf(output)}")
+            println("Added mapping for $title : $input, $output")
             System.out.flush()
-            if (title != null) {
-                niftiRepo.addFileMapping(title, listOf(input), listOf(output))
-            }
-            else{
-                println("no title, could not add to mapping")
-            }
+            niftiRepo.addFileMapping(title, input, output)
         }
 
     }

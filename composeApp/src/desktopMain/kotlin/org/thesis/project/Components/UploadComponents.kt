@@ -1,24 +1,19 @@
 package org.thesis.project.Components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import org.thesis.project.Model.InterfaceModel
-
 import java.awt.FileDialog
 import java.awt.Frame
 
@@ -32,7 +27,7 @@ fun selectFilesMultipleAWT(): List<String> {
 
 @Composable
 fun FileUploadComponent(
-    interfaceModel: InterfaceModel
+    onSelected: (String) -> Unit,
 ) {
 
     Box(
@@ -43,7 +38,7 @@ fun FileUploadComponent(
             .clickable {
                 val selectedFiles = selectFilesMultipleAWT()
                 selectedFiles.forEach { path ->
-                    interfaceModel.fileUploader.addFile(path)
+                    onSelected(path)
                     println(path)
                 }
             },

@@ -1,15 +1,13 @@
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
 import org.nd4j.linalg.factory.Nd4j
-import org.thesis.project.Model.FileUploadController
-import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiData
 import org.thesis.project.Model.UploadFileMetadata
 import java.io.File
 import java.nio.file.Paths
 
 fun runNiftiParser(niftiPath: String, outputDir: String): String {
-    val path = Paths.get("src/desktopMain/resources/executables/nifti_visualize.exe");
+    val path = Paths.get("src/desktopMain/resources/executables/nifti_visualize.exe")
     //val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
     //val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
     println("running process")
@@ -34,7 +32,6 @@ data class NiftiMeta(
 )
 
 
-
 //fun parseNiftiImages(jsonData: String, modality: String): NiftiData {
 //    val json = Json { ignoreUnknownKeys = true }
 //    val baseData = json.decodeFromString<NiftiData>(jsonData)
@@ -48,8 +45,8 @@ fun parseNiftiImages(jsonMeta: String, metaData: UploadFileMetadata): NiftiData 
     val volume = loadNpyVoxelVolume(meta.npy_path)
 
 
-    val coronalVoxel =  transformToCoronalSlices(volume)
-    val sagittalVoxel =  transformToSagittalSlices(volume)
+    val coronalVoxel = transformToCoronalSlices(volume)
+    val sagittalVoxel = transformToSagittalSlices(volume)
 
     return NiftiData(
         width = meta.width,

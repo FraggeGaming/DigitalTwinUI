@@ -1,30 +1,30 @@
 package org.thesis.project
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import java.awt.Cursor
 import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-
+import androidx.compose.ui.unit.dp
+import java.awt.Cursor
 
 
 @Composable
@@ -76,15 +76,14 @@ fun MainPanelLayout(
                 }
             }
 
-        }
-        else{
+        } else {
             Box(
                 modifier = Modifier
                     .width(48.dp)
                     .background(Color.DarkGray),
                 contentAlignment = Alignment.TopStart
             ) {
-                IconButton(onClick = {toggleLeftPanel()}) {
+                IconButton(onClick = { toggleLeftPanel() }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Expand Left", tint = Color.White)
                 }
             }
@@ -154,15 +153,15 @@ fun MainPanelLayout(
                     }
                 }
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp), // ✅ Restore spacing between items
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        rightContent()
-                    }
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    rightContent()
+                }
 
             }
 

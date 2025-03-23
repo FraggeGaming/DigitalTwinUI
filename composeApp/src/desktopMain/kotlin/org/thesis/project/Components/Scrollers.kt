@@ -1,10 +1,21 @@
 package org.thesis.project.Components
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Slider
+import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
@@ -22,19 +33,18 @@ fun scrollSlider(
 
     var sliderPosition by remember { mutableStateOf(currentScrollStep) }
 
-    Column {
-        Text(text = "Slice: ${currentScrollStep.toInt()} / ${maxValue.toInt()}")
-        Slider(
-            value = sliderPosition,
-            onValueChange = { newValue ->
-                sliderPosition = newValue
-                onUpdate(newValue)
-            },
-            valueRange = 0f..maxValue,
-            steps = 0
-        )
 
-    }
+    scrollWithTitle(
+        title = "Slice",
+        value = sliderPosition,
+        onValueChange = { newValue ->
+            sliderPosition = newValue
+            onUpdate(newValue)
+        },
+        valueRange = 0f..maxValue,
+    )
+
+
 
     LaunchedEffect(currentScrollStep) {
         if (currentScrollStep != sliderPosition) {
@@ -50,12 +60,65 @@ fun scrollWithTitle(
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     modifier: Modifier = Modifier
-){
-    Text(title)
-    Slider(
-        value = value,
-        onValueChange = onValueChange,
-        valueRange = valueRange,
-        modifier = modifier
-    )
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(title)
+
+        var inputText by remember { mutableStateOf(value.toInt().toString()) }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Slider(
+                value = value,
+                onValueChange = {
+                    inputText = it.toInt().toString()
+                    onValueChange(it)
+                },
+                valueRange = valueRange,
+                modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(
+                    thumbColor = Color(0xFF0050A0),
+                    activeTrackColor = Color(0xFF80A7D0),
+                    inactiveTrackColor = Color.Gray
+                )
+            )
+
+            Box(
+                modifier = Modifier
+                    .width(60.dp)
+                    .height(32.dp)
+                    .border(1.dp, Color.LightGray, RoundedCornerShape(6.dp))
+                    .background(Color(0xFFDCE7F6), RoundedCornerShape(6.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                BasicTextField(
+                    value = inputText,
+                    onValueChange = { newText ->
+                        inputText = newText
+                        val floatValue = newText.toFloatOrNull()?.coerceIn(valueRange.start, valueRange.endInclusive)
+                        if (floatValue != null) {
+                            onValueChange(floatValue)
+                        }
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        color = Color.Black,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            innerTextField()
+                        }
+                    }
+                )
+            }
+        }
+    }
 }

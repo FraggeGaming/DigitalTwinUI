@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun topAppBar(title: String, modelName: String,  extraContent: @Composable () -> Unit = {}) {
+fun topAppBar(title: String, modelName: String, extraContent: @Composable () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

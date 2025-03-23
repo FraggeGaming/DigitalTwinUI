@@ -6,19 +6,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.nio.file.Paths
-import runNiftiParser
 import parseNiftiImages
 import removeNiiExtension
+import runNiftiParser
+import java.io.File
+import java.nio.file.Paths
 
-class FileUploadController(private val niftiRepo: NiftiRepo,) {
+class FileUploadController(private val niftiRepo: NiftiRepo) {
 
     private val _uploadedFileMetadata = MutableStateFlow<List<UploadFileMetadata>>(emptyList())
     val uploadedFileMetadata: StateFlow<List<UploadFileMetadata>> = _uploadedFileMetadata.asStateFlow()
 
     fun addFile(filePath: String) {
-        val newFile = UploadFileMetadata(filePath, title = "", modality = "", region = "")
+        val newFile = UploadFileMetadata(filePath, title = "", modality = "", region = "", groundTruthFilePath = "")
         _uploadedFileMetadata.update { it + newFile }
     }
 

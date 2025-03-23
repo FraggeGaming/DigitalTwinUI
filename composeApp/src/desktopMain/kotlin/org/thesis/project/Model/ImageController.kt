@@ -3,7 +3,6 @@ package org.thesis.project.Model
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import org.thesis.project.Components.VoxelImageUIState
@@ -18,7 +17,6 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
 
     private val _maxSelectedImageIndex = MutableStateFlow<Map<String, Float>>(emptyMap())
     val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
-
 
 
     fun getImageIndices(filename: String): StateFlow<Triple<Int, Int, Int>> {

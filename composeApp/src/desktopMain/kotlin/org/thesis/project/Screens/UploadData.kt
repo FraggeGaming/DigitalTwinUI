@@ -1,5 +1,6 @@
 package org.thesis.project.Screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,9 +11,13 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -78,7 +83,7 @@ fun uploadData(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
-                                    DropdownMenuField(
+                                    dropDownMenuCustom(
                                         label = "Modality",
                                         selected = metadata.modality,
                                         options = listOf("CT", "PET", "MRI"),
@@ -88,7 +93,7 @@ fun uploadData(
                                         }
                                     )
 
-                                    DropdownMenuField(
+                                    dropDownMenuCustom(
                                         label = "Region",
                                         selected = metadata.region,
                                         options = listOf("Head", "Lung", "Total Body"),
@@ -145,6 +150,31 @@ fun uploadData(
                                 ) {
                                     Text("Select Model")
                                 }
+
+                                Text("Add ground truth")
+
+                                Row {
+                                    Box(modifier = Modifier.width(100.dp).height(100.dp)) {
+                                        FileUploadComponent(onSelected = {
+                                            val updated = metadata.copy(groundTruthFilePath = it)
+                                            interfaceModel.fileUploader.updateMetadata(index, updated)
+                                            println(uploadedFiles)
+                                        })
+
+
+                                    }
+
+                                    if (metadata.groundTruthFilePath.isNotEmpty()) {
+                                        Text(File(metadata.groundTruthFilePath).name)
+                                        TextButton(onClick = {
+                                            val updated = metadata.copy(groundTruthFilePath = "")
+                                            interfaceModel.fileUploader.updateMetadata(index, updated)
+                                        }) {
+                                            Text("Remove")
+                                        }
+                                    }
+                                }
+
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -232,7 +262,7 @@ fun uploadData(
                         }
                     }
 
-                    FileUploadComponent(interfaceModel)
+                    FileUploadComponent(interfaceModel.fileUploader::addFile)
 
                     Button(
                         onClick = {
@@ -257,9 +287,9 @@ fun uploadData(
 
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun DropdownMenuField(
+fun dropDownMenuCustom(
     label: String,
     selected: String,
     options: List<String>,
@@ -268,22 +298,50 @@ fun DropdownMenuField(
     var expanded by remember { mutableStateOf(false) }
     val icon = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown
     val text = selected.ifEmpty { label }
+
     Box {
-        Button(onClick = { expanded = true }) {
+        Button(
+            onClick = { expanded = true },
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = Color(0xFFDCE7F6),
+                contentColor = Color.Black
+            ),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.padding(bottom = 4.dp).width(180.dp)
+        ) {
             Text(text)
             Spacer(Modifier.width(8.dp))
             Icon(icon, contentDescription = if (expanded) "Collapse" else "Expand")
         }
+
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .background(Color(0xFFDCE7F6), shape = RoundedCornerShape(8.dp))
         ) {
             options.forEach { option ->
+                var isHovered by remember { mutableStateOf(false) }
+                val isSelected = option == selected
+
                 DropdownMenuItem(
                     onClick = {
                         expanded = false
                         onSelected(option)
-                    }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            when {
+                                isSelected -> Color(0xFFDCE7F6).copy(alpha = 0.3f)
+                                isHovered -> Color(0xFFDCE7F6).copy(alpha = 0.1f)
+                                else -> Color.Transparent
+                            }
+                        )
+                        .onPointerEvent(PointerEventType.Enter) { isHovered = true }
+                        .onPointerEvent(PointerEventType.Exit) { isHovered = false }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     Text(option)
                 }

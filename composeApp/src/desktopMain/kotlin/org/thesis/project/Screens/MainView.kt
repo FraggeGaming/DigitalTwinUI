@@ -1,6 +1,5 @@
 package org.thesis.project.Screens
 
-import cardMenu
 import CardWithCheckboxes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,6 +12,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -21,6 +21,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import buttonWithCheckboxSet
+import cardMenu
 import org.thesis.project.Components.scrollSlider
 import org.thesis.project.Components.scrollWithTitle
 import org.thesis.project.Components.standardCard
@@ -229,7 +230,7 @@ fun menuCard(
     //content: List<@Composable () -> Unit>
 ) {
     val buttonHeight = 60.dp
-    var buttonWidth = 160.dp
+    val buttonWidth = 160.dp
 
     Card(
         modifier = modifier.padding(16.dp),
@@ -316,49 +317,32 @@ fun menuCard(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun windowControls(interfaceModel: InterfaceModel) {
     val windowing by interfaceModel.imageController.windowing.collectAsState()
     var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
-    var expanded by remember { mutableStateOf(false) }
+    val expanded by remember { mutableStateOf(false) }
 
 
     standardCard(
         content = {
             Text("Windowing Presets")
-            val icon = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown
+            //val icon = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown
 
 
-            Box {
-                Button(onClick = { expanded = true }) {
-                    Text(selectedPresetLabel ?: "Select Preset")
-                    Spacer(Modifier.width(8.dp))
-                    Icon(icon, contentDescription = if (expanded) "Collapse" else "Expand")
+            dropDownMenuCustom(
+                label = "Select Preset",
+                selected = selectedPresetLabel ?: "",
+                options = interfaceModel.imageController.windowPresets.keys.toList(),
+                onSelected = { label ->
+                    selectedPresetLabel = label
+                    interfaceModel.imageController.setPreset(interfaceModel.imageController.windowPresets[label]!!)
                 }
-
-                if (expanded) { // 🔥 Ensure this check, Compose sometimes bugs otherwise
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        interfaceModel.imageController.windowPresets.forEach { (label, preset) ->
-                            DropdownMenuItem(
-                                onClick = {
-                                    selectedPresetLabel = label
-                                    interfaceModel.imageController.setPreset(preset)
-                                    expanded = false
-                                }
-
-                            ) {
-                                Text(label)
-                            }
-                        }
-                    }
-                }
-            }
+            )
 
             scrollWithTitle(
-                title = "Window Center: ${windowing.center.toInt()}",
+                title = "Window Center",
                 value = windowing.center,
                 onValueChange = { interfaceModel.imageController.setWindowing(it, windowing.width) },
                 valueRange = -1000f..1000f,
@@ -366,7 +350,7 @@ fun windowControls(interfaceModel: InterfaceModel) {
             )
 
             scrollWithTitle(
-                title = "Window Width: ${windowing.width.toInt()}",
+                title = "Window Width",
                 value = windowing.width,
                 onValueChange = { interfaceModel.imageController.setWindowing(windowing.center, it) },
                 valueRange = 1f..2500f,

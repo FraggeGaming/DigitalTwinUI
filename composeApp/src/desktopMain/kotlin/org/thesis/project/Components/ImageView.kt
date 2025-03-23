@@ -152,27 +152,28 @@ fun voxelImageDisplay(
 //
 //            contentAlignment = Alignment.CenterHorizontally,
 //            content = {
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = "Voxel image",
-                    modifier = Modifier.fillMaxSize() //wrapcontent
-                        .onSizeChanged {
-                            renderedImageSize = it
+        Image(
+            bitmap = bitmap,
+            contentDescription = "Voxel image",
+            modifier = Modifier.fillMaxSize() //wrapcontent
+                .onSizeChanged {
+                    renderedImageSize = it
 //                            interfaceModel.setImageCardSize(IntSize(renderWidth, renderHeight))
 //                            println("Voxel image: ${renderWidth} ${renderHeight}")
-                        }
-                        .onGloballyPositioned { imageLayoutCoordinates = it }
-                )
+                }
+                .onGloballyPositioned { imageLayoutCoordinates = it }
+        )
 
 //            }
 //        )
 
 
-
         // Canvas overlay drawn exactly over rendered image
         Canvas(
             modifier = Modifier
-                .size(with(LocalDensity.current) { renderWidth.toDp() }, with(LocalDensity.current) { renderHeight.toDp() })
+                .size(
+                    with(LocalDensity.current) { renderWidth.toDp() },
+                    with(LocalDensity.current) { renderHeight.toDp() })
                 .offset { IntOffset(offsetX.toInt(), offsetY.toInt()) }
         ) {
             val scaleX = size.width / bitmap.width
@@ -277,7 +278,6 @@ fun voxelSliceToBitmap(
 
     return image.toComposeImageBitmap()
 }
-
 
 
 fun mapToImageCoordinatesAspectAware(

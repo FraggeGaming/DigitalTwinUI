@@ -21,7 +21,7 @@ fun standardCard(
         modifier = modifier
             .fillMaxWidth()
         //.padding(contentPadding),
-        ,shape = RoundedCornerShape(8.dp),
+        , shape = RoundedCornerShape(8.dp),
         elevation = 8.dp
     ) {
         Column(

@@ -140,7 +140,7 @@ fun modalities(
         modifier = Modifier
             .wrapContentSize(Alignment.Center)
             .clip(shape)
-            .background(Color(0xFFFFB85F))
+            .background(Color(0xFFDCE7F6))
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp), // ✅ Restore spacing between items
         horizontalAlignment = Alignment.CenterHorizontally
@@ -206,43 +206,43 @@ fun cardMenu(
 //                            horizontalAlignment = Alignment.CenterHorizontally,
 //                            modifier = Modifier.fillMaxWidth()
 //                        ) {
-                            fileKeys.forEach { mainLabel ->
-                                val isSelected = expandedMenu == mainLabel
-                                Column(
-                                    modifier = Modifier.wrapContentSize(),
-                                    verticalArrangement = Arrangement.spacedBy(0.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    MenuButton(
-                                        mainLabel = mainLabel,
-                                        isSelected = isSelected,
-                                        onClick = { expandedMenu = if (isSelected) null else mainLabel },
-                                        widthFraction = 1f,
-                                        shapeSelected = RoundedCornerShape(
-                                            topStart = 8.dp,
-                                            bottomStart = 0.dp,
-                                            topEnd = 8.dp,
-                                            bottomEnd = 0.dp
-                                        )
+                        fileKeys.forEach { mainLabel ->
+                            val isSelected = expandedMenu == mainLabel
+                            Column(
+                                modifier = Modifier.wrapContentSize(),
+                                verticalArrangement = Arrangement.spacedBy(0.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                MenuButton(
+                                    mainLabel = mainLabel,
+                                    isSelected = isSelected,
+                                    onClick = { expandedMenu = if (isSelected) null else mainLabel },
+                                    widthFraction = 1f,
+                                    shapeSelected = RoundedCornerShape(
+                                        topStart = 8.dp,
+                                        bottomStart = 0.dp,
+                                        topEnd = 8.dp,
+                                        bottomEnd = 0.dp
                                     )
-                                    if (isSelected) {
-                                        getFileMapping(mainLabel)?.let { (inputList, outputList) ->
+                                )
+                                if (isSelected) {
+                                    getFileMapping(mainLabel)?.let { (inputList, outputList) ->
 
-                                            modalities(
-                                                selectedData = selectedData,
-                                                mainLabels = inputList,
-                                                subLabels = outputList,
-                                                onCheckboxChanged = onCheckboxChanged,
-                                                shape = RoundedCornerShape(
-                                                    topStart = 0.dp,
-                                                    bottomStart = 8.dp,
-                                                    topEnd = 0.dp,
-                                                    bottomEnd = 8.dp
-                                                )
+                                        modalities(
+                                            selectedData = selectedData,
+                                            mainLabels = inputList,
+                                            subLabels = outputList,
+                                            onCheckboxChanged = onCheckboxChanged,
+                                            shape = RoundedCornerShape(
+                                                topStart = 0.dp,
+                                                bottomStart = 8.dp,
+                                                topEnd = 0.dp,
+                                                bottomEnd = 8.dp
                                             )
-                                        }
+                                        )
                                     }
                                 }
+                            }
 //                            }
                         }
                     } else {
@@ -294,9 +294,9 @@ fun cardMenu(
                                     expandedMenu?.let { selectedMainLabel ->
                                         getFileMapping(selectedMainLabel)?.let { (inputList, outputList) ->
                                             modalities(
-                                                selectedData = selectedData, // ✅ Inputs are now correctly mapped
+                                                selectedData = selectedData,
                                                 mainLabels = inputList,
-                                                subLabels = outputList, // ✅ Outputs go into modalities
+                                                subLabels = outputList,
                                                 onCheckboxChanged = onCheckboxChanged,
                                                 shape = RoundedCornerShape(
                                                     topStart = 0.dp,
@@ -337,7 +337,7 @@ fun MenuButton(
         modifier = Modifier
             .fillMaxWidth(widthFraction)
             .background(
-                color = Color(0xFFFFB85F),
+                color = Color(0xFFDCE7F6),
                 shape = if (isSelected) {
                     shapeSelected
                 } else {
@@ -354,92 +354,33 @@ fun MenuButton(
 }
 
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun activeSelected(
     selectedData: Set<String>,
     onCheckboxChanged: (String, Boolean) -> Unit
 ) {
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth()
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        val chunkSize = if (maxWidth < 300.dp) 1 else 2 // Use 1 if width < 300.dp, otherwise 2
-
-        val rows = selectedData.toList().chunked(chunkSize)
-
-        if (chunkSize == 2) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                rows.forEach { rowItems ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (rowItems.isNotEmpty()) {
-                                selectedButtonRemove(
-                                    modifier = Modifier,
-                                    text = rowItems[0],
-                                    onclick = {
-                                        val isCurrentlyChecked = selectedData.contains(rowItems[0])
-                                        onCheckboxChanged(rowItems[0], !isCurrentlyChecked)
-                                    }
-                                )
-                            }
-                        }
-                        Box(
-                            modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (rowItems.size >= 2) {
-                                selectedButtonRemove(
-                                    modifier = Modifier,
-                                    text = rowItems[1],
-                                    onclick = {
-                                        val isCurrentlyChecked = selectedData.contains(rowItems[1])
-                                        onCheckboxChanged(rowItems[1], !isCurrentlyChecked)
-                                    }
-                                )
-                            }
-                        }
-
+        selectedData.toList().forEach { button ->
+            if (button.isNotEmpty()) {
+                selectedButtonRemove(
+                    modifier = Modifier,
+                    text = button[0].toString(),
+                    onclick = {
+                        val isCurrentlyChecked = selectedData.contains(button[0].toString())
+                        onCheckboxChanged(button[0].toString(), !isCurrentlyChecked)
                     }
-                }
+                )
             }
-        } else {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
 
-                ) {
-                rows.forEach { rowItems ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
 
-                    ) {
-                        rowItems.forEach { label ->
-                            selectedButtonRemove(
-                                modifier = Modifier,
-                                text = label,
-                                onclick = {
-                                    val isCurrentlyChecked = selectedData.contains(label)
-                                    onCheckboxChanged(label, !isCurrentlyChecked)
-                                }
-                            )
-                        }
-                    }
-                }
-            }
         }
-
-
     }
 }
 
@@ -451,7 +392,7 @@ fun selectedButtonRemove(modifier: Modifier = Modifier, text: String, onclick: (
             onclick()
         },
         colors = ButtonDefaults.textButtonColors(
-            backgroundColor = Color.LightGray,
+            backgroundColor = Color(0xFFDCE7F6),
             contentColor = Color.Black
         ),
         shape = RoundedCornerShape(12.dp),

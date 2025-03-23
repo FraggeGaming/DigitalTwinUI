@@ -1,6 +1,8 @@
 package org.thesis.project.Model
 
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 
 class NiftiRepo {
     //Stores the niftiData by Filename
@@ -35,7 +37,7 @@ class NiftiRepo {
             }
 
             NiftiView.SAGITTAL -> {
-                Triple( images.sagittalVoxelSlices, spacing[0], images.modality)
+                Triple(images.sagittalVoxelSlices, spacing[0], images.modality)
             }
         }
     }
@@ -43,7 +45,6 @@ class NiftiRepo {
     //Connects multiple filenames together, ex: Patient_1 : List("CT_img1", "PET_real"), List("Syntet_PET")
     private val _fileMapping = MutableStateFlow<Map<String, Pair<List<String>, List<String>>>>(emptyMap())
     val fileMapping: StateFlow<Map<String, Pair<List<String>, List<String>>>> = _fileMapping
-
 
 
     //Add or update an entry in the mapping
