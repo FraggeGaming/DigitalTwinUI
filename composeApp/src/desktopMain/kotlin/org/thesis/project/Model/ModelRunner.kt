@@ -12,6 +12,29 @@ class ModelRunner(
     private val fileUploader: FileUploadController
 ) {
 
+    private val _mLModels = MutableStateFlow<List<AIModel>>(emptyList())
+    val mLModels: StateFlow<List<AIModel>> = _mLModels.asStateFlow()
+
+
+    init {
+        val demoModels = listOf(
+            AIModel(
+                title = "CT to PET",
+                description = "CT to PET translation using a Pix2Pix patchGan",
+                inputModality = "CT",
+                outputModality = "PET"
+            ),
+            AIModel(
+                title = "PET to CT",
+                description = "PET to CT translation",
+                inputModality = "PET",
+                outputModality = "CT"
+            ),
+        )
+
+        _mLModels.value = demoModels
+    }
+
     suspend fun runModel() = coroutineScope {
 
         val input = mutableListOf<String>()
@@ -27,20 +50,23 @@ class ModelRunner(
             input.add(inputDeferred.await())
             println("TESTING, $input")
 
-            val fileName = file.groundTruthFilePath.substringAfterLast("/")
+            if (file.groundTruthFilePath.isNotBlank()){
+                val fileName = file.groundTruthFilePath.substringAfterLast("/")
 
-            //Create new UploadFileMetadata for the ground truth
-            val newGTFile = UploadFileMetadata(
-                filePath = file.groundTruthFilePath,
-                title = "$fileName GT",
-                modality = file.model?.outputModality ?: "",
-                region = file.region,
-                model = file.model,
-                groundTruthFilePath = ""
-            )
-            val inputGT = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }
-            input.add(inputGT.await())
-            println("TESTING, $input")
+                //Create new UploadFileMetadata for the ground truth
+                val newGTFile = UploadFileMetadata(
+                    filePath = file.groundTruthFilePath,
+                    title = "$fileName GT",
+                    modality = file.model?.outputModality ?: "",
+                    region = file.region,
+                    model = file.model,
+                    groundTruthFilePath = ""
+                )
+                val inputGT = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }
+                input.add(inputGT.await())
+                println("TESTING, $input")
+            }
+
 
 
             //TODO run model here
@@ -59,28 +85,5 @@ class ModelRunner(
             niftiRepo.addFileMapping(title, input, output)
         }
 
-    }
-
-    private val _mLModels = MutableStateFlow<List<AIModel>>(emptyList())
-    val mLModels: StateFlow<List<AIModel>> = _mLModels.asStateFlow()
-
-
-    init {
-        val demoModels = listOf(
-            AIModel(
-                title = "CT to PET",
-                description = "Segmentation of brain tumor from CT scans.",
-                inputModality = "CT",
-                outputModality = "PET"
-            ),
-            AIModel(
-                title = "PET to CT",
-                description = "Detection of lung nodules from PET images.",
-                inputModality = "PET",
-                outputModality = "CT"
-            ),
-        )
-
-        _mLModels.value = demoModels
     }
 }
