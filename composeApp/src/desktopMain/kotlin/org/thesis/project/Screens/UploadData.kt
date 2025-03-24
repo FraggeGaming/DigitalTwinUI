@@ -24,6 +24,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
 import org.thesis.project.Components.FileUploadComponent
+import org.thesis.project.Components.LocalAppColors
+import org.thesis.project.Components.dropDownMenuCustom
 import org.thesis.project.Components.standardCard
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.UploadFileMetadata
@@ -56,12 +58,6 @@ fun uploadData(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier.width(400.dp).wrapContentHeight()
-                        .verticalScroll(scrollState),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
                     uploadedFiles.forEachIndexed { index, metadata ->
                         standardCard(
                             contentAlignment = Alignment.CenterHorizontally,
@@ -104,6 +100,7 @@ fun uploadData(
                                     )
                                 }
 
+                                //Model card
                                 if (metadata.model != null) {
                                     standardCard(
                                         modifier = Modifier.width(300.dp),
@@ -129,6 +126,7 @@ fun uploadData(
                                     )
                                 }
 
+                                //Select Model
                                 Button(
                                     onClick = {
                                         val missingField = when {
@@ -148,23 +146,25 @@ fun uploadData(
                                         }
                                     }
                                 ) {
-                                    Text("Select Model")
+                                    Text("Select Model", color = Color.White)
                                 }
 
-                                Text("Add ground truth")
 
+                                //Add ground truth
                                 Row {
-                                    Box(modifier = Modifier.width(100.dp).height(100.dp)) {
-                                        FileUploadComponent(onSelected = {
-                                            val updated = metadata.copy(groundTruthFilePath = it)
-                                            interfaceModel.fileUploader.updateMetadata(index, updated)
-                                            println(uploadedFiles)
-                                        })
-
-
+                                    if (metadata.groundTruthFilePath.isEmpty()) {
+                                        Box(modifier = Modifier.width(100.dp).height(100.dp)) {
+                                            FileUploadComponent(
+                                                text = "Add ground truth",
+                                                onSelected = {
+                                                    val updated = metadata.copy(groundTruthFilePath = it)
+                                                    interfaceModel.fileUploader.updateMetadata(index, updated)
+                                                    println(uploadedFiles)
+                                                })
+                                        }
                                     }
 
-                                    if (metadata.groundTruthFilePath.isNotEmpty()) {
+                                    else {
                                         Text(File(metadata.groundTruthFilePath).name)
                                         TextButton(onClick = {
                                             val updated = metadata.copy(groundTruthFilePath = "")
@@ -176,6 +176,7 @@ fun uploadData(
                                 }
 
 
+                                //Remove
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
@@ -216,7 +217,7 @@ fun uploadData(
                                             standardCard(
                                                 modifier = Modifier.width(300.dp),
                                                 content = {
-                                                    Column(Modifier.padding(16.dp)) {
+
                                                         Text(text = model.title, style = MaterialTheme.typography.h6)
                                                         Spacer(modifier = Modifier.height(4.dp))
                                                         Text(
@@ -244,10 +245,11 @@ fun uploadData(
                                                                 )
                                                                 showModelPopup = false
                                                             }
-                                                        }) {
-                                                            Text("Select Model")
                                                         }
-                                                    }
+                                                        ) {
+                                                            Text("Select Model", color = Color.White)
+                                                        }
+
                                                 }
                                             )
                                         }
@@ -262,7 +264,9 @@ fun uploadData(
                         }
                     }
 
-                    FileUploadComponent(interfaceModel.fileUploader::addFile)
+                    FileUploadComponent(
+                        text = "Click To Upload File",
+                        interfaceModel.fileUploader::addFile)
 
                     Button(
                         onClick = {
@@ -273,79 +277,17 @@ fun uploadData(
                         },
                         shape = RectangleShape,
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF0050A0),
-                            contentColor = Color.White
+                            backgroundColor = LocalAppColors.current.primaryBlue,
+                            contentColor = LocalAppColors.current.textColor
                         ),
                         modifier = Modifier.width(100.dp).height(100.dp)
                     ) {
-                        Text("Run Generation", textAlign = TextAlign.Center)
+                        Text("Run Generation", textAlign = TextAlign.Center, color = Color.White)
                     }
-                }
+
             }
         }
     }
 
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-fun dropDownMenuCustom(
-    label: String,
-    selected: String,
-    options: List<String>,
-    onSelected: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val icon = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown
-    val text = selected.ifEmpty { label }
-
-    Box {
-        Button(
-            onClick = { expanded = true },
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = Color(0xFFDCE7F6),
-                contentColor = Color.Black
-            ),
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.padding(bottom = 4.dp).width(180.dp)
-        ) {
-            Text(text)
-            Spacer(Modifier.width(8.dp))
-            Icon(icon, contentDescription = if (expanded) "Collapse" else "Expand")
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .background(Color(0xFFDCE7F6), shape = RoundedCornerShape(8.dp))
-        ) {
-            options.forEach { option ->
-                var isHovered by remember { mutableStateOf(false) }
-                val isSelected = option == selected
-
-                DropdownMenuItem(
-                    onClick = {
-                        expanded = false
-                        onSelected(option)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(
-                            when {
-                                isSelected -> Color(0xFFDCE7F6).copy(alpha = 0.3f)
-                                isHovered -> Color(0xFFDCE7F6).copy(alpha = 0.1f)
-                                else -> Color.Transparent
-                            }
-                        )
-                        .onPointerEvent(PointerEventType.Enter) { isHovered = true }
-                        .onPointerEvent(PointerEventType.Exit) { isHovered = false }
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    Text(option)
-                }
-            }
-        }
-    }
-}

@@ -24,6 +24,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.thesis.project.Components.LocalAppColors
 import java.awt.Cursor
 
 
@@ -32,7 +33,7 @@ fun MainPanelLayout(
     leftContent: @Composable () -> Unit,
     centerContent: @Composable () -> Unit,
     rightContent: @Composable () -> Unit,
-    minPanelWidth: Dp = 300.dp, // Minimum width in dp for left/right panels
+    minPanelWidth: Dp = 200.dp, // Minimum width in dp for left/right panels
     maxPanelWidth: Dp = 600.dp, // Maximum width in dp for left/right panels
     leftPanelWidth: Dp,                // Passed in state for left panel width
     rightPanelWidth: Dp,               // Passed in state for right panel width
@@ -45,6 +46,7 @@ fun MainPanelLayout(
     var leftWidth by remember { mutableStateOf(leftPanelWidth) }
     var rightWidth by remember { mutableStateOf(rightPanelWidth) }
 
+    val bkg = LocalAppColors.current.secondaryBackgroundColor
 
     Row(modifier = Modifier.fillMaxSize()) {
         val leftScrollState = rememberScrollState()
@@ -57,7 +59,7 @@ fun MainPanelLayout(
                     .fillMaxHeight()
                     .width(leftWidth.coerceIn(minPanelWidth, maxPanelWidth))
                     .verticalScroll(leftScrollState)
-                    .background(Color.LightGray)
+                    .background(LocalAppColors.current.backgroundColor)
                     .padding(12.dp), // move padding here
                 verticalArrangement = Arrangement.spacedBy(16.dp), // combine spacing
                 horizontalAlignment = Alignment.Start
@@ -80,7 +82,7 @@ fun MainPanelLayout(
             Box(
                 modifier = Modifier
                     .width(48.dp)
-                    .background(Color.DarkGray),
+                    .background(LocalAppColors.current.backgroundColor),
                 contentAlignment = Alignment.TopStart
             ) {
                 IconButton(onClick = { toggleLeftPanel() }) {
@@ -94,7 +96,7 @@ fun MainPanelLayout(
             modifier = Modifier
                 .fillMaxHeight()
                 .weight(1f) // Center panel takes the remaining space
-                .background(Color.White),
+                .background(bkg),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.Start
         ) {
@@ -118,7 +120,7 @@ fun MainPanelLayout(
                     .fillMaxHeight()
                     .width(rightWidth.coerceIn(minPanelWidth, maxPanelWidth))
                     .verticalScroll(rightScrollState)
-                    .background(Color.LightGray),
+                    .background(LocalAppColors.current.backgroundColor),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Start
             ) {
@@ -130,7 +132,7 @@ fun MainPanelLayout(
                         .drawBehind {
                             // Draw top border
                             drawLine(
-                                color = Color.LightGray,
+                                color = bkg,
                                 start = Offset(0f, 0f),
                                 end = Offset(size.width, 0f),
                                 strokeWidth = 1.dp.toPx()

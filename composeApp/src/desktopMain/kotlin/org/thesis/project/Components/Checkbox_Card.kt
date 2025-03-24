@@ -2,9 +2,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.thesis.project.Components.LocalAppColors
 import org.thesis.project.Components.standardCard
 import org.thesis.project.Model.NiftiView
 
@@ -30,7 +31,7 @@ fun CardWithCheckboxes(
         modifier = modifier,
         contentAlignment = Alignment.CenterHorizontally,
         content = {
-            Text(text = "Select Districts")
+            Text(text = "Select Districts",  color = LocalAppColors.current.primaryBlue,)
 
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -67,27 +68,31 @@ fun buttonWithCheckbox(
     label: String,
     onCheckboxChanged: (String, Boolean) -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        TextButton(
-            //modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.textButtonColors(
-                backgroundColor = Color.Transparent,
-                contentColor = LocalContentColor.current
-            ),
-            onClick = {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .clickable {
                 val isCurrentlyChecked = selectedData.contains(label)
                 onCheckboxChanged(label, !isCurrentlyChecked)
-            }
-        ) {
-            Checkbox(
-                checked = selectedData.contains(label),
-                onCheckedChange = { isChecked ->
-                    onCheckboxChanged(label, isChecked)
-                }
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+
+
+        Checkbox(
+            checked = selectedData.contains(label),
+            onCheckedChange = { isChecked ->
+                onCheckboxChanged(label, isChecked)
+            },
+            colors = CheckboxDefaults.colors(
+                checkedColor = LocalAppColors.current.primaryBlue,
+                uncheckedColor = LocalAppColors.current.primaryBlue,
+                checkmarkColor = Color.White
             )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(text = label)
-        }
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(text = label, color = Color.Black)
     }
 }
 
@@ -103,14 +108,16 @@ fun buttonWithCheckboxSet(
             modifier = modifier,
             //modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.textButtonColors(
-                backgroundColor = Color.Transparent,
+                containerColor  = Color.Transparent,
                 contentColor = Color.White,
             ),
             onClick = {
                 val isCurrentlyChecked = selectedData.contains(label)
                 onCheckboxChanged(label, !isCurrentlyChecked)
-            }
+            },
+            shape = RoundedCornerShape(0.dp)
         ) {
+
             Checkbox(
                 checked = selectedData.contains(label),
                 onCheckedChange = { isChecked ->
@@ -119,14 +126,16 @@ fun buttonWithCheckboxSet(
                 colors = CheckboxDefaults.colors(
                     checkedColor = Color.White,
                     uncheckedColor = Color.White,
-                    checkmarkColor = Color(0xFF0050A0)
+                    checkmarkColor = LocalAppColors.current.primaryBlue
                 )
             )
+
             Spacer(modifier = Modifier.width(4.dp))
-            Text(text = label.displayName)
+            Text(text = label.displayName, color = Color.White)
         }
     }
 }
+
 
 @Composable
 fun modalities(
@@ -140,30 +149,24 @@ fun modalities(
         modifier = Modifier
             .wrapContentSize(Alignment.Center)
             .clip(shape)
-            .background(Color(0xFFDCE7F6))
+            .background(LocalAppColors.current.thirdlyBlue)
             .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp), // ✅ Restore spacing between items
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "Input",
-            textAlign = TextAlign.Start,
-            modifier = Modifier
-                .wrapContentSize(),
-            color = Color.Black
+            color = Color.Black,
+
         )
 
         mainLabels.forEach { mainLabel ->
             buttonWithCheckbox(selectedData, mainLabel, onCheckboxChanged)
-
         }
 
-        Divider(modifier = Modifier.padding(vertical = 8.dp))
         Text(
             text = "Synthetic output",
-            textAlign = TextAlign.Start,
-            modifier = Modifier
-                .wrapContentSize()
+            color = Color.Black,
         )
         subLabels.forEach { subLabel ->
             buttonWithCheckbox(selectedData, subLabel, onCheckboxChanged)
@@ -195,11 +198,12 @@ fun cardMenu(
                 ) {
                     Text(
                         text = "Select files to view",
+                        color = LocalAppColors.current.primaryBlue,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
 
-                    if (boxMaxWidth < 300.dp) {
+                    if (boxMaxWidth < 200.dp) {
                         // Vertical list of menu items
 //                        Column(
 //                            verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -213,7 +217,7 @@ fun cardMenu(
                                 verticalArrangement = Arrangement.spacedBy(0.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                MenuButton(
+                                menuButton(
                                     mainLabel = mainLabel,
                                     isSelected = isSelected,
                                     onClick = { expandedMenu = if (isSelected) null else mainLabel },
@@ -254,12 +258,12 @@ fun cardMenu(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 fileKeys.forEach { mainLabel ->
-                                    MenuButton(
+                                    menuButton(
                                         mainLabel = mainLabel,
                                         isSelected = false,
                                         onClick = { expandedMenu = mainLabel },
                                         widthFraction = 1f,
-                                        shapeSelected = RoundedCornerShape(8.dp)
+                                        shapeSelected = RoundedCornerShape(4.dp)
                                     )
                                 }
                             }
@@ -272,14 +276,14 @@ fun cardMenu(
                                 ) {
                                     fileKeys.forEach { mainLabel ->
                                         val isSelected = expandedMenu == mainLabel
-                                        MenuButton(
+                                        menuButton(
                                             mainLabel = mainLabel,
                                             isSelected = isSelected,
                                             onClick = { expandedMenu = if (isSelected) null else mainLabel },
                                             widthFraction = if (isSelected) 1f else 0.8f,
                                             shapeSelected = RoundedCornerShape(
-                                                topStart = 8.dp,
-                                                bottomStart = 8.dp,
+                                                topStart = 4.dp,
+                                                bottomStart = 4.dp,
                                                 topEnd = 0.dp,
                                                 bottomEnd = 0.dp
                                             )
@@ -300,9 +304,9 @@ fun cardMenu(
                                                 onCheckboxChanged = onCheckboxChanged,
                                                 shape = RoundedCornerShape(
                                                     topStart = 0.dp,
-                                                    bottomStart = 8.dp,
+                                                    bottomStart = 4.dp,
                                                     topEnd = 0.dp,
-                                                    bottomEnd = 8.dp
+                                                    bottomEnd = 4.dp
                                                 )
                                             )
                                         }
@@ -325,25 +329,27 @@ fun cardMenu(
 
 
 @Composable
-fun MenuButton(
+fun menuButton(
     mainLabel: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     widthFraction: Float,
     shapeSelected: Shape
 ) {
-    TextButton(
-        onClick = onClick,
+    Row(
         modifier = Modifier
-            .fillMaxWidth(widthFraction)
+            .fillMaxSize().height(40.dp)
             .background(
-                color = Color(0xFFDCE7F6),
+                color = LocalAppColors.current.thirdlyBlue,
                 shape = if (isSelected) {
                     shapeSelected
                 } else {
-                    RoundedCornerShape(8.dp)
+                    RoundedCornerShape(4.dp)
                 }
-            )
+            ).clickable {onClick()}
+        ,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
         Text(
             text = mainLabel,
@@ -367,14 +373,15 @@ fun activeSelected(
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        println(selectedData)
         selectedData.toList().forEach { button ->
             if (button.isNotEmpty()) {
                 selectedButtonRemove(
                     modifier = Modifier,
-                    text = button[0].toString(),
+                    text = button,
                     onclick = {
-                        val isCurrentlyChecked = selectedData.contains(button[0].toString())
-                        onCheckboxChanged(button[0].toString(), !isCurrentlyChecked)
+                        val isCurrentlyChecked = selectedData.contains(button)
+                        onCheckboxChanged(button, !isCurrentlyChecked)
                     }
                 )
             }
@@ -392,25 +399,23 @@ fun selectedButtonRemove(modifier: Modifier = Modifier, text: String, onclick: (
             onclick()
         },
         colors = ButtonDefaults.textButtonColors(
-            backgroundColor = Color(0xFFDCE7F6),
+            containerColor  = LocalAppColors.current.thirdlyBlue,
             contentColor = Color.Black
         ),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         modifier = Modifier
-            .size(150.dp, 50.dp)
+            .size(100.dp, 50.dp)
             .then(modifier)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+            horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = text,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Start
+                text = text
             )
-            Spacer(modifier = Modifier.width(8.dp))
+
             Icon(
                 imageVector = Icons.Filled.Close,
                 contentDescription = "Exit",

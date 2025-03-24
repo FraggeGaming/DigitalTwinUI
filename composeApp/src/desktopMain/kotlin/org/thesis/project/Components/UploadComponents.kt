@@ -27,6 +27,7 @@ fun selectFilesMultipleAWT(): List<String> {
 
 @Composable
 fun FileUploadComponent(
+    text: String,
     onSelected: (String) -> Unit,
 ) {
 
@@ -51,7 +52,7 @@ fun FileUploadComponent(
                 tint = Color.DarkGray,
                 modifier = Modifier.size(48.dp)
             )
-            Text("Drag & Drop or Click to Upload", textAlign = TextAlign.Center)
+            Text(text, textAlign = TextAlign.Center)
         }
     }
 }

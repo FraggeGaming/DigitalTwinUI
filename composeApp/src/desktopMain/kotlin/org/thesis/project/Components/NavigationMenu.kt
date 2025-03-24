@@ -1,39 +1,57 @@
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import org.thesis.project.Components.LocalAppColors
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun navigationButtons(navController: NavController, selected: String) {
+
+    var isHoveredUpload by remember { mutableStateOf(false) }
+    var isHoveredResult by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier.height(height = 70.dp)
             .width(300.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Button(
+
             onClick = { navController.navigate("upload") },
             shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
+
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = if (selected == "upload") Color(0xFF0050A0) else Color(0xFF0050A0), // Blue background
-                contentColor = Color.White            // White text
+                containerColor  = when {
+                    selected == "upload" -> LocalAppColors.current.buttonColor.copy(alpha = 0.8f)
+                    isHoveredUpload -> LocalAppColors.current.buttonColor.copy(alpha = 0.7f)
+                    else -> LocalAppColors.current.buttonColor
+                },
+                contentColor = LocalAppColors.current.buttonTextColor
             ),
             modifier = Modifier
+                .onPointerEvent(PointerEventType.Enter) { isHoveredUpload = true }
+                .onPointerEvent(PointerEventType.Exit) { isHoveredUpload = false }
                 .weight(1f)
                 .fillMaxHeight()
         ) {
             Text("Upload", textAlign = TextAlign.Center)
         }
+
+
 //        Button(
 //            onClick = { navController.navigate("modelSelect") },
 //            shape = RectangleShape,
@@ -49,12 +67,18 @@ fun navigationButtons(navController: NavController, selected: String) {
 //        }
         Button(
             onClick = { navController.navigate("main") },
-            shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp),
+             shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp),
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = if (selected == "main") Color(0xFF0050A0) else Color(0xFF0050A0), // Blue background
-                contentColor = Color.White            // White text
+                containerColor  = when {
+                    selected == "main" -> LocalAppColors.current.buttonColor.copy(alpha = 0.8f)
+                    isHoveredResult -> LocalAppColors.current.buttonColor.copy(alpha = 0.7f)
+                    else -> LocalAppColors.current.buttonColor
+                },
+                contentColor = LocalAppColors.current.buttonTextColor
             ),
             modifier = Modifier
+                .onPointerEvent(PointerEventType.Enter) { isHoveredResult = true }
+                .onPointerEvent(PointerEventType.Exit) { isHoveredResult = false }
                 .weight(1f)
                 .fillMaxHeight()
         ) {

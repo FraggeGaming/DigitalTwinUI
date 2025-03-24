@@ -4,10 +4,13 @@ import CardWithCheckboxes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,10 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import buttonWithCheckboxSet
 import cardMenu
-import org.thesis.project.Components.scrollSlider
-import org.thesis.project.Components.scrollWithTitle
-import org.thesis.project.Components.standardCard
-import org.thesis.project.Components.voxelImageDisplay
+import org.thesis.project.Components.*
 import org.thesis.project.MainPanelLayout
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
@@ -196,14 +196,17 @@ fun imageGrid(
                                     content = {
                                         Text(
                                             text = "${selectedView.displayName} - Slice $currentIndex",
-                                            style = MaterialTheme.typography.h6
+                                            style = MaterialTheme.typography.displaySmall
                                         )
-                                        voxelImageDisplay(
-                                            voxelSlice = slices[currentIndex],
-                                            interfaceModel = interfaceModel,
-                                            modality = modality,
-                                            pixelSpacing = spacingPx
-                                        )
+                                        if (slices.isNotEmpty()){
+                                            voxelImageDisplay(
+                                                voxelSlice = slices[currentIndex],
+                                                interfaceModel = interfaceModel,
+                                                modality = modality,
+                                                pixelSpacing = spacingPx
+                                            )
+                                        }
+
                                     }
                                 )
                             }
@@ -231,13 +234,18 @@ fun menuCard(
 
     Card(
         modifier = modifier.padding(16.dp),
-        elevation = 8.dp,
-        contentColor = Color.White
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White, // This is the background color of the Card
+            contentColor = Color.White      // Content color inside the Card
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 8.dp
+        )
     ) {
         FlowRow(
             modifier = Modifier
                 .wrapContentSize()
-                .background(Color(0xFF0050A0), shape = RoundedCornerShape(8.dp)),
+                .background(LocalAppColors.current.primaryBlue, shape = RoundedCornerShape(8.dp)),
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
@@ -272,9 +280,10 @@ fun menuCard(
                     interfaceModel.updateSelectedSettings(Settings.MEASUREMENT, !isChecked)
                 },
                 colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = if (selectedSettings.contains(Settings.MEASUREMENT)) Color(0xFF80A7D0) else Color.Transparent,
+                    containerColor = if (selectedSettings.contains(Settings.MEASUREMENT)) Color(0xFF80A7D0) else Color.Transparent,
                     contentColor = if (selectedSettings.contains(Settings.MEASUREMENT)) Color.Black else Color.White
-                )
+                ),
+                shape = RoundedCornerShape(0.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -296,9 +305,10 @@ fun menuCard(
                     interfaceModel.updateSelectedSettings(Settings.PIXEL, !isChecked)
                 },
                 colors = ButtonDefaults.textButtonColors(
-                    backgroundColor = if (selectedSettings.contains(Settings.PIXEL)) Color(0xFF80A7D0) else Color.Transparent,
+                    containerColor = if (selectedSettings.contains(Settings.PIXEL)) Color(0xFF80A7D0) else Color.Transparent,
                     contentColor = if (selectedSettings.contains(Settings.PIXEL)) Color.Black else Color.White
-                )
+                ),
+                shape = RoundedCornerShape(0.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -321,10 +331,6 @@ fun windowControls(interfaceModel: InterfaceModel) {
 
     standardCard(
         content = {
-            Text("Windowing Presets")
-            //val icon = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown
-
-
             dropDownMenuCustom(
                 label = "Select Preset",
                 selected = selectedPresetLabel ?: "",

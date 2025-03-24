@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import navigationButtons
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.thesis.project.Components.regionVasterbottenTheme
 import org.thesis.project.Components.topAppBar
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Screens.imageViewer
@@ -28,7 +29,7 @@ import org.thesis.project.Screens.uploadData
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
+    regionVasterbottenTheme {
         val interfaceModel: InterfaceModel = viewModel()
 
         val navController = rememberNavController()

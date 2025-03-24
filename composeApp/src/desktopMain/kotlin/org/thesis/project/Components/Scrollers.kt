@@ -5,9 +5,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.Slider
-import androidx.compose.material.SliderDefaults
-import androidx.compose.material.Text
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,7 +62,7 @@ fun scrollWithTitle(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(title)
+        Text(title, color = LocalAppColors.current.primaryBlue)
 
         var inputText by remember { mutableStateOf(value.toInt().toString()) }
 
@@ -79,9 +79,9 @@ fun scrollWithTitle(
                 valueRange = valueRange,
                 modifier = Modifier.weight(1f),
                 colors = SliderDefaults.colors(
-                    thumbColor = Color(0xFF0050A0),
-                    activeTrackColor = Color(0xFF80A7D0),
-                    inactiveTrackColor = Color.Gray
+                    thumbColor = LocalAppColors.current.primaryBlue,
+                    activeTrackColor = LocalAppColors.current.secondaryBlue,
+                    inactiveTrackColor = LocalAppColors.current.primaryGray
                 )
             )
 
@@ -89,8 +89,8 @@ fun scrollWithTitle(
                 modifier = Modifier
                     .width(60.dp)
                     .height(32.dp)
-                    .border(1.dp, Color.LightGray, RoundedCornerShape(6.dp))
-                    .background(Color(0xFFDCE7F6), RoundedCornerShape(6.dp)),
+                    //.border(1.dp, LocalAppColors.current.primaryDarkGray, RoundedCornerShape(6.dp))
+                    .background(LocalAppColors.current.secondaryBlue, RoundedCornerShape(6.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 BasicTextField(

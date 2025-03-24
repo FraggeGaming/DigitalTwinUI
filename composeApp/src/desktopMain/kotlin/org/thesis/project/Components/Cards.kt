@@ -1,8 +1,10 @@
 package org.thesis.project.Components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,15 +20,14 @@ fun standardCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-        //.padding(contentPadding),
-        , shape = RoundedCornerShape(8.dp),
-        elevation = 8.dp
+        modifier = modifier.padding(16.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 8.dp
+        )
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth().background(LocalAppColors.current.cardColor)
                 .padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(verticalSpacing),
             horizontalAlignment = contentAlignment

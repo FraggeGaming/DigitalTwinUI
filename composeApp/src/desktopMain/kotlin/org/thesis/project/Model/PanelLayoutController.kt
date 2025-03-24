@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 class PanelLayoutController {
     // Define initial values as constants or properties
-    private val initialLeftPanelWidth: Dp = 400.dp
+    private val initialLeftPanelWidth: Dp = 350.dp
     private val initialRightPanelWidth: Dp = 300.dp
 
     // Panel layout state using Dp
