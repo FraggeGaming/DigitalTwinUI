@@ -23,11 +23,12 @@ fun standardCard(
         modifier = modifier.padding(16.dp),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 8.dp
-        )
+        ),
+        colors = CardDefaults.cardColors(containerColor = LocalAppColors.current.cardColor)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth().background(LocalAppColors.current.cardColor)
+                .fillMaxWidth()//.background(LocalAppColors.current.cardColor)
                 .padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(verticalSpacing),
             horizontalAlignment = contentAlignment

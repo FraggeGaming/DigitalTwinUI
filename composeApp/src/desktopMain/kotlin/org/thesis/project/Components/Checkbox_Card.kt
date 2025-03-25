@@ -338,7 +338,7 @@ fun menuButton(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxSize().height(40.dp)
+            .fillMaxSize(widthFraction).height(40.dp)
             .background(
                 color = LocalAppColors.current.thirdlyBlue,
                 shape = if (isSelected) {

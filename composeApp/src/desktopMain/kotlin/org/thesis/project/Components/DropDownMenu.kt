@@ -1,6 +1,7 @@
 package org.thesis.project.Components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -48,10 +49,10 @@ fun dropDownMenuCustom(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(
-                color = LocalAppColors.current.thirdlyBlue,
-                shape = RoundedCornerShape(8.dp)
-            )
+            modifier = Modifier
+                .width(180.dp) // optional
+                //.background(LocalAppColors.current.thirdlyBlue, RoundedCornerShape(12.dp))
+            , containerColor = LocalAppColors.current.thirdlyBlue
         ) {
             options.forEach { option ->
                 var isHovered by remember { mutableStateOf(false) }
@@ -65,19 +66,19 @@ fun dropDownMenuCustom(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(
-                            when {
-                                isSelected -> LocalAppColors.current.thirdlyBlue.copy(alpha = 0.8f)
-                                isHovered -> LocalAppColors.current.thirdlyBlue.copy(alpha = 0.7f)
-                                else -> Color.Transparent
-                            }
-                        )
+//                        .background(
+//                            when {
+//                                isSelected -> LocalAppColors.current.thirdlyBlue.copy(alpha = 0.8f)
+//                                isHovered -> LocalAppColors.current.thirdlyBlue.copy(alpha = 0.7f)
+//                                else -> LocalAppColors.current.thirdlyBlue
+//                            }
+//                        )
                         .onPointerEvent(PointerEventType.Enter) { isHovered = true }
                         .onPointerEvent(PointerEventType.Exit) { isHovered = false }
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
         }
+
     }
 }

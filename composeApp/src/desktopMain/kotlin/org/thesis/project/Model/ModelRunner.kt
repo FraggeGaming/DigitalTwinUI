@@ -37,10 +37,11 @@ class ModelRunner(
 
     suspend fun runModel() = coroutineScope {
 
-        val input = mutableListOf<String>()
-        val output = mutableListOf<String>()
+
 
         fileUploader.uploadedFileMetadata.value.forEach { file ->
+            val input = mutableListOf<String>()
+            val output = mutableListOf<String>()
             println("Model: ${file.model}")
 
             println("Simulate backend")

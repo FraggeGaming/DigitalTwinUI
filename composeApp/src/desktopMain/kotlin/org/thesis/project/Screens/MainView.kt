@@ -280,8 +280,8 @@ fun menuCard(
                     interfaceModel.updateSelectedSettings(Settings.MEASUREMENT, !isChecked)
                 },
                 colors = ButtonDefaults.textButtonColors(
-                    containerColor = if (selectedSettings.contains(Settings.MEASUREMENT)) Color(0xFF80A7D0) else Color.Transparent,
-                    contentColor = if (selectedSettings.contains(Settings.MEASUREMENT)) Color.Black else Color.White
+                    containerColor = if (selectedSettings.contains(Settings.MEASUREMENT)) LocalAppColors.current.buttonPressedColor else Color.Transparent,
+                    contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(0.dp)
             ) {
@@ -305,8 +305,8 @@ fun menuCard(
                     interfaceModel.updateSelectedSettings(Settings.PIXEL, !isChecked)
                 },
                 colors = ButtonDefaults.textButtonColors(
-                    containerColor = if (selectedSettings.contains(Settings.PIXEL)) Color(0xFF80A7D0) else Color.Transparent,
-                    contentColor = if (selectedSettings.contains(Settings.PIXEL)) Color.Black else Color.White
+                    containerColor = if (selectedSettings.contains(Settings.PIXEL)) LocalAppColors.current.buttonPressedColor else Color.Transparent,
+                    contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(0.dp)
             ) {
