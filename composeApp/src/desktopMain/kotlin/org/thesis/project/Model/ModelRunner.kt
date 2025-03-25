@@ -51,6 +51,14 @@ class ModelRunner(
             input.add(inputDeferred.await())
             println("TESTING, $input")
 
+            //sendNiftiToServer(file,"http://localhost:8000/process")
+            val returnedNifti = sendNiftiToServer(file, "http://localhost:8000/process")
+//            returnedNifti?.let {
+//                val outputName = "predicted_${file.title}"
+//                fileUploader.storeNiftiImages(outputName, parseNiftiImages(it, file.modality))
+//                output.add(outputName)
+//            }
+
             if (file.groundTruthFilePath.isNotBlank()){
                 val fileName = file.groundTruthFilePath.substringAfterLast("/")
 

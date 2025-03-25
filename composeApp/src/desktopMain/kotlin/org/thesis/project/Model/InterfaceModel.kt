@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.Serializable
 
 enum class NiftiView(val displayName: String) {
     AXIAL("Axial"),
@@ -21,6 +22,7 @@ enum class Settings(val settingName: String) {
     override fun toString(): String = settingName
 }
 
+@Serializable
 data class UploadFileMetadata(
     val filePath: String,
     var title: String,
@@ -30,7 +32,9 @@ data class UploadFileMetadata(
     val groundTruthFilePath: String
 )
 
+@Serializable
 data class AIModel(val title: String, val description: String, val inputModality: String, val outputModality: String)
+
 data class NiftiData(
     val width: Int,
     val height: Int,
