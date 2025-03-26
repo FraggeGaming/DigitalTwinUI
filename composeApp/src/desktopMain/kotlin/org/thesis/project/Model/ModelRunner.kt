@@ -6,6 +6,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.File
+import java.nio.file.Paths
 
 class ModelRunner(
     private val niftiRepo: NiftiRepo,
@@ -51,13 +53,29 @@ class ModelRunner(
             input.add(inputDeferred.await())
             println("TESTING, $input")
 
-            //sendNiftiToServer(file,"http://localhost:8000/process")
+
             val returnedNifti = sendNiftiToServer(file, "http://localhost:8000/process")
-//            returnedNifti?.let {
-//                val outputName = "predicted_${file.title}"
-//                fileUploader.storeNiftiImages(outputName, parseNiftiImages(it, file.modality))
-//                output.add(outputName)
-//            }
+            returnedNifti?.let {
+
+                val outputFileName = "predicted_${file.title}.nii.gz"
+                val outputDir = Paths.get("src/desktopMain/resources/output/").toFile()
+                val outputFilePath = File(outputDir, outputFileName)
+
+                outputDir.mkdirs() // Make sure the output directory exists
+                it.copyTo(outputFilePath, overwrite = true) // ✅ Copy the returned file
+
+                val predictedMetadata = UploadFileMetadata(
+                    filePath = outputFilePath.absolutePath,
+                    title = outputFileName,
+                    modality = file.model?.outputModality ?: "",
+                    region = file.region,
+                    model = file.model,
+                    groundTruthFilePath = ""
+                )
+
+                val outputDeferred = async(Dispatchers.IO) { fileUploader.loadNifti(predictedMetadata) }
+                output.add(outputDeferred.await())
+            }
 
             if (file.groundTruthFilePath.isNotBlank()){
                 val fileName = file.groundTruthFilePath.substringAfterLast("/")
@@ -75,17 +93,8 @@ class ModelRunner(
                 input.add(inputGT.await())
                 println("TESTING, $input")
             }
-
-
-
             //TODO run model here
             //TODO parse nifti
-
-            // outputFiles.add((uploadedFileMetadata.value!!.filePath))
-            //val outputDeferred = async(Dispatchers.IO) { loadNifti(outputNiftiFile) }
-
-            //val output = input// Placeholder until real model output is ready
-
 
             val title = file.title
             println("TEST: $title")

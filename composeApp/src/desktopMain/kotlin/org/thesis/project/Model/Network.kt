@@ -2,7 +2,6 @@ package org.thesis.project.Model
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -13,12 +12,13 @@ import java.io.File
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import java.util.concurrent.TimeUnit
 
 suspend fun sendNiftiToServer(
     metadata: UploadFileMetadata,
     serverUrl: String
 ): File? = withContext(Dispatchers.IO) {
-    val client = OkHttpClient()
+    //val client = OkHttpClient()
     val niftiFile = File(metadata.filePath)
 
     val jsonMetadata = Json.encodeToString(metadata)
@@ -36,10 +36,15 @@ suspend fun sendNiftiToServer(
             jsonMetadata.toRequestBody("application/json".toMediaType())
         )
         .build()
-
     val request = Request.Builder()
         .url(serverUrl)
         .post(requestBody)
+        .build()
+
+    val client = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.MINUTES)
+        .writeTimeout(5, TimeUnit.MINUTES)
+        .readTimeout(30, TimeUnit.MINUTES) // ⏱️ Wait up to 30 minutes for model processing
         .build()
 
     val response = client.newCall(request).execute()

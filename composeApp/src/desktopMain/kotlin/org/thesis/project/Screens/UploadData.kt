@@ -226,22 +226,25 @@ fun uploadData(
                 }
 
 
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            interfaceModel.modelRunner.runModel()
-                            navController.navigate("main")
-                        }
-                    },
-                    shape = RoundedCornerShape(4.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = LocalAppColors.current.primaryBlue,
-                        contentColor = LocalAppColors.current.textColor
-                    ),
-                    modifier = Modifier.width(200.dp).height(100.dp)
-                ) {
-                    Text("Run Generation", textAlign = TextAlign.Center, color = Color.White)
+                if(uploadedFiles.isNotEmpty()){
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                interfaceModel.modelRunner.runModel()
+                                navController.navigate("main")
+                            }
+                        },
+                        shape = RoundedCornerShape(4.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = LocalAppColors.current.primaryBlue,
+                            contentColor = LocalAppColors.current.textColor
+                        ),
+                        modifier = Modifier.width(200.dp).height(100.dp)
+                    ) {
+                        Text("Run Generation", textAlign = TextAlign.Center, color = Color.White)
+                    }
                 }
+
             }
 
 

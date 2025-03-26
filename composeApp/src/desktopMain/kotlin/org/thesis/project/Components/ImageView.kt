@@ -34,6 +34,7 @@ import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.Settings
 import java.awt.Point
 import java.awt.image.BufferedImage
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -266,17 +267,22 @@ fun voxelSliceToBitmap(
 
     for (y in 0 until height) {
         for (x in 0 until width) {
-            val value = slice[y][x]
-            val pixel = when {
-                value <= windowMin -> 0
-                value >= windowMax -> 255
-                else -> ((value - windowMin) / windowRange * 255f).toInt()
-            }
+            val pixel = applyWindowing(slice[y][x], windowCenter,windowWidth)
             raster.setSample(x, y, 0, pixel)
         }
     }
 
     return image.toComposeImageBitmap()
+}
+
+fun applyWindowing(value: Float, center: Float, width: Float): Int {
+    val min = center - width / 2f
+    val max = center + width / 2f
+    return when {
+        value <= min -> 0
+        value >= max -> 255
+        else -> (((value - min) / width) * 255f).roundToInt().coerceIn(0, 255)
+    }
 }
 
 

@@ -173,8 +173,8 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
     val windowPresets = mapOf(
         "CT - Brain" to WindowingParams(40f, 80f),
         "CT - Lung" to WindowingParams(-600f, 1500f),
-        "CT - Bone" to WindowingParams(400f, 2000f),
-        "PET SUV" to WindowingParams(5f, 10f)
+        "CT - Bone" to WindowingParams(300f, 1500f),
+        "PET SUV" to WindowingParams(2f, 5f)
     )
 
     data class WindowingParams(
