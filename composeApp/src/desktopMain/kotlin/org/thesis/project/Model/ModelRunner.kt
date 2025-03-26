@@ -62,7 +62,7 @@ class ModelRunner(
                 val outputFilePath = File(outputDir, outputFileName)
 
                 outputDir.mkdirs() // Make sure the output directory exists
-                it.copyTo(outputFilePath, overwrite = true) // ✅ Copy the returned file
+                it.copyTo(outputFilePath, overwrite = true) //Copy the returned file
 
                 val predictedMetadata = UploadFileMetadata(
                     filePath = outputFilePath.absolutePath,
