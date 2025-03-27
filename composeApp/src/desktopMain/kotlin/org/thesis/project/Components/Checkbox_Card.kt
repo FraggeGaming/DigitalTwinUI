@@ -404,7 +404,7 @@ fun selectedButtonRemove(modifier: Modifier = Modifier, text: String, onclick: (
         ),
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
-            .size(100.dp, 50.dp)
+            .size(150.dp, 70.dp)
             .then(modifier)
     ) {
         Row(
