@@ -39,8 +39,6 @@ class ModelRunner(
 
     suspend fun runModel() = coroutineScope {
 
-
-
         fileUploader.uploadedFileMetadata.value.forEach { file ->
             val input = mutableListOf<String>()
             val output = mutableListOf<String>()
@@ -53,6 +51,8 @@ class ModelRunner(
             input.add(inputDeferred.await())
             println("TESTING, $input")
 
+
+            //TODO Have server address and directory locations in csv files
 
             val returnedNifti = sendNiftiToServer(file, "http://localhost:8000/process")
             returnedNifti?.let {
@@ -93,8 +93,6 @@ class ModelRunner(
                 input.add(inputGT.await())
                 println("TESTING, $input")
             }
-            //TODO run model here
-            //TODO parse nifti
 
             val title = file.title
             println("TEST: $title")

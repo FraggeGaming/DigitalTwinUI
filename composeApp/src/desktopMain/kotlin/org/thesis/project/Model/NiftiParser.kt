@@ -8,8 +8,7 @@ import java.nio.file.Paths
 
 fun runNiftiParser(niftiPath: String, outputDir: String): String {
     val path = Paths.get("src/desktopMain/resources/executables/nifti_visualize.exe")
-    //val exePath = "C:\\Users\\User\\Desktop\\Exjob\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
-    //val exePath = "G:\\Coding\\Imaging\\composeApp\\src\\desktopMain\\resources\\executables\\nifti_visualize.exe"
+
     println("running process")
     val process = ProcessBuilder(path.toAbsolutePath().toString(), niftiPath, outputDir)
         .redirectErrorStream(true)
