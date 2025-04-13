@@ -44,7 +44,7 @@ data class NiftiData(
     var region: String = "",
     val voxelVolume: Array<Array<Array<Float>>>,
     var coronalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(),
-    var sagittalVoxelSlices: Array<Array<Array<Float>>> = emptyArray()
+    var sagittalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(),
 )
 
 class InterfaceModel : ViewModel() {

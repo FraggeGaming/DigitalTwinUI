@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import org.thesis.project.Model.ImageController
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.Settings
 import java.awt.Point
@@ -44,11 +45,11 @@ fun voxelImageDisplay(
     interfaceModel: InterfaceModel,
     modality: String,
     pixelSpacing: Float = 1f,
+    windowing: State<ImageController.WindowingParams>,
 ) {
     val uiState = remember { mutableStateOf(VoxelImageUIState()) }
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
-    val windowing by interfaceModel.imageController.windowing.collectAsState()
-    val bitmap = voxelSliceToBitmap(voxelSlice, windowing.center, windowing.width)
+    val bitmap = voxelSliceToBitmap(voxelSlice, windowing.value.center, windowing.value.width)
 
     var imageLayoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var boxCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }

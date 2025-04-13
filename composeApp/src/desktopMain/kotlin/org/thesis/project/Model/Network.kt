@@ -18,47 +18,54 @@ suspend fun sendNiftiToServer(
     metadata: UploadFileMetadata,
     serverUrl: String
 ): File? = withContext(Dispatchers.IO) {
-    //val client = OkHttpClient()
-    val niftiFile = File(metadata.filePath)
+    try {
+        val niftiFile = File(metadata.filePath)
+        val jsonMetadata = Json.encodeToString(metadata)
 
-    val jsonMetadata = Json.encodeToString(metadata)
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart(
+                "file",
+                niftiFile.name,
+                niftiFile.asRequestBody("application/octet-stream".toMediaType())
+            )
+            .addFormDataPart(
+                "metadata",
+                null,
+                jsonMetadata.toRequestBody("application/json".toMediaType())
+            )
+            .build()
 
-    val requestBody = MultipartBody.Builder()
-        .setType(MultipartBody.FORM)
-        .addFormDataPart(
-            "file",
-            niftiFile.name,
-            niftiFile.asRequestBody("application/octet-stream".toMediaType())
-        )
-        .addFormDataPart(
-            "metadata",
-            null,
-            jsonMetadata.toRequestBody("application/json".toMediaType())
-        )
-        .build()
-    val request = Request.Builder()
-        .url(serverUrl)
-        .post(requestBody)
-        .build()
+        val request = Request.Builder()
+            .url(serverUrl)
+            .post(requestBody)
+            .build()
 
-    val client = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.MINUTES)
-        .writeTimeout(5, TimeUnit.MINUTES)
-        .readTimeout(30, TimeUnit.MINUTES) // ⏱️ Wait up to 30 minutes for model processing
-        .build()
+        val client = OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.MINUTES)
+            .writeTimeout(5, TimeUnit.MINUTES)
+            .readTimeout(30, TimeUnit.MINUTES)
+            .build()
 
-    val response = client.newCall(request).execute()
-    if (!response.isSuccessful) {
-        println("Request failed: ${response.code}")
+        val response = client.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            println("Request failed: ${response.code}")
+            return@withContext null
+        }
+
+        val returnedFile = File.createTempFile("returned_", ".nii.gz")
+        returnedFile.outputStream().use { output ->
+            response.body?.byteStream()?.copyTo(output)
+        }
+
+        return@withContext returnedFile
+
+    } catch (e: Exception) {
+        println("Error sending NIfTI to server: ${e.localizedMessage}")
+        e.printStackTrace()
         return@withContext null
     }
-
-    val returnedFile = File.createTempFile("returned_", ".nii.gz")
-    returnedFile.outputStream().use { output ->
-        response.body?.byteStream()?.copyTo(output)
-    }
-
-    return@withContext returnedFile
 }
 
 

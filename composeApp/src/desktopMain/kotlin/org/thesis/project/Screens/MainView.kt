@@ -129,7 +129,7 @@ fun imageViewer(
                     )
                 }
             )
-            windowControls(interfaceModel)
+            windowControls(selectedData, interfaceModel)
         }
     )
 }
@@ -203,7 +203,8 @@ fun imageGrid(
                                                 voxelSlice = slices[currentIndex],
                                                 interfaceModel = interfaceModel,
                                                 modality = modality,
-                                                pixelSpacing = spacingPx
+                                                pixelSpacing = spacingPx,
+                                                windowing = interfaceModel.imageController.getWindowingState(filename)
                                             )
                                         }
 
@@ -325,38 +326,43 @@ fun menuCard(
 }
 
 @Composable
-fun windowControls(interfaceModel: InterfaceModel) {
-    val windowing by interfaceModel.imageController.windowing.collectAsState()
-    var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
+fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
 
-    standardCard(
-        content = {
-            dropDownMenuCustom(
-                label = "Select Preset",
-                selected = selectedPresetLabel ?: "",
-                options = interfaceModel.imageController.windowPresets.keys.toList(),
-                onSelected = { label ->
-                    selectedPresetLabel = label
-                    interfaceModel.imageController.setPreset(interfaceModel.imageController.windowPresets[label]!!)
-                }
-            )
 
-            scrollWithTitle(
-                title = "Window Center",
-                value = windowing.center,
-                onValueChange = { interfaceModel.imageController.setWindowing(it, windowing.width) },
-                valueRange = -1000f..1000f,
-                modifier = Modifier.fillMaxWidth()
-            )
+    selectedData.forEach { data ->
+        var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
+        val windowingState = interfaceModel.imageController.getWindowingState(data)
+        standardCard(
+            content = {
+                Text(data)
+                dropDownMenuCustom(
+                    label = "Select Preset",
+                    selected = selectedPresetLabel ?: "",
+                    options = interfaceModel.imageController.windowPresets.keys.toList(),
+                    onSelected = { label ->
+                        selectedPresetLabel = label
+                        interfaceModel.imageController.setPreset(interfaceModel.imageController.windowPresets[label]!!, data)
+                    }
+                )
 
-            scrollWithTitle(
-                title = "Window Width",
-                value = windowing.width,
-                onValueChange = { interfaceModel.imageController.setWindowing(windowing.center, it) },
-                valueRange = 1f..2500f,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    )
+                scrollWithTitle(
+                    title = "Window Center",
+                    value = windowingState.value.center,
+                    onValueChange = { interfaceModel.imageController.setWindowingCenter(it, data) },
+                    valueRange = -1000f..1000f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                scrollWithTitle(
+                    title = "Window Width",
+                    value = windowingState.value.width,
+                    onValueChange = { interfaceModel.imageController.setWindowingWidth(it, data) },
+                    valueRange = 1f..2500f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        )
+    }
+
 
 }

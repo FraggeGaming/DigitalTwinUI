@@ -9,6 +9,8 @@ import org.thesis.project.Components.VoxelImageUIState
 import java.awt.Point
 import kotlin.math.floor
 import kotlin.math.sqrt
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.State
 
 class ImageController(private val niftiRepo: NiftiRepo, private val scope: CoroutineScope) {
 
@@ -182,14 +184,33 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
         val width: Float
     )
 
-    private val _windowing = MutableStateFlow(WindowingParams(center = 40f, width = 80f))
-    val windowing: StateFlow<WindowingParams> = _windowing.asStateFlow()
+    val windowingMap = mutableMapOf<String, MutableState<WindowingParams>>()
 
-    fun setWindowing(center: Float, width: Float) {
-        _windowing.value = WindowingParams(center, width)
+    fun getWindowingState(filename: String): State<WindowingParams> {
+        return windowingMap.getOrPut(filename) {
+            mutableStateOf(WindowingParams(40f, 80f))
+        }
     }
 
-    fun setPreset(preset: WindowingParams) {
-        _windowing.value = preset
+    private fun getWindowingMutableState(filename: String): MutableState<WindowingParams> {
+        return windowingMap.getOrPut(filename) {
+            mutableStateOf(WindowingParams(40f, 80f))
+        }
+    }
+
+
+    fun setWindowingCenter(center: Float, filename: String) {
+        val state = getWindowingMutableState(filename)
+        state.value = state.value.copy(center = center)
+    }
+
+    fun setWindowingWidth(width: Float, filename: String) {
+        val state = getWindowingMutableState(filename)
+        state.value = state.value.copy(width = width)
+    }
+
+    fun setPreset(preset: WindowingParams, filename: String) {
+        val state = getWindowingMutableState(filename)
+        state.value = preset
     }
 }
