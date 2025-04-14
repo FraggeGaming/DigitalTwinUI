@@ -42,7 +42,7 @@ class ModelRunner(
         fileUploader.uploadedFileMetadata.value.forEach { file ->
             val input = mutableListOf<String>()
             val output = mutableListOf<String>()
-            var inputNifti: NiftiData?
+            val inputNifti: NiftiData?
             var outputNifti: NiftiData? = null
             println("Model: ${file.model}")
 
