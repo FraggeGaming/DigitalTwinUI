@@ -42,13 +42,18 @@ class ModelRunner(
         fileUploader.uploadedFileMetadata.value.forEach { file ->
             val input = mutableListOf<String>()
             val output = mutableListOf<String>()
+            var inputNifti: NiftiData?
+            var outputNifti: NiftiData? = null
             println("Model: ${file.model}")
 
             println("Simulate backend")
             println("No backend... setting output same as input")
 
+            //Fetching/parsing the input nifti
             val inputDeferred = async(Dispatchers.IO) { fileUploader.loadNifti(file) }
-            input.add(inputDeferred.await())
+            val inputString = inputDeferred.await()
+            inputNifti = niftiRepo.get(inputString) //Getting the nifti for voxelSpacing transfer
+            input.add(inputString)
             println("TESTING, $input")
 
 
@@ -74,9 +79,17 @@ class ModelRunner(
                 )
 
                 val outputDeferred = async(Dispatchers.IO) { fileUploader.loadNifti(predictedMetadata) }
-                output.add(outputDeferred.await())
+                val outputString = outputDeferred.await()
+                outputNifti = niftiRepo.get(outputString) //Getting the nifti for voxelSpacing transfer
+                output.add(outputString)
             }
 
+            //VoxelSpacing transfer
+            if (outputNifti != null && inputNifti != null){
+               outputNifti!!.voxelSpacing = inputNifti.voxelSpacing
+            }
+
+            //If ground truth file was uploaded. Parse that as well
             if (file.groundTruthFilePath.isNotBlank()){
                 val fileName = file.groundTruthFilePath.substringAfterLast("/")
 
@@ -98,6 +111,8 @@ class ModelRunner(
             println("TEST: $title")
             println("Added mapping for $title : $input, $output")
             System.out.flush()
+
+
             niftiRepo.addFileMapping(title, input, output)
         }
 

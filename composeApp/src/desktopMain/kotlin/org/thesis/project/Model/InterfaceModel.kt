@@ -39,7 +39,7 @@ data class NiftiData(
     val width: Int,
     val height: Int,
     val depth: Int,
-    val voxelSpacing: List<Float>,
+    var voxelSpacing: List<Float>,
     val modality: String = "",
     var region: String = "",
     val voxelVolume: Array<Array<Array<Float>>>,
