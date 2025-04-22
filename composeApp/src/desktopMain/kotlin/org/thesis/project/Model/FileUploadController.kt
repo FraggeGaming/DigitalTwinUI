@@ -6,11 +6,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import parseNiftiImages
 import removeNiiExtension
 import runNiftiParser
 import java.io.File
 import java.nio.file.Paths
+
+
 
 class FileUploadController(private val niftiRepo: NiftiRepo) {
 
@@ -37,31 +40,24 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
             }
         }
     }
-
+    private val json = Json { ignoreUnknownKeys = true }
     suspend fun loadNifti(niftiStorage: UploadFileMetadata): String = withContext(Dispatchers.IO) {
         try {
 
-            println("Running NIfTI Parser for: ${niftiStorage.filePath}")
-            System.out.flush()
+            val outPath_npy = Paths.get(PathStrings.OUTPUT_PATH_NPY.toString())
 
-            val outPath = Paths.get("src/desktopMain/resources/output")
-            println("After output path val")
-            System.out.flush()
+            val outputJson = runNiftiParser(niftiStorage.filePath, outPath_npy.toAbsolutePath().toString())
+            val meta = json.decodeFromString<NiftiMeta>(outputJson)
+            val niftiData = parseNiftiImages(meta, niftiStorage)
+            niftiData.npy_path = meta.npy_path
+            niftiData.gz_path = niftiStorage.filePath
 
-            val outputJson = runNiftiParser(niftiStorage.filePath, outPath.toAbsolutePath().toString())
-            val niftiData = parseNiftiImages(outputJson, niftiStorage)
-
-            println("NIFTI: $niftiData")
-            System.out.flush()
 
             val fileName = removeNiiExtension(File(niftiStorage.filePath).nameWithoutExtension)
             println(fileName)
 
             niftiRepo.store(fileName, niftiData)
-            println("Stored NIfTI images for: $fileName")
-            System.out.flush()
 
-            println("Returning filename: $fileName")
             fileName
         } catch (e: Exception) {
             println("ERROR in NIfTI load: ${e.message}")

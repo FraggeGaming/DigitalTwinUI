@@ -8,9 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -52,6 +50,48 @@ fun uploadData(
         Column(modifier = Modifier.padding(12.dp)) {
 
             navMenu()
+
+            Row(){
+                val mappings = interfaceModel.niftiRepo.jsonMapper.getAllMappings()
+
+                mappings.forEachIndexed { index, mapping ->
+                    standardCard(
+                        modifier = Modifier.width(200.dp).wrapContentHeight(),
+                        contentAlignment = Alignment.CenterHorizontally,
+                        content = {
+                            Text(
+                                text = mapping.title, // ✅ Display the title of the mapping
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(onClick = {
+                                    // ✅ Handle SELECT action for this mapping
+                                    println("Selected mapping: ${mapping.title}")
+                                    // Add to a list of selected mappings
+                                    // e.g., selectedMappings.add(mapping)
+                                }) {
+                                    Icon(Icons.Default.Check, contentDescription = "Select Mapping")
+                                }
+
+                                IconButton(onClick = {
+                                    // ❌ Handle DELETE action for this mapping if you want (optional)
+                                    println("Would remove mapping: ${mapping.title}")
+                                    // You could remove the mapping and re-save the file if you want
+                                }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete Mapping")
+                                }
+                            }
+                        }
+                    )
+                }
+            }
 
             Row(
                 modifier = Modifier
@@ -230,6 +270,7 @@ fun uploadData(
                     Button(
                         onClick = {
                             coroutineScope.launch {
+                                interfaceModel.establishFolderIntegrity()
                                 interfaceModel.modelRunner.runModel()
                                 navController.navigate("main")
                             }

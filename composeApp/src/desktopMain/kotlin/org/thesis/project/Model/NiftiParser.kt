@@ -1,7 +1,7 @@
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.nd4j.linalg.factory.Nd4j
 import org.thesis.project.Model.NiftiData
+import org.thesis.project.Model.NiftiMeta
 import org.thesis.project.Model.UploadFileMetadata
 import java.io.File
 import java.nio.file.Paths
@@ -21,14 +21,7 @@ fun runNiftiParser(niftiPath: String, outputDir: String): String {
     return output
 }
 
-@Serializable
-data class NiftiMeta(
-    val width: Int,
-    val height: Int,
-    val depth: Int,
-    val voxel_spacing: List<Float>,
-    val npy_path: String
-)
+
 
 
 //fun parseNiftiImages(jsonData: String, modality: String): NiftiData {
@@ -37,10 +30,10 @@ data class NiftiMeta(
 //    return baseData.copy(modality = modality)
 //}
 
-private val json = Json { ignoreUnknownKeys = true }
+//private val json = Json { ignoreUnknownKeys = true }
 
-fun parseNiftiImages(jsonMeta: String, metaData: UploadFileMetadata): NiftiData {
-    val meta = json.decodeFromString<NiftiMeta>(jsonMeta)
+fun parseNiftiImages(meta: NiftiMeta, metaData: UploadFileMetadata): NiftiData {
+
     val volume = loadNpyVoxelVolume(meta.npy_path)
 
 
@@ -56,7 +49,7 @@ fun parseNiftiImages(jsonMeta: String, metaData: UploadFileMetadata): NiftiData 
         region = metaData.region,
         voxelVolume = volume,
         coronalVoxelSlices = coronalVoxel,
-        sagittalVoxelSlices = sagittalVoxel
+        sagittalVoxelSlices = sagittalVoxel,
     )
 }
 
@@ -104,6 +97,15 @@ fun loadNpyVoxelVolume(npyPath: String): Array<Array<Array<Float>>> {
             }
         }
     }
+
+    //Delete the file after loading
+//    val deleted = file.delete()
+//    if (deleted) {
+//        println("File deleted successfully.")
+//    } else {
+//        println("Failed to delete the file.")
+//    }
+
     return result
 }
 

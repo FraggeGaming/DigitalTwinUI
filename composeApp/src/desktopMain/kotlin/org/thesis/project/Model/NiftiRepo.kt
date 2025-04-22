@@ -3,12 +3,13 @@ package org.thesis.project.Model
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import java.nio.file.Paths
 
 class NiftiRepo {
     //Stores the niftiData by Filename
     private val _niftiImages = MutableStateFlow<Map<String, NiftiData>>(emptyMap())
     val niftiImages: StateFlow<Map<String, NiftiData>> = _niftiImages
-
+    val jsonMapper = JsonMappingController()
 
     fun store(filename: String, data: NiftiData) {
         _niftiImages.update { currentMap ->
@@ -74,6 +75,22 @@ class NiftiRepo {
     //Check if a key exists in the mapping
     fun hasFileMapping(key: String): Boolean {
         return _fileMapping.value.containsKey(key)
+    }
+
+    fun fetchSavedNifti(): List<String> {
+        val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
+
+        // Find all .nii.gz files
+        val niiGzFiles = outputDir.walkTopDown()
+            .filter { it.isFile && it.name.endsWith(".nii.gz") }
+            .toList()
+
+        // If you want just the paths as strings
+        val niiGzFilePaths = niiGzFiles.map { it.absolutePath }
+
+        //niiGzFilePaths.forEach { println(it) }
+
+        return niiGzFilePaths
     }
 
 }
