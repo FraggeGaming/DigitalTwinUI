@@ -1,14 +1,18 @@
 package org.thesis.project.Model
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import loadNpyVoxelVolume
+import removeNiiExtension
+import transformToCoronalSlices
+import transformToSagittalSlices
 import java.io.File
-import java.nio.file.Paths
-import java.util.*
 
 class ModelRunner(
     private val niftiRepo: NiftiRepo,
@@ -40,25 +44,98 @@ class ModelRunner(
 
     suspend fun runModel() = coroutineScope {
 
-        //copy all uploaded files into safe output folder
-        val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
 
-        fileUploader.uploadedFileMetadata.value.forEachIndexed { index, file ->
-            val originalFile = File(file.filePath)
+        niftiRepo.jsonMapper.selectedMappings.value.forEach { mapping ->
 
-            val randomId = UUID.randomUUID().toString().substring(0, 8)
-            val newFilename = "${originalFile.nameWithoutExtension}_$randomId.nii.gz"
-            val newFile = File(outputDir, newFilename)
+            val title = mapping.title
 
-            // Copy the file
-            originalFile.copyTo(newFile, overwrite = true)
+            if (niftiRepo.hasFileMapping(title)) {
+                println("Mapping for $title already exists")
+                return@forEach //Skip
+            }
 
-            // Use your provided updateMetadata method to update the entry
-            fileUploader.updateMetadata(
-                index,
-                file.copy(filePath = newFile.absolutePath)
-            )
+            val inputList = mutableListOf<String>()
+            val outputList = mutableListOf<String>()
+
+
+
+            mapping.inputs.forEach { input ->
+                val volume = loadNpyVoxelVolume(input.npy_path)
+
+                val coronalVoxel = transformToCoronalSlices(volume)
+                val sagittalVoxel = transformToSagittalSlices(volume)
+
+                val niftiData = NiftiData(
+                    width = input.width,
+                    height = input.height,
+                    depth = input.depth,
+                    voxelSpacing = input.voxelSpacing,
+                    modality = input.modality,
+                    region = input.region,
+                    voxelVolume = volume,
+                    coronalVoxelSlices = coronalVoxel,
+                    sagittalVoxelSlices = sagittalVoxel,
+                    npy_path = input.npy_path,
+                    gz_path = input.gz_path,
+                )
+
+                val fileName = removeNiiExtension(File(input.gz_path).nameWithoutExtension)
+                niftiRepo.store(fileName, niftiData)
+                inputList.add(fileName)
+            }
+
+
+            mapping.outputs.forEach { output ->
+                val volume = loadNpyVoxelVolume(output.npy_path)
+
+
+                val coronalVoxel = transformToCoronalSlices(volume)
+                val sagittalVoxel = transformToSagittalSlices(volume)
+
+                val niftiData = NiftiData(
+                    width = output.width,
+                    height = output.height,
+                    depth = output.depth,
+                    voxelSpacing = output.voxelSpacing,
+                    modality = output.modality,
+                    region = output.region,
+                    voxelVolume = volume,
+                    coronalVoxelSlices = coronalVoxel,
+                    sagittalVoxelSlices = sagittalVoxel,
+                    npy_path = output.npy_path,
+                    gz_path = output.gz_path,
+                )
+
+                val fileName = removeNiiExtension(File(output.gz_path).nameWithoutExtension)
+                niftiRepo.store(fileName, niftiData)
+                outputList.add(fileName)
+            }
+
+
+            niftiRepo.addFileMapping(title, inputList, outputList)
         }
+
+
+//        fileUploader.uploadedFileMetadata.value.forEachIndexed { index, file ->
+//            val originalFile = File(file.filePath)
+//
+//            val randomId = UUID.randomUUID().toString().substring(0, 8)
+//            val newFilename = "${originalFile.nameWithoutExtension}_$randomId.nii.gz"
+//            val newFile = File(outputDir, newFilename)
+//
+//            // Copy the file
+//            originalFile.copyTo(newFile, overwrite = true)
+//
+//            // Use your provided updateMetadata method to update the entry
+//            fileUploader.updateMetadata(
+//                index,
+//                file.copy(filePath = newFile.absolutePath)
+//            )
+//
+//            if (file.groundTruthFilePath.isNotBlank()){
+//
+//            }
+//        }
 
 
         fileUploader.uploadedFileMetadata.value.forEach { file ->
@@ -107,7 +184,6 @@ class ModelRunner(
             }
 
 
-
             //If ground truth file was uploaded. Parse that as well
             if (file.groundTruthFilePath.isNotBlank()){
                 val fileName = file.groundTruthFilePath.substringAfterLast("/")
@@ -115,7 +191,7 @@ class ModelRunner(
                 //Create new UploadFileMetadata for the ground truth
                 val newGTFile = UploadFileMetadata(
                     filePath = file.groundTruthFilePath,
-                    title = "$fileName GT",
+                    title = "${fileName}_GT",
                     modality = file.model?.outputModality ?: "",
                     region = file.region,
                     model = file.model,
@@ -132,20 +208,6 @@ class ModelRunner(
             }
 
             val title = file.title
-            println("TEST: $title")
-            println("Added mapping for $title : $input, $output")
-            System.out.flush()
-
-
-            println("----------Input--------")
-            println(inputNifti)
-            println("-----------output-----------")
-            println(outputNifti)
-            if (gt_inputnifti != null){
-                println("---------GT-----------")
-                println(gt_inputnifti)
-            }
-
 
             niftiRepo.addFileMapping(title, input, output)
 

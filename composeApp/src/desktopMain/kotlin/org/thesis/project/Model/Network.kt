@@ -56,15 +56,8 @@ suspend fun sendNiftiToServer(
             return@withContext null
         }
 
-        // ✨ Save inside output_gz instead of temp file
-        val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
+        val returnedFile = File.createTempFile("returned_", ".nii.gz")
 
-        // Generate a unique filename if needed (optional but recommended)
-        val returnedFileName = "${niftiFile.name}_gen.nii.gz"
-        val returnedFile = File(outputDir, returnedFileName)
-
-
-        // Save the response body into the correct file
         returnedFile.outputStream().use { output ->
             response.body?.byteStream()?.copyTo(output)
         }

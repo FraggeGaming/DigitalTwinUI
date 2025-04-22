@@ -53,6 +53,7 @@ fun parseNiftiImages(meta: NiftiMeta, metaData: UploadFileMetadata): NiftiData {
     )
 }
 
+
 fun transformToCoronalSlices(voxelVolume: Array<Array<Array<Float>>>): Array<Array<Array<Float>>> {
     val depth = voxelVolume.size
     val height = voxelVolume[0].size

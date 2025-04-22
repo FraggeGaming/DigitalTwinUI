@@ -76,21 +76,4 @@ class NiftiRepo {
     fun hasFileMapping(key: String): Boolean {
         return _fileMapping.value.containsKey(key)
     }
-
-    fun fetchSavedNifti(): List<String> {
-        val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
-
-        // Find all .nii.gz files
-        val niiGzFiles = outputDir.walkTopDown()
-            .filter { it.isFile && it.name.endsWith(".nii.gz") }
-            .toList()
-
-        // If you want just the paths as strings
-        val niiGzFilePaths = niiGzFiles.map { it.absolutePath }
-
-        //niiGzFilePaths.forEach { println(it) }
-
-        return niiGzFilePaths
-    }
-
 }

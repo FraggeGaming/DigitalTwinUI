@@ -1,12 +1,29 @@
 package org.thesis.project.Model
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
 class JsonMappingController {
     private val mappings = mutableListOf<FileMappingFull>()
+    private val _selectedMappings = MutableStateFlow<List<FileMappingFull>>(emptyList())
+    val selectedMappings: StateFlow<List<FileMappingFull>> = _selectedMappings.asStateFlow()
 
+    fun toggleSelectedMapping(mapping: FileMappingFull) {
+        _selectedMappings.update { currentList ->
+            if (mapping in currentList) {
+                currentList - mapping
+            } else {
+                currentList + mapping
+            }
+        }
+    }
     private val mappingFile = File(PathStrings.SAVED_MAPPING.toString())
     private val json = Json { prettyPrint = true }
 

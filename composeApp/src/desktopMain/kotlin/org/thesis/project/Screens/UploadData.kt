@@ -25,6 +25,7 @@ import androidx.navigation.NavHostController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.thesis.project.Components.*
+import org.thesis.project.Model.FileMappingFull
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.UploadFileMetadata
 import java.io.File
@@ -40,7 +41,7 @@ fun uploadData(
     var currentlySelected by remember { mutableStateOf<UploadFileMetadata?>(null) }
     var showModelPopup by remember { mutableStateOf(false) }
     val models by interfaceModel.modelRunner.mLModels.collectAsState()
-
+    val selectedMappings by interfaceModel.niftiRepo.jsonMapper.selectedMappings.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -53,15 +54,21 @@ fun uploadData(
             navMenu()
 
             Row(){
+                interfaceModel.niftiRepo.jsonMapper.loadMappings()
                 val mappings = interfaceModel.niftiRepo.jsonMapper.getAllMappings()
 
                 mappings.forEachIndexed { index, mapping ->
+                    val isSelected = mapping in selectedMappings
+
                     standardCard(
-                        modifier = Modifier.width(200.dp).wrapContentHeight(),
+                        modifier = Modifier
+                            .width(200.dp)
+                            .wrapContentHeight()
+                            .background(if (isSelected) Color(0xFFA5D6A7) else Color.White), // ✅ Green background if selected
                         contentAlignment = Alignment.CenterHorizontally,
                         content = {
                             Text(
-                                text = mapping.title, // ✅ Display the title of the mapping
+                                text = mapping.title,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(top = 8.dp)
                             )
@@ -73,18 +80,17 @@ fun uploadData(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 IconButton(onClick = {
-                                    // ✅ Handle SELECT action for this mapping
-                                    println("Selected mapping: ${mapping.title}")
-                                    // Add to a list of selected mappings
-                                    // e.g., selectedMappings.add(mapping)
+
+                                    interfaceModel.niftiRepo.jsonMapper.toggleSelectedMapping(mapping)
+
+                                    println("Selected mappings: ${selectedMappings.map { it.title }}")
                                 }) {
                                     Icon(Icons.Default.Check, contentDescription = "Select Mapping")
                                 }
 
                                 IconButton(onClick = {
-                                    // ❌ Handle DELETE action for this mapping if you want (optional)
                                     println("Would remove mapping: ${mapping.title}")
-                                    // You could remove the mapping and re-save the file if you want
+                                    // Optional: handle deleting a mapping if needed
                                 }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Delete Mapping")
                                 }
@@ -268,10 +274,7 @@ fun uploadData(
                 }
 
 
-                if(uploadedFiles.isNotEmpty()){
-
-
-
+                if(uploadedFiles.isNotEmpty() || selectedMappings.isNotEmpty()){
                     Button(
                         onClick = {
 

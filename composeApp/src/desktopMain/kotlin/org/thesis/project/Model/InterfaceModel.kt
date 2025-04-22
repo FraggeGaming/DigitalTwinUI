@@ -25,7 +25,7 @@ enum class Settings(val settingName: String) {
 }
 
 enum class PathStrings(val path: String) {
-    OUTPUT_PATH_GZ("src/desktopMain/resources/output_gz"),
+    //OUTPUT_PATH_GZ("src/desktopMain/resources/output_gz"),
     OUTPUT_PATH_NPY("src/desktopMain/resources/output_npy"),
     //PREV_VIEWED_PATH("src/desktopMain/resources/prev_view.xml"),
     SAVED_MAPPING("src/desktopMain/resources/saved_mapping.txt"),
