@@ -8,7 +8,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -183,6 +185,7 @@ fun uploadData(
                                             metadata.region.isBlank() -> "Region"
                                             else -> null
                                         }
+                                        print(missingField)
 
                                         if (missingField != null) {
                                             coroutineScope.launch {
@@ -200,7 +203,7 @@ fun uploadData(
                                     shape = RoundedCornerShape(4.dp)
 
                                 ) {
-                                    Text(   "Select Model" , color = Color.White)
+                                    Text("Select Model" , color = Color.White)
                                 }
                             }
 
@@ -267,12 +270,22 @@ fun uploadData(
 
 
                 if(uploadedFiles.isNotEmpty()){
+
+
+
                     Button(
                         onClick = {
-                            coroutineScope.launch {
-                                interfaceModel.establishFolderIntegrity()
-                                interfaceModel.modelRunner.runModel()
-                                navController.navigate("main")
+
+                            val canContinue = uploadCheck(coroutineScope, snackbarHostState, uploadedFiles)
+
+
+                            if (canContinue){
+                                coroutineScope.launch {
+                                    interfaceModel.establishFolderIntegrity()
+
+                                    interfaceModel.modelRunner.runModel()
+                                    navController.navigate("main")
+                                }
                             }
                         },
                         shape = RoundedCornerShape(4.dp),
@@ -371,4 +384,42 @@ fun uploadData(
         }
     }
 
+}
+
+fun uploadCheck(
+    coroutineScope: CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+    uploadedFiles: List<UploadFileMetadata>
+): Boolean{
+
+    val titles = uploadedFiles.map { it.title }
+    val duplicateTitles = titles.groupingBy { it }.eachCount().filter { it.value > 1 }
+
+    if (duplicateTitles.isNotEmpty()) {
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar("Duplicate titles found: ${duplicateTitles.keys}")
+        }
+       return false
+    }
+
+    uploadedFiles.forEach{file ->
+        val missingField = when {
+            file.title.isBlank() -> "Title"
+            file.modality.isBlank() -> "Modality"
+            file.region.isBlank() -> "Region"
+            file.model == null -> "Model"
+            else -> null
+        }
+
+        if (missingField != null) {
+
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Please select a $missingField for ${file.filePath}.")
+            }
+
+            return false
+        }
+    }
+
+    return true
 }
