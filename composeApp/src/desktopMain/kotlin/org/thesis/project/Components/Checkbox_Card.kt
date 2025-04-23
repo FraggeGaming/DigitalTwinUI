@@ -2,8 +2,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,8 +17,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.thesis.project.Components.LocalAppColors
 import org.thesis.project.Components.standardCard
+import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
-
+import java.awt.FileDialog
+import java.awt.Frame
+import java.io.File
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -143,7 +148,9 @@ fun modalities(
     mainLabels: List<String>,
     subLabels: List<String>,
     onCheckboxChanged: (String, Boolean) -> Unit,
-    shape: Shape = RoundedCornerShape(8.dp)
+    shape: Shape = RoundedCornerShape(8.dp),
+    interfaceModel: InterfaceModel,
+    mainLabel: String
 ) {
     Column(
         modifier = Modifier
@@ -171,6 +178,55 @@ fun modalities(
         subLabels.forEach { subLabel ->
             buttonWithCheckbox(selectedData, subLabel, onCheckboxChanged)
         }
+
+        TextButton(
+            onClick = {
+                //save nifti to user choose of folder
+                val path = interfaceModel.niftiRepo.get(subLabels.first())?.gz_path
+
+                if (path != null) {
+                    val sourceFile = File(path)
+
+                    //Create a native Save dialog
+                    val dialog = FileDialog(null as Frame?, "Save NIfTI File", FileDialog.SAVE)
+                    dialog.file = sourceFile.name // suggest filename
+                    dialog.isVisible = true
+
+                    if (dialog.file != null && dialog.directory != null) {
+                        val chosenFile = File(dialog.directory, dialog.file)
+
+                        //Copy file to chosen location
+                        sourceFile.copyTo(chosenFile, overwrite = true)
+
+                        println("File saved to: ${chosenFile.absolutePath}")
+                    } else {
+                        println("User canceled the save dialog.")
+                    }
+                }
+            },
+            colors = ButtonDefaults.textButtonColors(
+                containerColor  = LocalAppColors.current.thirdlyBlue,
+                contentColor = Color.Black
+            ),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxSize()
+
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Download synthetic nifti")
+
+                Icon(
+                    imageVector = Icons.Filled.Download,
+                    contentDescription = "Download synthetic nifti",
+                    modifier = Modifier
+                        .size(24.dp)
+                )
+            }
+        }
     }
 }
 
@@ -182,6 +238,7 @@ fun cardMenu(
     getFileMapping: (String) -> Pair<List<String>, List<String>>?,
     onCheckboxChanged: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    interfaceModel: InterfaceModel
 ) {
     var expandedMenu by remember { mutableStateOf<String?>(null) }
 
@@ -242,7 +299,9 @@ fun cardMenu(
                                                 bottomStart = 8.dp,
                                                 topEnd = 0.dp,
                                                 bottomEnd = 8.dp
-                                            )
+                                            ),
+                                            interfaceModel,
+                                            mainLabel
                                         )
                                     }
                                 }
@@ -307,7 +366,10 @@ fun cardMenu(
                                                     bottomStart = 4.dp,
                                                     topEnd = 0.dp,
                                                     bottomEnd = 4.dp
-                                                )
+                                                ),
+                                                interfaceModel = interfaceModel,
+                                                mainLabel = selectedMainLabel,
+
                                             )
                                         }
                                     }

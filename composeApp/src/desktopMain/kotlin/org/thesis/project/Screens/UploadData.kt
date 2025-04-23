@@ -39,15 +39,14 @@ fun uploadData(
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val hasFetchedModels by interfaceModel.modelRunner.hasFetchedModels.collectAsState()
+    val mappings by interfaceModel.niftiRepo.jsonMapper.mappings.collectAsState()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) {
-
-        interfaceModel.niftiRepo.jsonMapper.loadMappings()
-        val mappings = interfaceModel.niftiRepo.jsonMapper.getAllMappings()
-
-
+        LaunchedEffect(Unit){
+            interfaceModel.niftiRepo.jsonMapper.loadMappings()
+        }
 
         Column(modifier = Modifier.padding(12.dp)) {
 
@@ -63,7 +62,7 @@ fun uploadData(
                         modifier = Modifier
                             .width(200.dp)
                             .wrapContentHeight()
-                            .background(if (isSelected) Color(0xFFA5D6A7) else Color.White), // ✅ Green background if selected
+                            .background(if (isSelected) Color(0xFFA5D6A7) else Color.White),
                         contentAlignment = Alignment.CenterHorizontally,
                         content = {
                             Text(
@@ -89,7 +88,7 @@ fun uploadData(
 
                                 IconButton(onClick = {
                                     println("Would remove mapping: ${mapping.title}")
-                                    // Optional: handle deleting a mapping if needed
+                                    interfaceModel.niftiRepo.jsonMapper.removeMapping(mapping)
                                 }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Delete Mapping")
                                 }
@@ -111,7 +110,7 @@ fun uploadData(
 
 
                 uploadedFiles.forEachIndexed { index, metadata ->
-                    println(uploadedFiles.toString())
+                    //println(uploadedFiles.toString())
                     standardCard(
                         modifier = Modifier.width(300.dp).wrapContentHeight(),
                         contentAlignment = Alignment.CenterHorizontally,

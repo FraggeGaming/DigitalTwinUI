@@ -11,7 +11,9 @@ import kotlinx.serialization.json.Json
 import java.io.File
 
 class JsonMappingController {
-    private val mappings = mutableListOf<FileMappingFull>()
+    private val _mappings = MutableStateFlow<List<FileMappingFull>>(emptyList())
+    val mappings: StateFlow<List<FileMappingFull>> = _mappings.asStateFlow()
+
     private val _selectedMappings = MutableStateFlow<List<FileMappingFull>>(emptyList())
     val selectedMappings: StateFlow<List<FileMappingFull>> = _selectedMappings.asStateFlow()
 
@@ -31,34 +33,39 @@ class JsonMappingController {
         if (mappingFile.exists()) {
             if (mappingFile.readText().isNotBlank()) {
                 val loaded = json.decodeFromString<List<FileMappingFull>>(mappingFile.readText())
-                mappings.clear()
-                mappings.addAll(loaded)
-                println("Loaded ${mappings.size} mappings from file.")
+                _mappings.value = loaded
+                //println("Loaded ${loaded.size} mappings from file.")
             } else {
-                println("Mapping file was empty. Initializing empty mappings.")
-                mappingFile.writeText("[]") // 🔥 Write an empty list into it
-                mappings.clear()
+                //println("Mapping file was empty. Initializing empty mappings.")
+                mappingFile.writeText("[]")
+                _mappings.value = emptyList()
             }
         } else {
-            println("No existing mappings found. Creating new mapping file.")
+            //println("No existing mappings found. Creating new mapping file.")
             mappingFile.parentFile?.mkdirs()
-            mappingFile.writeText("[]") // 🔥 When creating, always put valid empty JSON
-            mappings.clear()
+            mappingFile.writeText("[]")
+            _mappings.value = emptyList()
         }
     }
 
 
     private fun saveMappings() {
-        val jsonString = json.encodeToString(mappings)
+        val jsonString = json.encodeToString(_mappings.value)
         mappingFile.writeText(jsonString)
-        println("Saved ${mappings.size} mappings to file.")
+        //println("Saved ${_mappings.value.size} mappings to file.")
     }
 
     fun addMappingAndSave(newMapping: FileMappingFull) {
         loadMappings()
-        mappings.add(newMapping)
+        _mappings.update { it + newMapping }
         saveMappings()
     }
 
-    fun getAllMappings(): List<FileMappingFull> = mappings
+    fun removeMapping(mappingToRemove: FileMappingFull) {
+        loadMappings()
+        _mappings.update { it.filterNot { it.title == mappingToRemove.title } }
+        saveMappings()
+        _selectedMappings.update { it.filterNot { it.title == mappingToRemove.title } }
+        //println("Removed mapping: ${mappingToRemove.title}")
+    }
 }

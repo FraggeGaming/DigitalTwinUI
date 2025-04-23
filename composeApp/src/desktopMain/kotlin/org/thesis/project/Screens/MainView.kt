@@ -74,7 +74,8 @@ fun imageViewer(
                 getFileMapping = interfaceModel.niftiRepo::getFileMapping,
                 onCheckboxChanged = { label, isChecked ->
                     interfaceModel.imageController.updateSelectedData(label, isChecked)
-                }
+                },
+                interfaceModel = interfaceModel
             )
 
             CardWithCheckboxes(
