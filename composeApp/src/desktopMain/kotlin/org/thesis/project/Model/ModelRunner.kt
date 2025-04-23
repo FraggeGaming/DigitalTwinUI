@@ -48,9 +48,6 @@ class ModelRunner(
 
             val inputList = mutableListOf<String>()
             val outputList = mutableListOf<String>()
-
-
-
             mapping.inputs.forEach { input ->
                 val volume = loadNpyVoxelVolume(input.npy_path)
 
@@ -108,32 +105,52 @@ class ModelRunner(
         }
     }
 
+    fun loadMapping(mapping: List<NiftiDataSlim>): MutableList<String>{
+        val data = mutableListOf<String>()
+
+        mapping.forEach { output ->
+            val volume = loadNpyVoxelVolume(output.npy_path)
+
+
+            val coronalVoxel = transformToCoronalSlices(volume)
+            val sagittalVoxel = transformToSagittalSlices(volume)
+
+            val niftiData = NiftiData(
+                width = output.width,
+                height = output.height,
+                depth = output.depth,
+                voxelSpacing = output.voxelSpacing,
+                modality = output.modality,
+                region = output.region,
+                voxelVolume = volume,
+                coronalVoxelSlices = coronalVoxel,
+                sagittalVoxelSlices = sagittalVoxel,
+                npy_path = output.npy_path,
+                gz_path = output.gz_path,
+            )
+
+            val fileName = removeNiiExtension(File(output.gz_path).nameWithoutExtension)
+            niftiRepo.store(fileName, niftiData)
+            data.add(fileName)
+        }
+
+        return data
+    }
+
     suspend fun runModel() = coroutineScope {
 
+        //loadFromJson()
+        niftiRepo.jsonMapper.selectedMappings.value.forEach { mapping ->
+            val title = mapping.title
+            if (niftiRepo.hasFileMapping(title)) {
+                println("Mapping for $title already exists")
+                return@forEach //Skip
+            }
 
-        loadFromJson()
-
-
-//        fileUploader.uploadedFileMetadata.value.forEachIndexed { index, file ->
-//            val originalFile = File(file.filePath)
-//
-//            val randomId = UUID.randomUUID().toString().substring(0, 8)
-//            val newFilename = "${originalFile.nameWithoutExtension}_$randomId.nii.gz"
-//            val newFile = File(outputDir, newFilename)
-//
-//            // Copy the file
-//            originalFile.copyTo(newFile, overwrite = true)
-//
-//            // Use your provided updateMetadata method to update the entry
-//            fileUploader.updateMetadata(
-//                index,
-//                file.copy(filePath = newFile.absolutePath)
-//            )
-//
-//            if (file.groundTruthFilePath.isNotBlank()){
-//
-//            }
-//        }
+            val inputList = loadMapping(mapping.inputs)
+            val outputList = loadMapping(mapping.outputs)
+            niftiRepo.addFileMapping(title, inputList, outputList)
+        }
 
 
         fileUploader.uploadedFileMetadata.value.forEach { file ->
