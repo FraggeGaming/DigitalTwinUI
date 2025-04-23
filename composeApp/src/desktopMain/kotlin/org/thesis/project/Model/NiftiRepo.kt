@@ -76,4 +76,18 @@ class NiftiRepo {
     fun hasFileMapping(key: String): Boolean {
         return _fileMapping.value.containsKey(key)
     }
+
+    fun updateFileMappingInput(key: String, newInput: List<String>) {
+        _fileMapping.update { currentMap ->
+            val existingOutput = currentMap[key]?.second ?: emptyList()
+            currentMap + (key to (newInput to existingOutput))
+        }
+    }
+
+    fun updateFileMappingOutput(key: String, newOutput: List<String>) {
+        _fileMapping.update { currentMap ->
+            val existingInput = currentMap[key]?.first ?: emptyList()
+            currentMap + (key to (existingInput to newOutput))
+        }
+    }
 }

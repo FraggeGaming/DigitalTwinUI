@@ -159,6 +159,7 @@ class ModelRunner(
             val inputNifti: NiftiData?
             var gt_inputnifti: NiftiData? = null
             var outputNifti: NiftiData? = null
+            val title = file.title
             println("Model: ${file.model}")
 
             //Fetching/parsing the input nifti
@@ -170,6 +171,29 @@ class ModelRunner(
 
             niftiRepo.store(inputNifti.name, inputNifti)
             input.add(inputNifti.name)
+
+            //If ground truth file was uploaded. Parse that as well
+            if (file.groundTruthFilePath.isNotBlank()){
+                //Create new UploadFileMetadata for the ground truth
+                val newGTFile = UploadFileMetadata(
+                    filePath = file.groundTruthFilePath,
+                    title = "${file.groundTruthFilePath.substringAfterLast("/")}_GT",
+                    modality = file.model?.outputModality ?: "",
+                    region = file.region,
+                    model = file.model,
+                    groundTruthFilePath = ""
+                )
+
+                gt_inputnifti = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }.await()
+                gt_inputnifti.gz_path = newGTFile.filePath
+                gt_inputnifti.name = removeNiiExtension(File(file.groundTruthFilePath).nameWithoutExtension)
+
+                niftiRepo.store(gt_inputnifti.name, gt_inputnifti)
+                input.add(gt_inputnifti.name)
+
+            }
+
+            niftiRepo.updateFileMappingInput(title, input)
 
             val returnedNifti = sendNiftiToServer(file, PathStrings.SERVER_IP.toString())
             returnedNifti?.let {
@@ -193,32 +217,8 @@ class ModelRunner(
             //VoxelSpacing transfer
             if (outputNifti != null){
                 outputNifti!!.voxelSpacing = inputNifti.voxelSpacing
+                niftiRepo.updateFileMappingInput(title, output)
             }
-
-            //If ground truth file was uploaded. Parse that as well
-            if (file.groundTruthFilePath.isNotBlank()){
-                //Create new UploadFileMetadata for the ground truth
-                val newGTFile = UploadFileMetadata(
-                    filePath = file.groundTruthFilePath,
-                    title = "${file.groundTruthFilePath.substringAfterLast("/")}_GT",
-                    modality = file.model?.outputModality ?: "",
-                    region = file.region,
-                    model = file.model,
-                    groundTruthFilePath = ""
-                )
-
-                gt_inputnifti = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }.await()
-                gt_inputnifti.gz_path = newGTFile.filePath
-                gt_inputnifti.name = removeNiiExtension(File(file.groundTruthFilePath).nameWithoutExtension)
-
-                niftiRepo.store(gt_inputnifti.name, gt_inputnifti)
-                input.add(gt_inputnifti.name)
-
-            }
-
-            val title = file.title
-
-            niftiRepo.addFileMapping(title, input, output)
 
             val inputs = listOfNotNull(
                 inputNifti.toSlim(),
