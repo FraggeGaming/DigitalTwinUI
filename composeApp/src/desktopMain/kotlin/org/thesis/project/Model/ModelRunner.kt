@@ -1,7 +1,6 @@
 package org.thesis.project.Model
 
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -22,29 +21,22 @@ class ModelRunner(
     private val _mLModels = MutableStateFlow<List<AIModel>>(emptyList())
     val mLModels: StateFlow<List<AIModel>> = _mLModels.asStateFlow()
 
+    private val _hasFetchedModels = MutableStateFlow(false)
+    val hasFetchedModels: StateFlow<Boolean> = _hasFetchedModels
 
-    init {
-        val demoModels = listOf(
-            AIModel(
-                title = "CT to PET",
-                description = "CT to PET translation using a Pix2Pix patchGan",
-                inputModality = "CT",
-                outputModality = "PET"
-            ),
-            AIModel(
-                title = "PET to CT",
-                description = "PET to CT translation",
-                inputModality = "PET",
-                outputModality = "CT"
-            ),
-        )
 
-        _mLModels.value = demoModels
+    suspend fun fetchMLModels(metadata: UploadFileMetadata) = coroutineScope {
+        _hasFetchedModels.value = false
+        val models = fetchAvailableModels(PathStrings.SERVER_IP.toString(), metadata)
+        if (models != null) {
+            _mLModels.value = models
+            _hasFetchedModels.value = true
+        }
+
+
     }
 
-    suspend fun runModel() = coroutineScope {
-
-
+    private fun loadFromJson(){
         niftiRepo.jsonMapper.selectedMappings.value.forEach { mapping ->
 
             val title = mapping.title
@@ -114,6 +106,12 @@ class ModelRunner(
 
             niftiRepo.addFileMapping(title, inputList, outputList)
         }
+    }
+
+    suspend fun runModel() = coroutineScope {
+
+
+        loadFromJson()
 
 
 //        fileUploader.uploadedFileMetadata.value.forEachIndexed { index, file ->
@@ -141,7 +139,7 @@ class ModelRunner(
         fileUploader.uploadedFileMetadata.value.forEach { file ->
             val input = mutableListOf<String>()
             val output = mutableListOf<String>()
-            var inputNifti: NiftiData?
+            val inputNifti: NiftiData?
             var gt_inputnifti: NiftiData? = null
             var outputNifti: NiftiData? = null
             println("Model: ${file.model}")

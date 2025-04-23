@@ -2,11 +2,13 @@ package org.thesis.project.Model
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.nio.file.Paths
 
 enum class NiftiView(val displayName: String) {
@@ -29,7 +31,7 @@ enum class PathStrings(val path: String) {
     OUTPUT_PATH_NPY("src/desktopMain/resources/output_npy"),
     //PREV_VIEWED_PATH("src/desktopMain/resources/prev_view.xml"),
     SAVED_MAPPING("src/desktopMain/resources/saved_mapping.txt"),
-    SERVER_IP("http://localhost:8000/process");
+    SERVER_IP("http://localhost:8000");
 
     override fun toString(): String = path
 }
@@ -45,7 +47,7 @@ data class UploadFileMetadata(
 )
 
 @Serializable
-data class AIModel(val title: String, val description: String, val inputModality: String, val outputModality: String)
+data class AIModel(val id: Int, val title: String, val description: String, val inputModality: String, val outputModality: String, val region: String)
 
 data class NiftiData(
     val width: Int,
@@ -156,6 +158,24 @@ class InterfaceModel : ViewModel() {
                 if (!file.exists()) {
                     println("Creating missing directory: ${file.absolutePath}")
                     file.mkdirs()
+                }
+            }
+        }
+    }
+
+    private val _shouldRunModel = MutableStateFlow(false)
+
+    fun triggerModelRun() {
+        _shouldRunModel.value = true
+    }
+
+    fun runModelIfTriggered() {
+        if (_shouldRunModel.value) {
+            _shouldRunModel.value = false
+            viewModelScope.launch {
+                establishFolderIntegrity()
+                withContext(Dispatchers.IO) {
+                    modelRunner.runModel()
                 }
             }
         }

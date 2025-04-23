@@ -51,6 +51,10 @@ fun imageViewer(
 
     interfaceModel.imageController.updateSelectedViews(NiftiView.AXIAL, true)
 
+    LaunchedEffect(Unit) {
+        interfaceModel.runModelIfTriggered()
+    }
+
     MainPanelLayout(
         leftPanelWidth = leftPanelWidth,
         leftPanelExpanded = leftPanelExpanded,

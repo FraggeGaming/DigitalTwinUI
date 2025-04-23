@@ -12,8 +12,6 @@ import java.io.File
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
-import java.nio.file.Paths
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 suspend fun sendNiftiToServer(
@@ -39,7 +37,7 @@ suspend fun sendNiftiToServer(
             .build()
 
         val request = Request.Builder()
-            .url(serverUrl)
+            .url("$serverUrl/process")
             .post(requestBody)
             .build()
 
@@ -71,6 +69,40 @@ suspend fun sendNiftiToServer(
         e.printStackTrace()
         return@withContext null
     }
+}
+
+suspend fun fetchAvailableModels(serverUrl: String, metadata: UploadFileMetadata): List<AIModel>? = withContext(Dispatchers.IO) {
+    try {
+        val json = Json.encodeToString(mapOf("modality" to metadata.modality, "region" to metadata.region))
+        val requestBody = json.toRequestBody("application/json".toMediaType())
+
+        val request = Request.Builder()
+            .url("$serverUrl/getmodels")
+            .post(requestBody)
+            .build()
+
+        val client = OkHttpClient()
+        val response = client.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            println("Request failed: ${response.code}")
+            return@withContext null
+        }
+
+        val bodyString = response.body?.string()
+        if (bodyString == null) {
+            println("Empty response body.")
+            return@withContext null
+        }
+
+        return@withContext Json.decodeFromString<List<AIModel>>(bodyString)
+
+    } catch (e: Exception) {
+        println("Error fetching models: ${e.localizedMessage}")
+        e.printStackTrace()
+        return@withContext null
+    }
+
 }
 
 

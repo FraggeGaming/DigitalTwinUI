@@ -1,23 +1,16 @@
 package org.thesis.project.Screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -45,17 +38,23 @@ fun uploadData(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+    val hasFetchedModels by interfaceModel.modelRunner.hasFetchedModels.collectAsState()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) {
+
+        interfaceModel.niftiRepo.jsonMapper.loadMappings()
+        val mappings = interfaceModel.niftiRepo.jsonMapper.getAllMappings()
+
+
+
         Column(modifier = Modifier.padding(12.dp)) {
 
             navMenu()
 
             Row(){
-                interfaceModel.niftiRepo.jsonMapper.loadMappings()
-                val mappings = interfaceModel.niftiRepo.jsonMapper.getAllMappings()
+
 
                 mappings.forEachIndexed { index, mapping ->
                     val isSelected = mapping in selectedMappings
@@ -182,6 +181,8 @@ fun uploadData(
 
                             //Select Model
                             else{
+
+
                                 Button(
                                     onClick = {
                                         val missingField = when {
@@ -278,16 +279,11 @@ fun uploadData(
                     Button(
                         onClick = {
 
-                            val canContinue = uploadCheck(coroutineScope, snackbarHostState, uploadedFiles)
-
+                            val canContinue = uploadCheck(coroutineScope, snackbarHostState, uploadedFiles, mappings)
 
                             if (canContinue){
-                                coroutineScope.launch {
-                                    interfaceModel.establishFolderIntegrity()
-
-                                    interfaceModel.modelRunner.runModel()
-                                    navController.navigate("main")
-                                }
+                                interfaceModel.triggerModelRun()
+                                navController.navigate("main")
                             }
                         },
                         shape = RoundedCornerShape(4.dp),
@@ -304,12 +300,11 @@ fun uploadData(
             }
 
 
-
-
-
-
-
             if (showModelPopup && currentlySelected != null) {
+                coroutineScope.launch {
+                    interfaceModel.modelRunner.fetchMLModels(metadata = currentlySelected!!)
+                }
+
                 Dialog(onDismissRequest = { showModelPopup = false }) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
@@ -320,23 +315,33 @@ fun uploadData(
                             .padding(16.dp)
                     ) {
                         Column(Modifier.padding(16.dp)) {
-                            Text("Matching Models", style = MaterialTheme.typography.titleSmall)
-                            Spacer(Modifier.height(12.dp))
 
-                            val matchingModels = models.filter { model ->
-                                model.inputModality == currentlySelected?.modality
+                            if (!hasFetchedModels){
+                                Text("Fetching generative models...")
                             }
 
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                                maxItemsInEachRow = 2
-                            ) {
-                                matchingModels.forEach { model ->
-                                    standardCard(
-                                        modifier = Modifier.width(300.dp),
-                                        content = {
+                            else if (models.isEmpty()){
+                                Text("No matching models exists. Please select different modalities or regions")
+                            }
+
+                            else {
+                                Text("Matching Models", style = MaterialTheme.typography.titleSmall)
+                                Spacer(Modifier.height(12.dp))
+
+                                val matchingModels = models.filter { model ->
+                                    model.inputModality == currentlySelected?.modality
+                                }
+
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                    maxItemsInEachRow = 2
+                                ) {
+                                    matchingModels.forEach { model ->
+                                        standardCard(
+                                            modifier = Modifier.width(300.dp),
+                                            content = {
 
                                                 Text(text = model.title, style = MaterialTheme.typography.titleMedium)
                                                 Spacer(modifier = Modifier.height(4.dp))
@@ -370,10 +375,12 @@ fun uploadData(
                                                     Text("Select Model", color = Color.White)
                                                 }
 
-                                        }
-                                    )
+                                            }
+                                        )
+                                    }
                                 }
                             }
+
 
                             Spacer(Modifier.height(16.dp))
                             TextButton(onClick = { showModelPopup = false }) {
@@ -391,7 +398,8 @@ fun uploadData(
 fun uploadCheck(
     coroutineScope: CoroutineScope,
     snackbarHostState: SnackbarHostState,
-    uploadedFiles: List<UploadFileMetadata>
+    uploadedFiles: List<UploadFileMetadata>,
+    mappings: List<FileMappingFull>
 ): Boolean{
 
     val titles = uploadedFiles.map { it.title }
@@ -403,6 +411,17 @@ fun uploadCheck(
         }
        return false
     }
+
+    val existingTitles = mappings.map { it.title }.toSet()
+    val overlappingTitles = titles.filter { it in existingTitles }
+
+    if (overlappingTitles.isNotEmpty()) {
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar("These titles already exist: ${overlappingTitles.joinToString(", ")}")
+        }
+        return false
+    }
+
 
     uploadedFiles.forEach{file ->
         val missingField = when {
