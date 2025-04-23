@@ -41,29 +41,23 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
         }
     }
     private val json = Json { ignoreUnknownKeys = true }
-    suspend fun loadNifti(niftiStorage: UploadFileMetadata): String = withContext(Dispatchers.IO) {
-        try {
+    suspend fun loadNifti(niftiStorage: UploadFileMetadata): NiftiData = withContext(Dispatchers.IO) {
 
-            val outPath_npy = Paths.get(PathStrings.OUTPUT_PATH_NPY.toString())
+        val outPath_npy = Paths.get(PathStrings.OUTPUT_PATH_NPY.toString())
+        val outputJson = runNiftiParser(niftiStorage.filePath, outPath_npy.toAbsolutePath().toString())
 
-            val outputJson = runNiftiParser(niftiStorage.filePath, outPath_npy.toAbsolutePath().toString())
-            val meta = json.decodeFromString<NiftiMeta>(outputJson)
-            val niftiData = parseNiftiImages(meta, niftiStorage)
-            niftiData.npy_path = meta.npy_path
-            niftiData.gz_path = niftiStorage.filePath
+        val meta = json.decodeFromString<NiftiMeta>(outputJson)
+        val niftiData = parseNiftiImages(meta, niftiStorage)
+        niftiData.npy_path = meta.npy_path
+        niftiData.gz_path = niftiStorage.filePath
 
 
-            val fileName = removeNiiExtension(File(niftiStorage.filePath).nameWithoutExtension)
-            println(fileName)
+//        val fileName = removeNiiExtension(File(niftiStorage.filePath).nameWithoutExtension)
+//        println(fileName)
+//
+//        niftiRepo.store(fileName, niftiData)
 
-            niftiRepo.store(fileName, niftiData)
-
-            fileName
-        } catch (e: Exception) {
-            println("ERROR in NIfTI load: ${e.message}")
-            e.printStackTrace()
-            System.out.flush()
-            ""
-        }
+        //fileName
+        niftiData
     }
 }

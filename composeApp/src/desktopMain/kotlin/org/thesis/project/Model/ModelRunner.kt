@@ -145,14 +145,14 @@ class ModelRunner(
             println("Model: ${file.model}")
 
             //Fetching/parsing the input nifti
-            val inputDeferred = async(Dispatchers.IO) { fileUploader.loadNifti(file) }
-            val inputString = inputDeferred.await()
-            inputNifti = niftiRepo.get(inputString) //Getting the nifti for voxelSpacing transfer
-            input.add(inputString)
+            inputNifti = async(Dispatchers.IO) { fileUploader.loadNifti(file) }.await()
+            inputNifti.gz_path = file.filePath
 
-            if (inputNifti != null){
-                inputNifti.gz_path = file.filePath
-            }
+            val fileName = removeNiiExtension(File(file.filePath).nameWithoutExtension)
+            inputNifti.name = fileName
+
+            niftiRepo.store(inputNifti.name, inputNifti)
+            input.add(inputNifti.name)
 
             val returnedNifti = sendNiftiToServer(file, PathStrings.SERVER_IP.toString())
             returnedNifti?.let {
@@ -165,44 +165,38 @@ class ModelRunner(
                     model = file.model,
                     groundTruthFilePath = ""
                 )
+                outputNifti = async(Dispatchers.IO) { fileUploader.loadNifti(predictedMetadata) }.await()
+                outputNifti!!.gz_path = predictedMetadata.filePath
+                outputNifti!!.name = "Gen_${inputNifti.name}"
 
-                val outputDeferred = async(Dispatchers.IO) { fileUploader.loadNifti(predictedMetadata) }
-                val outputString = outputDeferred.await()
-                outputNifti = niftiRepo.get(outputString) //Getting the nifti for voxelSpacing transfer
-                output.add(outputString)
-
-                if (outputNifti != null){
-                    outputNifti!!.gz_path = predictedMetadata.filePath
-                }
+                niftiRepo.store(outputNifti!!.name, outputNifti!!)
+                output.add(outputNifti!!.name)
             }
 
             //VoxelSpacing transfer
-            if (outputNifti != null && inputNifti != null){
-               outputNifti!!.voxelSpacing = inputNifti.voxelSpacing
+            if (outputNifti != null){
+                outputNifti!!.voxelSpacing = inputNifti.voxelSpacing
             }
-
 
             //If ground truth file was uploaded. Parse that as well
             if (file.groundTruthFilePath.isNotBlank()){
-                val fileName = file.groundTruthFilePath.substringAfterLast("/")
-
                 //Create new UploadFileMetadata for the ground truth
                 val newGTFile = UploadFileMetadata(
                     filePath = file.groundTruthFilePath,
-                    title = "${fileName}_GT",
+                    title = "${file.groundTruthFilePath.substringAfterLast("/")}_GT",
                     modality = file.model?.outputModality ?: "",
                     region = file.region,
                     model = file.model,
                     groundTruthFilePath = ""
                 )
-                val inputGT = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }
-                val gt_outputString = inputGT.await()
-                gt_inputnifti = niftiRepo.get(gt_outputString)
-                input.add(gt_outputString)
 
-                if (gt_inputnifti != null){
-                    gt_inputnifti.gz_path = newGTFile.filePath
-                }
+                gt_inputnifti = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }.await()
+                gt_inputnifti.gz_path = newGTFile.filePath
+                gt_inputnifti.name = removeNiiExtension(File(file.groundTruthFilePath).nameWithoutExtension)
+
+                niftiRepo.store(gt_inputnifti.name, gt_inputnifti)
+                input.add(gt_inputnifti.name)
+
             }
 
             val title = file.title
@@ -210,7 +204,7 @@ class ModelRunner(
             niftiRepo.addFileMapping(title, input, output)
 
             val inputs = listOfNotNull(
-                inputNifti?.toSlim(),
+                inputNifti.toSlim(),
                 gt_inputnifti?.toSlim()
             )
 

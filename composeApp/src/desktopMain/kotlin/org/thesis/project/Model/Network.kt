@@ -12,6 +12,8 @@ import java.io.File
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import java.nio.file.Paths
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 suspend fun sendNiftiToServer(
@@ -54,8 +56,13 @@ suspend fun sendNiftiToServer(
             return@withContext null
         }
 
-        val returnedFile = File.createTempFile("returned_", ".nii.gz")
+        val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
+        outputDir.mkdirs() // Ensure the folder exists
 
+        val returnedFileName = "returned_${UUID.randomUUID().toString().substring(0, 8)}.nii.gz"
+        val returnedFile = File(outputDir, returnedFileName)
+
+        // Save the response body to the file
         returnedFile.outputStream().use { output ->
             response.body?.byteStream()?.copyTo(output)
         }

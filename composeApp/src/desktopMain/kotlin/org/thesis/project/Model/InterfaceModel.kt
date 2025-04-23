@@ -27,7 +27,7 @@ enum class Settings(val settingName: String) {
 }
 
 enum class PathStrings(val path: String) {
-    //OUTPUT_PATH_GZ("src/desktopMain/resources/output_gz"),
+    OUTPUT_PATH_GZ("src/desktopMain/resources/output_gz"),
     OUTPUT_PATH_NPY("src/desktopMain/resources/output_npy"),
     //PREV_VIEWED_PATH("src/desktopMain/resources/prev_view.xml"),
     SAVED_MAPPING("src/desktopMain/resources/saved_mapping.txt"),
@@ -61,6 +61,7 @@ data class NiftiData(
     var sagittalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(),
     var npy_path: String = "",
     var gz_path: String = "",
+    var name: String = "",
 ) {
     fun toSlim(): NiftiDataSlim {
         return NiftiDataSlim(
@@ -71,7 +72,8 @@ data class NiftiData(
             modality = this.modality,
             region = this.region,
             npy_path = this.npy_path,
-            gz_path = this.gz_path
+            gz_path = this.gz_path,
+            name = this.name
         )
     }
 }
@@ -94,7 +96,8 @@ data class NiftiDataSlim(
     val modality: String = "",
     val region: String = "",
     val npy_path: String = "",
-    val gz_path: String = ""
+    val gz_path: String = "",
+    var name: String = ""
 )
 
 @Serializable
@@ -135,7 +138,7 @@ class InterfaceModel : ViewModel() {
         }
     }
 
-    fun establishFolderIntegrity() {
+    private fun establishFolderIntegrity() {
         PathStrings.entries.forEach { pathString ->
             val path = pathString.path
 
