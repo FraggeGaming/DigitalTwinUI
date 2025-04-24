@@ -1,7 +1,6 @@
 package org.thesis.project.Model
 
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,6 +61,40 @@ class JsonMappingController {
     }
 
     fun removeMapping(mappingToRemove: FileMappingFull) {
+
+        (mappingToRemove.inputs).forEach { nifti ->
+            try {
+                val npyFile = File(nifti.npy_path)
+
+                if (npyFile.exists()) {
+                    npyFile.delete()
+                    println("Deleted NPY: ${npyFile.absolutePath}")
+                }
+
+            } catch (e: Exception) {
+                println("Failed to delete file for ${nifti.gz_path}: ${e.message}")
+            }
+        }
+
+        (mappingToRemove.outputs).forEach { nifti ->
+            try {
+                val npyFile = File(nifti.npy_path)
+                val gzFile = File(nifti.gz_path)
+
+                if (npyFile.exists()) {
+                    npyFile.delete()
+                    println("Deleted NPY: ${npyFile.absolutePath}")
+                }
+
+                if (gzFile.exists()) {
+                    gzFile.delete()
+                    println("Deleted GZ: ${gzFile.absolutePath}")
+                }
+            } catch (e: Exception) {
+                println("Failed to delete file(s) for ${nifti.gz_path}: ${e.message}")
+            }
+        }
+
         loadMappings()
         _mappings.update { it.filterNot { it.title == mappingToRemove.title } }
         saveMappings()

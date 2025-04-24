@@ -8,9 +8,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import parseNiftiImages
-import removeNiiExtension
 import runNiftiParser
-import java.io.File
 import java.nio.file.Paths
 
 
@@ -51,13 +49,6 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
         niftiData.npy_path = meta.npy_path
         niftiData.gz_path = niftiStorage.filePath
 
-
-//        val fileName = removeNiiExtension(File(niftiStorage.filePath).nameWithoutExtension)
-//        println(fileName)
-//
-//        niftiRepo.store(fileName, niftiData)
-
-        //fileName
         niftiData
     }
 
@@ -91,11 +82,11 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
                     file.title.isBlank() -> "Title"
                     file.modality.isBlank() -> "Modality"
                     file.region.isBlank() -> "Region"
-                    file.model == null -> "Model"
                     else -> null
                 }
 
                 if (missingField != null) {
+
                     errorMsg = "Please select a $missingField for ${file.filePath}."
                     canContinue = false
                     break

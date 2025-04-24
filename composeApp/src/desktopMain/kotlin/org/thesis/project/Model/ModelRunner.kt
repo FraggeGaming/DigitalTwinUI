@@ -195,30 +195,33 @@ class ModelRunner(
 
             niftiRepo.updateFileMappingInput(title, input)
 
-            val returnedNifti = sendNiftiToServer(file, PathStrings.SERVER_IP.toString())
-            returnedNifti?.let {
+            if (file.model != null){
+                val returnedNifti = sendNiftiToServer(file, PathStrings.SERVER_IP.toString())
+                returnedNifti?.let {
 
-                val predictedMetadata = UploadFileMetadata(
-                    filePath = it.absolutePath,
-                    title = it.name,
-                    modality = file.model?.outputModality ?: "",
-                    region = file.region,
-                    model = file.model,
-                    groundTruthFilePath = ""
-                )
-                outputNifti = async(Dispatchers.IO) { fileUploader.loadNifti(predictedMetadata) }.await()
-                outputNifti!!.gz_path = predictedMetadata.filePath
-                outputNifti!!.name = "Gen_${inputNifti.name}"
+                    val predictedMetadata = UploadFileMetadata(
+                        filePath = it.absolutePath,
+                        title = it.name,
+                        modality = file.model?.outputModality ?: "",
+                        region = file.region,
+                        model = file.model,
+                        groundTruthFilePath = ""
+                    )
+                    outputNifti = async(Dispatchers.IO) { fileUploader.loadNifti(predictedMetadata) }.await()
+                    outputNifti!!.gz_path = predictedMetadata.filePath
+                    outputNifti!!.name = "Gen_${inputNifti.name}"
 
-                niftiRepo.store(outputNifti!!.name, outputNifti!!)
-                output.add(outputNifti!!.name)
+                    niftiRepo.store(outputNifti!!.name, outputNifti!!)
+                    output.add(outputNifti!!.name)
+                }
+
+                //VoxelSpacing transfer
+                if (outputNifti != null){
+                    outputNifti!!.voxelSpacing = inputNifti.voxelSpacing
+                    niftiRepo.updateFileMappingInput(title, output)
+                }
             }
 
-            //VoxelSpacing transfer
-            if (outputNifti != null){
-                outputNifti!!.voxelSpacing = inputNifti.voxelSpacing
-                niftiRepo.updateFileMappingInput(title, output)
-            }
 
             val inputs = listOfNotNull(
                 inputNifti.toSlim(),

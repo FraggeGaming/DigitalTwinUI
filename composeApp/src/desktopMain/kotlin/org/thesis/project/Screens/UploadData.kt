@@ -15,10 +15,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.thesis.project.Components.*
-import org.thesis.project.Model.FileMappingFull
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.UploadFileMetadata
 import java.io.File
@@ -181,7 +179,7 @@ fun uploadData(
 
                             //Select Model
                             else{
-
+                                Text("Without a selected model, the file won't be translated — it will only be displayed.")
 
                                 Button(
                                     onClick = {
