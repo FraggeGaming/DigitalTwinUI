@@ -60,7 +60,11 @@ fun uploadData(
 
         Column(modifier = Modifier.padding(12.dp)) {
 
-            Row(){
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 ComponentInfoBox(
                     id = "previousSavedCards",
                     infoMode,
@@ -84,7 +88,7 @@ fun uploadData(
                 modifier = Modifier
                     .fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.Center,
             ) {
                 ComponentInfoBox(
                     id = "FileUploadComponent",
