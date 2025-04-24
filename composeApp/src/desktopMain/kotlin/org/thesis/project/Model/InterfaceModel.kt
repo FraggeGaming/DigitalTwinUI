@@ -183,4 +183,15 @@ class InterfaceModel : ViewModel() {
             }
         }
     }
+
+    private val _infoMode = MutableStateFlow(false)
+    val infoMode: StateFlow<Boolean> = _infoMode
+
+    fun toggleInfoMode() {
+        _infoMode.update { !it }
+    }
+
+    fun setInfoMode(state: Boolean) {
+        _infoMode.update { state }
+    }
 }

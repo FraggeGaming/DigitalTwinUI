@@ -27,6 +27,7 @@ import org.thesis.project.MainPanelLayout
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import org.thesis.project.Model.Settings
+import org.thesis.project.TooltipManager
 
 @Composable
 fun imageViewer(
@@ -48,12 +49,15 @@ fun imageViewer(
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
 
     val fileMapping by interfaceModel.niftiRepo.fileMapping.collectAsState()
-
+    val infoMode = interfaceModel.infoMode.collectAsState()
     interfaceModel.imageController.updateSelectedViews(NiftiView.AXIAL, true)
 
     LaunchedEffect(Unit) {
         interfaceModel.runModelIfTriggered()
+        interfaceModel.setInfoMode(false)
+        TooltipManager.clearAll()
     }
+
 
     MainPanelLayout(
         leftPanelWidth = leftPanelWidth,
@@ -65,26 +69,35 @@ fun imageViewer(
 
         leftContent = {
 
-
             //navMenu()
 
-            cardMenu(
-                fileKeys = fileMapping.keys.toList(),
-                selectedData = selectedData,
-                getFileMapping = interfaceModel.niftiRepo::getFileMapping,
-                onCheckboxChanged = { label, isChecked ->
-                    interfaceModel.imageController.updateSelectedData(label, isChecked)
+            ComponentInfoBox(
+                id = "cardMenu",
+                infoMode,
+                infoText =
+                    "This section displays the loaded NIfTI files. Use the checkboxes to pick what files to visualize",
+                content = {
+                    cardMenu(
+                        fileKeys = fileMapping.keys.toList(),
+                        selectedData = selectedData,
+                        getFileMapping = interfaceModel.niftiRepo::getFileMapping,
+                        onCheckboxChanged = { label, isChecked ->
+                            interfaceModel.imageController.updateSelectedData(label, isChecked)
+                        },
+                        interfaceModel = interfaceModel
+                    )
                 },
-                interfaceModel = interfaceModel
+                enabled = true,
+                arrowDirection = TooltipArrowDirection.Left
             )
 
-            CardWithCheckboxes(
-                selectedDistricts,
-                items = organs,
-                onCheckboxChanged = { organ, isChecked ->
-                    interfaceModel.updateSelectedDistrict(organ, isChecked)
-                }
-            )
+//            CardWithCheckboxes(
+//                selectedDistricts,
+//                items = organs,
+//                onCheckboxChanged = { organ, isChecked ->
+//                    interfaceModel.updateSelectedDistrict(organ, isChecked)
+//                }
+//            )
 
         },
         centerContent = {
@@ -113,28 +126,61 @@ fun imageViewer(
                         },
                     contentAlignment = Alignment.Center
                 ) {
+
                     imageGrid(selectedData, selectedViews, interfaceModel)
                 }
 
-                menuCard(
-                    selectedViews = selectedViews,
-                    interfaceModel = interfaceModel,
-                    selectedSettings = selectedSettings,
+                ComponentInfoBox(
+                    id = "menuCard",
+                    infoMode,
+                    infoText =
+                        "This is the menu toolbar, where you can pick what axis to view and measure lesions and se pixel values",
+                    content = {
+                        menuCard(
+                            selectedViews = selectedViews,
+                            interfaceModel = interfaceModel,
+                            selectedSettings = selectedSettings,
+                        )
+                    },
+                    enabled = true,
+                    arrowDirection = TooltipArrowDirection.Bottom
                 )
+
             }
         },
         rightContent = {
-            standardCard(
+            ComponentInfoBox(
+                id = "scrollSlider",
+                infoMode,
+                infoText =
+                    "Here you can scroll through the image slices",
                 content = {
-                    scrollSlider(
-                        selectedData = interfaceModel.imageController.selectedData,
-                        scrollStep = interfaceModel.imageController.scrollStep,
-                        maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
-                        onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
+                    standardCard(
+                        content = {
+                            scrollSlider(
+                                selectedData = interfaceModel.imageController.selectedData,
+                                scrollStep = interfaceModel.imageController.scrollStep,
+                                maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
+                                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
+                            )
+                        }
                     )
-                }
+                },
+                enabled = interfaceModel.imageController.selectedData.value.isNotEmpty()
             )
-            windowControls(selectedData, interfaceModel)
+
+            ComponentInfoBox(
+                id = "windowControls",
+                infoMode,
+                infoText =
+                    "Here you can change windowing settings for color adjustment",
+                content = {
+                    windowControls(selectedData, interfaceModel)
+                },
+                enabled = interfaceModel.imageController.selectedData.value.isNotEmpty()
+            )
+
+
         }
     )
 }

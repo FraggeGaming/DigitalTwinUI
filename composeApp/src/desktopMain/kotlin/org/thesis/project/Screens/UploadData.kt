@@ -10,15 +10,22 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.thesis.project.Components.*
+import org.thesis.project.Model.FileMappingFull
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.UploadFileMetadata
+import org.thesis.project.TooltipManager
 import java.io.File
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -39,238 +46,83 @@ fun uploadData(
     val hasFetchedModels by interfaceModel.modelRunner.hasFetchedModels.collectAsState()
     val mappings by interfaceModel.niftiRepo.jsonMapper.mappings.collectAsState()
 
+    //Determines if info popout should appear
+    val infoMode = interfaceModel.infoMode.collectAsState()
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) {
         LaunchedEffect(Unit){
             interfaceModel.niftiRepo.jsonMapper.loadMappings()
+            interfaceModel.setInfoMode(false)
+            TooltipManager.clearAll()
         }
 
         Column(modifier = Modifier.padding(12.dp)) {
 
-            //navMenu()
-
             Row(){
+                ComponentInfoBox(
+                    id = "previousSavedCards",
+                    infoMode,
+                    infoText =
+                        "This section displays your previously generated results. " +
+                            "You can view or delete them.",
+                    content = {
+                        previousSavedCards(
+                            mappings = mappings,
+                            selectedMappings = selectedMappings,
+                            interfaceModel = interfaceModel,
+                        )
+                    },
+                    enabled = mappings.isNotEmpty(),
+                    arrowDirection = TooltipArrowDirection.Top
+                )
 
-
-                mappings.forEachIndexed { index, mapping ->
-                    val isSelected = mapping in selectedMappings
-
-                    standardCard(
-                        modifier = Modifier
-                            .width(200.dp)
-                            .wrapContentHeight()
-                            .background(if (isSelected) Color(0xFFA5D6A7) else Color.White),
-                        contentAlignment = Alignment.CenterHorizontally,
-                        content = {
-                            Text(
-                                text = mapping.title,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(onClick = {
-
-                                    interfaceModel.niftiRepo.jsonMapper.toggleSelectedMapping(mapping)
-
-                                    println("Selected mappings: ${selectedMappings.map { it.title }}")
-                                }) {
-                                    Icon(Icons.Default.Check, contentDescription = "Select Mapping")
-                                }
-
-                                IconButton(onClick = {
-                                    println("Would remove mapping: ${mapping.title}")
-                                    interfaceModel.niftiRepo.jsonMapper.removeMapping(mapping)
-                                }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete Mapping")
-                                }
-                            }
-                        }
-                    )
-                }
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                FileUploadComponent(
-                    text = "Click To Upload File",
-                    interfaceModel.fileUploader::addFile
+                ComponentInfoBox(
+                    id = "FileUploadComponent",
+                    infoMode,
+                    infoText = "Use this button to upload NIfTI files for viewing or AI-based translation.",
+                    content = {
+                        FileUploadComponent(
+                            text = "Click To Upload File",
+                            interfaceModel.fileUploader::addFile,
+                        )
+                    },
+                    enabled = true,
+                    arrowDirection = TooltipArrowDirection.Bottom
                 )
 
+                ComponentInfoBox(
+                    id = "UploadInputCard",
+                    infoMode,
+                    infoText = "Fill out the form to run the generation, or to visualize the added data",
+                    content = {
+                        uploadedFiles.forEachIndexed { index, metadata ->
+                            //println(uploadedFiles.toString())
+                            UploadInputCard(
+                                metadata = metadata,
+                                interfaceModel = interfaceModel,
+                                index = index,
+                                onSelect = { currentlySelected = it },
+                                onShowPopup = { showModelPopup = true },
+                                coroutineScope,
+                                snackbarHostState,
+                                uploadedFiles
 
-                uploadedFiles.forEachIndexed { index, metadata ->
-                    //println(uploadedFiles.toString())
-                    standardCard(
-                        modifier = Modifier.width(300.dp).wrapContentHeight(),
-                        contentAlignment = Alignment.CenterHorizontally,
-                        content = {
-                            Text("File: ${File(metadata.filePath).name}", style = MaterialTheme.typography.bodySmall)
-
-                            OutlinedTextField(
-                                value = metadata.title,
-                                onValueChange = {
-                                    val updated = metadata.copy(title = it)
-                                    interfaceModel.fileUploader.updateMetadata(index, updated)
-                                },
-                                label = { Text("Title") },
-                                isError = false
                             )
-
-
-                            dropDownMenuCustom(
-                                label = "Modality",
-                                selected = metadata.modality,
-                                options = listOf("CT", "PET", "MRI"),
-                                onSelected = {
-                                    val updated = metadata.copy(modality = it).copy(model = null)
-                                    interfaceModel.fileUploader.updateMetadata(index, updated)
-                                }
-                            )
-
-                            dropDownMenuCustom(
-                                label = "Region",
-                                selected = metadata.region,
-                                options = listOf("Head", "Lung", "Total Body"),
-                                onSelected = {
-                                    val updated = metadata.copy(region = it).copy(model = null)
-                                    interfaceModel.fileUploader.updateMetadata(index, updated)
-                                }
-                            )
-
-                            //Model card
-
-                            if (metadata.model != null) {
-                                standardCard(
-                                    modifier = Modifier.width(300.dp),
-                                    content = {
-                                        Text(text = metadata.model!!.title, style = MaterialTheme.typography.titleMedium)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            "Input Modality: ${metadata.model!!.inputModality}",
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                        Text(
-                                            "Output Modality: ${metadata.model!!.outputModality}",
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-
-                                        TextButton(onClick = {
-//                                                val updated = metadata.copy(model = null)
-//                                                interfaceModel.fileUploader.updateMetadata(index, updated)
-                                            currentlySelected = metadata
-                                            showModelPopup = true
-                                        }) {
-                                            Text("Change Model")
-                                        }
-
-                                    }
-                                )
-                            }
-
-                            //Select Model
-                            else{
-                                Text("Without a selected model, the file won't be translated — it will only be displayed.")
-
-                                Button(
-                                    onClick = {
-                                        val missingField = when {
-                                            metadata.modality.isBlank() -> "Modality"
-                                            metadata.title.isBlank() -> "Title"
-                                            metadata.region.isBlank() -> "Region"
-                                            else -> null
-                                        }
-                                        print(missingField)
-
-                                        if (missingField != null) {
-                                            coroutineScope.launch {
-                                                snackbarHostState.showSnackbar("Please select a $missingField first.")
-                                            }
-                                        } else {
-                                            currentlySelected = metadata
-                                            showModelPopup = true
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = LocalAppColors.current.primaryBlue,
-                                        contentColor = LocalAppColors.current.textColor
-                                    ),
-                                    shape = RoundedCornerShape(4.dp)
-
-                                ) {
-                                    Text("Select Model" , color = Color.White)
-                                }
-                            }
-
-
-
-                            //Add ground truth
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                            ) {
-                                if (metadata.groundTruthFilePath.isEmpty()) {
-                                    Text("Ground Truth File")
-                                    fileUploadCircle(onSelected = {
-                                        val updated = metadata.copy(groundTruthFilePath = it)
-                                        interfaceModel.fileUploader.updateMetadata(index, updated)
-                                        println(uploadedFiles)
-                                    })
-                                }
-
-                                else {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = File(metadata.groundTruthFilePath).name,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            modifier = Modifier.weight(1f)
-                                        )
-
-                                        IconButton(
-                                            onClick = {
-                                                val updated = metadata.copy(groundTruthFilePath = "")
-                                                interfaceModel.fileUploader.updateMetadata(index, updated)
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Filled.Close,
-                                                contentDescription = "Remove file",
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-
-                            //Remove
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                TextButton(onClick = { interfaceModel.fileUploader.removeFile(index) }) {
-                                    Text("Remove")
-                                }
-                            }
                         }
-                    )
-                }
+                    },
+                    enabled = uploadedFiles.isNotEmpty(),
+                    arrowDirection = TooltipArrowDirection.Top
+                )
 
 
                 if(uploadedFiles.isNotEmpty() || selectedMappings.isNotEmpty()){
@@ -393,9 +245,300 @@ fun uploadData(
                     }
                 }
             }
+
         }
     }
 
 }
+
+@Composable
+fun UploadInputCard(
+    metadata: UploadFileMetadata,
+    interfaceModel: InterfaceModel,
+    index: Int,
+    onSelect: (UploadFileMetadata) -> Unit,
+    onShowPopup: () -> Unit,
+    coroutineScope: CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+    uploadedFiles: List<UploadFileMetadata>
+) {
+    standardCard(
+        modifier = Modifier.width(300.dp).wrapContentHeight(),
+        contentAlignment = Alignment.CenterHorizontally,
+        content = {
+            Text("File: ${File(metadata.filePath).name}", style = MaterialTheme.typography.bodySmall)
+
+            OutlinedTextField(
+                value = metadata.title,
+                onValueChange = {
+                    val updated = metadata.copy(title = it)
+                    interfaceModel.fileUploader.updateMetadata(index, updated)
+                },
+                label = { Text("Title") },
+                isError = false
+            )
+
+
+            dropDownMenuCustom(
+                label = "Modality",
+                selected = metadata.modality,
+                options = listOf("CT", "PET", "MRI"),
+                onSelected = {
+                    val updated = metadata.copy(modality = it).copy(model = null)
+                    interfaceModel.fileUploader.updateMetadata(index, updated)
+                }
+            )
+
+            dropDownMenuCustom(
+                label = "Region",
+                selected = metadata.region,
+                options = listOf("Head", "Lung", "Total Body"),
+                onSelected = {
+                    val updated = metadata.copy(region = it).copy(model = null)
+                    interfaceModel.fileUploader.updateMetadata(index, updated)
+                }
+            )
+
+            //Model card
+
+            if (metadata.model != null) {
+                standardCard(
+                    modifier = Modifier.width(300.dp),
+                    content = {
+                        Text(text = metadata.model!!.title, style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Input Modality: ${metadata.model!!.inputModality}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            "Output Modality: ${metadata.model!!.outputModality}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
+                        TextButton(onClick = {
+                            onSelect(metadata)
+                            onShowPopup()
+                        }) {
+                            Text("Change Model")
+                        }
+
+                    }
+                )
+            }
+
+            //Select Model
+            else{
+                Text("Without a selected model, the file won't be translated — it will only be displayed.")
+
+                Button(
+                    onClick = {
+                        val missingField = when {
+                            metadata.modality.isBlank() -> "Modality"
+                            metadata.title.isBlank() -> "Title"
+                            metadata.region.isBlank() -> "Region"
+                            else -> null
+                        }
+                        print(missingField)
+
+                        if (missingField != null) {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Please select a $missingField first.")
+                            }
+                        } else {
+                            onSelect(metadata)
+                            onShowPopup()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = LocalAppColors.current.primaryBlue,
+                        contentColor = LocalAppColors.current.textColor
+                    ),
+                    shape = RoundedCornerShape(4.dp)
+
+                ) {
+                    Text("Select Model" , color = Color.White)
+                }
+            }
+
+
+
+            //Add ground truth
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                if (metadata.groundTruthFilePath.isEmpty()) {
+                    Text("Ground Truth File")
+                    fileUploadCircle(onSelected = {
+                        val updated = metadata.copy(groundTruthFilePath = it)
+                        interfaceModel.fileUploader.updateMetadata(index, updated)
+                        println(uploadedFiles)
+                    })
+                }
+
+                else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = File(metadata.groundTruthFilePath).name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(
+                            onClick = {
+                                val updated = metadata.copy(groundTruthFilePath = "")
+                                interfaceModel.fileUploader.updateMetadata(index, updated)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Remove file",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            }
+
+
+            //Remove
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = { interfaceModel.fileUploader.removeFile(index) }) {
+                    Text("Remove")
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun previousSavedCards(
+    mappings: List<FileMappingFull>,
+    selectedMappings: List<FileMappingFull>,
+    interfaceModel: InterfaceModel,
+) {
+        mappings.forEachIndexed { index, mapping ->
+            val isSelected = mapping in selectedMappings
+
+            standardCard(
+                modifier = Modifier
+                    .width(200.dp)
+                    .wrapContentHeight()
+                    .background(if (isSelected) Color(0xFFA5D6A7) else Color.White),
+                contentAlignment = Alignment.CenterHorizontally,
+                content = {
+                    Text(
+                        text = mapping.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {
+
+                            interfaceModel.niftiRepo.jsonMapper.toggleSelectedMapping(mapping)
+
+                            println("Selected mappings: ${selectedMappings.map { it.title }}")
+                        }) {
+                            Icon(Icons.Default.Check, contentDescription = "Select Mapping")
+                        }
+
+                        IconButton(onClick = {
+                            println("Would remove mapping: ${mapping.title}")
+                            interfaceModel.niftiRepo.jsonMapper.removeMapping(mapping)
+                        }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete Mapping")
+                        }
+                    }
+                }
+            )
+
+    }
+}
+
+@Composable
+fun ComponentInfoBox(
+    id: String,
+    showInfo: State<Boolean>,
+    infoText: String,
+    enabled: Boolean = true,
+    content: @Composable () -> Unit,
+    arrowDirection: TooltipArrowDirection = TooltipArrowDirection.Left
+) {
+    val position = remember { mutableStateOf(Offset.Zero) }
+    val size = remember { mutableStateOf(IntSize.Zero) }
+
+    Box(
+        modifier = Modifier.onGloballyPositioned {
+            position.value = it.positionInRoot()
+            size.value = it.size
+        }
+    ) {
+        content()
+    }
+
+    val TOOLTIP_WIDTH = 250f
+    val TOOLTIP_HEIGHT = 60f
+
+    val arrowPadding = 70f
+    // Determine where to place the tooltip based on direction
+    val tooltipOffset = when (arrowDirection) {
+        TooltipArrowDirection.Left -> Offset(
+            position.value.x + size.value.width - 15f,
+            position.value.y + size.value.height / 2f - TOOLTIP_HEIGHT / 2f // center vertically
+        )
+        TooltipArrowDirection.Right -> Offset(
+            position.value.x - TOOLTIP_WIDTH - arrowPadding,
+            position.value.y + size.value.height / 2f - TOOLTIP_HEIGHT / 2f // center vertically
+        )
+        TooltipArrowDirection.Bottom -> Offset(
+            position.value.x + size.value.width / 2f - 125f, // center horizontally, tooltip width = 250.dp
+            position.value.y - arrowPadding // space above the component
+        )
+        TooltipArrowDirection.Top -> Offset(
+            position.value.x + size.value.width / 2f - 125f, // center horizontally
+            position.value.y + size.value.height - 15f // below the component
+        )
+    }
+
+    // Register floating tooltip
+    LaunchedEffect(showInfo.value, enabled, position.value, size.value) {
+        TooltipManager.clear(id)
+        if (showInfo.value && enabled) {
+            TooltipManager.show(id) {
+                InfoBox(
+                    text = infoText,
+                    position = tooltipOffset,
+                    arrowDirection = arrowDirection
+                )
+            }
+        }
+        if (!showInfo.value) {
+            TooltipManager.clearAll()
+        }
+    }
+}
+
+
+
+
+
+
 
 
