@@ -106,7 +106,8 @@ fun uploadData(
             ) {
                 FileUploadComponent(
                     text = "Click To Upload File",
-                    interfaceModel.fileUploader::addFile)
+                    interfaceModel.fileUploader::addFile
+                )
 
 
                 uploadedFiles.forEachIndexed { index, metadata ->
@@ -278,11 +279,16 @@ fun uploadData(
                     Button(
                         onClick = {
 
-                            val canContinue = uploadCheck(coroutineScope, snackbarHostState, uploadedFiles, mappings)
+                            val (canContinue, errorMsg) = interfaceModel.fileUploader.uploadRunCheck(uploadedFiles, mappings)
 
                             if (canContinue){
                                 interfaceModel.triggerModelRun()
                                 navController.navigate("main")
+                            }
+                            else{
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(errorMsg)
+                                }
                             }
                         },
                         shape = RoundedCornerShape(4.dp),
@@ -394,52 +400,4 @@ fun uploadData(
 
 }
 
-fun uploadCheck(
-    coroutineScope: CoroutineScope,
-    snackbarHostState: SnackbarHostState,
-    uploadedFiles: List<UploadFileMetadata>,
-    mappings: List<FileMappingFull>
-): Boolean{
 
-    val titles = uploadedFiles.map { it.title }
-    val duplicateTitles = titles.groupingBy { it }.eachCount().filter { it.value > 1 }
-
-    if (duplicateTitles.isNotEmpty()) {
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar("Duplicate titles found: ${duplicateTitles.keys}")
-        }
-       return false
-    }
-
-    val existingTitles = mappings.map { it.title }.toSet()
-    val overlappingTitles = titles.filter { it in existingTitles }
-
-    if (overlappingTitles.isNotEmpty()) {
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar("These titles already exist: ${overlappingTitles.joinToString(", ")}")
-        }
-        return false
-    }
-
-
-    uploadedFiles.forEach{file ->
-        val missingField = when {
-            file.title.isBlank() -> "Title"
-            file.modality.isBlank() -> "Modality"
-            file.region.isBlank() -> "Region"
-            file.model == null -> "Model"
-            else -> null
-        }
-
-        if (missingField != null) {
-
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("Please select a $missingField for ${file.filePath}.")
-            }
-
-            return false
-        }
-    }
-
-    return true
-}

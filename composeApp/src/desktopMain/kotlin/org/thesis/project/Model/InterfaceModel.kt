@@ -183,11 +183,4 @@ class InterfaceModel : ViewModel() {
             }
         }
     }
-
-
-
-
-
-
-
 }

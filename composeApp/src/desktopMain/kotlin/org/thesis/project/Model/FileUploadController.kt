@@ -60,4 +60,50 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
         //fileName
         niftiData
     }
+
+    fun uploadRunCheck(
+        uploadedFiles: List<UploadFileMetadata>,
+        mappings: List<FileMappingFull>
+    ): Pair<Boolean, String>{
+        var errorMsg = "Accepted"
+        var canContinue = true
+
+        val titles = uploadedFiles.map { it.title }
+        val duplicateTitles = titles.groupingBy { it }.eachCount().filter { it.value > 1 }
+        val existingTitles = mappings.map { it.title }.toSet()
+        val overlappingTitles = titles.filter { it in existingTitles }
+
+        if (duplicateTitles.isNotEmpty()) {
+            errorMsg = "Duplicate titles found: ${duplicateTitles.keys}"
+            canContinue = false
+
+        }
+
+        else if (overlappingTitles.isNotEmpty()) {
+            errorMsg = "These titles already exist: ${overlappingTitles.joinToString(", ")}"
+            canContinue = false
+
+        }
+
+        else{
+            for (file in uploadedFiles) {
+                val missingField = when {
+                    file.title.isBlank() -> "Title"
+                    file.modality.isBlank() -> "Modality"
+                    file.region.isBlank() -> "Region"
+                    file.model == null -> "Model"
+                    else -> null
+                }
+
+                if (missingField != null) {
+                    errorMsg = "Please select a $missingField for ${file.filePath}."
+                    canContinue = false
+                    break
+                }
+            }
+        }
+
+
+        return Pair(canContinue, errorMsg)
+    }
 }
