@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun topAppBar(title: String, modelName: String, extraContent: @Composable () -> Unit = {}) {
+fun topAppBar(title: String, modelName: String, extraContent: @Composable () -> Unit = {}, navMenu: @Composable () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -21,10 +21,16 @@ fun topAppBar(title: String, modelName: String, extraContent: @Composable () -> 
             .background(Color(0xFF0050A0)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            navMenu()
+        }
         Row(
             modifier = Modifier.padding(start = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
+
+            //Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = title,
                 color = Color.White

@@ -32,11 +32,11 @@ fun navigationButtons(navController: NavController, selected: String) {
         Button(
 
             onClick = { navController.navigate("upload") },
-            shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
-
+            //shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
+            shape = RoundedCornerShape(0.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor  = when {
-                    selected == "upload" -> LocalAppColors.current.buttonPressedColor
+                    selected == "upload" -> LocalAppColors.current.buttonPressedColor.copy(alpha = 0.7f)
                     isHoveredUpload -> LocalAppColors.current.buttonColor.copy(alpha = 0.7f)
                     else -> LocalAppColors.current.buttonColor
                 },
@@ -67,10 +67,11 @@ fun navigationButtons(navController: NavController, selected: String) {
 //        }
         Button(
             onClick = { navController.navigate("main") },
-             shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp),
+            //shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp),
+            shape = RoundedCornerShape(0.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor  = when {
-                    selected == "main" -> LocalAppColors.current.buttonPressedColor
+                    selected == "main" -> LocalAppColors.current.buttonPressedColor.copy(alpha = 0.7f)
                     isHoveredResult -> LocalAppColors.current.buttonColor.copy(alpha = 0.7f)
                     else -> LocalAppColors.current.buttonColor
                 },

@@ -48,7 +48,7 @@ fun uploadData(
 
         Column(modifier = Modifier.padding(12.dp)) {
 
-            navMenu()
+            //navMenu()
 
             Row(){
 

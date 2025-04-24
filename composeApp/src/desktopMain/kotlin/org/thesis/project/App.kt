@@ -3,7 +3,6 @@ package org.thesis.project
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Tune
@@ -40,24 +39,28 @@ fun App() {
 
 
                     topAppBar(
-                        title = "App Name", modelName = "Model Name"
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End,
-                            modifier = Modifier.padding(end = 16.dp)
-                        ) {
-                            IconButton(onClick = { /* show info */ }) {
-                                Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
+                        title = "App Name",
+                        modelName = "Model Name",
+                        navMenu = { navigationButtons(navController, "upload") },
+                        extraContent = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.End,
+                                modifier = Modifier.padding(end = 16.dp)
+                            ) {
+                                IconButton(onClick = { /* show info */ }) {
+                                    Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
+                                }
+
+                                IconButton(
+                                    onClick = { interfaceModel.panelLayout.toggleRightPanelExpanded() }
+                                ) {
+                                    Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
+                                }
                             }
 
-                            IconButton(
-                                onClick = { interfaceModel.panelLayout.toggleRightPanelExpanded() }
-                            ) {
-                                Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
-                            }
                         }
-                    }
+                    )
 
                     uploadData(
                         interfaceModel = interfaceModel,
@@ -66,40 +69,35 @@ fun App() {
                     )
 
                 }
-
             }
-
-//            composable("modelSelect") {
-//                modelSelect(
-//                    interfaceModel = interfaceModel,
-//                    navMenu = { navigationButtons(navController, "modelSelect") }, navController
-//                )
-//            }
 
             composable("main") {
                 Column(modifier = Modifier.fillMaxSize()) {
 
-
                     topAppBar(
-                        title = "App Name", modelName = "Model Name"
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End,
-                            modifier = Modifier.padding(end = 16.dp)
-                        ) {
-                            IconButton(onClick = { /* show info */ }) {
-                                Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
-                            }
+                        title = "App Name",
+                        modelName = "Model Name",
+                        navMenu = { navigationButtons(navController, "main") },
+                        extraContent = {
 
-                            IconButton(
-                                onClick = { interfaceModel.panelLayout.toggleRightPanelExpanded() }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.End,
+                                modifier = Modifier.padding(end = 16.dp)
                             ) {
-                                Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
-                            }
-                        }
-                    }
+                                IconButton(onClick = { /* show info */ }) {
+                                    Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
+                                }
 
+                                IconButton(
+                                    onClick = { interfaceModel.panelLayout.toggleRightPanelExpanded() }
+                                ) {
+                                    Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
+                                }
+                            }
+
+                        }
+                    )
                     imageViewer(
                         interfaceModel = interfaceModel,
                         navMenu = { navigationButtons(navController, "main") },
@@ -108,9 +106,8 @@ fun App() {
 
                 }
 
-
-
             }
+
         }
     }
 }

@@ -66,7 +66,7 @@ fun imageViewer(
         leftContent = {
 
 
-            navMenu()
+            //navMenu()
 
             cardMenu(
                 fileKeys = fileMapping.keys.toList(),
