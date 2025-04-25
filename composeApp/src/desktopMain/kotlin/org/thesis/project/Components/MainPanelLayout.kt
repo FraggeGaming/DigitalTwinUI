@@ -24,7 +24,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.apache.commons.lang3.ClassUtils.Interfaces
 import org.thesis.project.Components.LocalAppColors
+import org.thesis.project.Components.TooltipArrowDirection
+import org.thesis.project.Model.InterfaceModel
+import org.thesis.project.Screens.ComponentInfoBox
 import java.awt.Cursor
 
 
@@ -40,11 +44,13 @@ fun MainPanelLayout(
     leftPanelExpanded: Boolean,        // Passed in state for left panel expansion
     rightPanelExpanded: Boolean,       // Passed in state for right panel expansion
     toggleLeftPanel: () -> Unit,  // Callback to update left panel expansion
-    toggleRightPanel: () -> Unit  // Callback to update right panel expansion
+    toggleRightPanel: () -> Unit,  // Callback to update right panel expansion
+    interfaceModel: InterfaceModel
 ) {
 
     var leftWidth by remember { mutableStateOf(leftPanelWidth) }
     var rightWidth by remember { mutableStateOf(rightPanelWidth) }
+    val infoMode = interfaceModel.infoMode.collectAsState()
 
     val bkg = LocalAppColors.current.secondaryBackgroundColor
 
@@ -124,36 +130,54 @@ fun MainPanelLayout(
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Start
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF0050A0))
-                        .clickable { toggleRightPanel() }
-                        .drawBehind {
-                            // Draw top border
-                            drawLine(
-                                color = bkg,
-                                start = Offset(0f, 0f),
-                                end = Offset(size.width, 0f),
-                                strokeWidth = 1.dp.toPx()
-                            )
-                        }
-                        .padding(vertical = 8.dp, horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Collapse Right",
-                        tint = Color.White
-                    )
 
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Settings and Controls",
-                            color = Color.White
-                        )
-                    }
-                }
+                ComponentInfoBox(
+                    id = "scrollSlider",
+                    infoMode,
+                    infoText =
+                        "This is the settings tab, where you can modify the contrast, and scroll through the image slices",
+                    content = {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF0050A0))
+                                .clickable {
+                                    toggleRightPanel()
+
+                                }
+                                .drawBehind {
+                                    // Draw top border
+                                    drawLine(
+                                        color = bkg,
+                                        start = Offset(0f, 0f),
+                                        end = Offset(size.width, 0f),
+                                        strokeWidth = 1.dp.toPx()
+                                    )
+                                }
+                                .padding(vertical = 8.dp, horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Collapse Right",
+                                tint = Color.White
+                            )
+
+                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "Settings and Controls",
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    },
+                    enabled = rightPanelExpanded,
+                    arrowDirection = TooltipArrowDirection.Right
+                )
+
+
+
+
 
                 Column(
                     modifier = Modifier
@@ -164,6 +188,7 @@ fun MainPanelLayout(
                 ) {
                     rightContent()
                 }
+
 
             }
 

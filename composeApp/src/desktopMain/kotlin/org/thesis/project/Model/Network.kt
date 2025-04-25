@@ -1,7 +1,9 @@
 package org.thesis.project.Model
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -110,6 +112,30 @@ suspend fun fetchAvailableModels(serverUrl: String, metadata: UploadFileMetadata
         return@withContext null
     }
 
+}
+@Serializable
+data class Progress(val step: Int, val total: Int, val percent: Double)
+
+suspend fun pollProgress(jobId: String, serverUrl: String, client: OkHttpClient ,onProgress: (Progress) -> Unit) {
+    val request = Request.Builder()
+        .url("$serverUrl/progress/$jobId")
+        .build()
+
+    while (true) {
+        try {
+            val response = client.newCall(request).execute()
+            val body = response.body?.string()
+            if (body != null) {
+                val progress = Json.decodeFromString<Progress>(body)
+                onProgress(progress)
+                if (progress.step >= progress.total) break
+            }
+        } catch (e: Exception) {
+            println("Polling error: ${e.message}")
+            break
+        }
+        delay(1000)
+    }
 }
 
 

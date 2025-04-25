@@ -32,7 +32,7 @@ fun App() {
         val interfaceModel: InterfaceModel = viewModel()
 
         val navController = rememberNavController()
-        NavHost(navController, startDestination = "main") {
+        NavHost(navController, startDestination = "upload") {
 
             composable("upload") {
                 Box(modifier = Modifier.fillMaxSize()) {

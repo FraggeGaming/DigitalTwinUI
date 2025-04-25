@@ -62,7 +62,7 @@ fun uploadData(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ComponentInfoBox(
@@ -432,6 +432,12 @@ fun previousSavedCards(
     selectedMappings: List<FileMappingFull>,
     interfaceModel: InterfaceModel,
 ) {
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         mappings.forEachIndexed { index, mapping ->
             val isSelected = mapping in selectedMappings
 
@@ -472,7 +478,7 @@ fun previousSavedCards(
                     }
                 }
             )
-
+        }
     }
 }
 
@@ -482,6 +488,7 @@ fun ComponentInfoBox(
     showInfo: State<Boolean>,
     infoText: String,
     enabled: Boolean = true,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
     arrowDirection: TooltipArrowDirection = TooltipArrowDirection.Left
 ) {
@@ -489,11 +496,12 @@ fun ComponentInfoBox(
     val size = remember { mutableStateOf(IntSize.Zero) }
 
     Box(
-        modifier = Modifier.onGloballyPositioned {
+        modifier = modifier.onGloballyPositioned {
             position.value = it.positionInRoot()
             size.value = it.size
         }
     ) {
+
         content()
     }
 
@@ -508,7 +516,7 @@ fun ComponentInfoBox(
             position.value.y + size.value.height / 2f - TOOLTIP_HEIGHT / 2f // center vertically
         )
         TooltipArrowDirection.Right -> Offset(
-            position.value.x - TOOLTIP_WIDTH - arrowPadding,
+            position.value.x - TOOLTIP_WIDTH - 15f,
             position.value.y + size.value.height / 2f - TOOLTIP_HEIGHT / 2f // center vertically
         )
         TooltipArrowDirection.Bottom -> Offset(

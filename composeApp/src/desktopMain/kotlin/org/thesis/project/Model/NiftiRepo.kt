@@ -11,20 +11,24 @@ class NiftiRepo {
     val niftiImages: StateFlow<Map<String, NiftiData>> = _niftiImages
     val jsonMapper = JsonMappingController()
 
-    fun store(filename: String, data: NiftiData) {
+    private val _niftiImagesPairs = MutableStateFlow<Map<String, Pair<List<NiftiData>, List<NiftiData>>>>(emptyMap())
+    val niftiImagesPairs: StateFlow<Map<String, Pair<List<NiftiData>, List<NiftiData>>>> = _niftiImagesPairs
+
+
+    fun store(id: String, data: NiftiData) {
         _niftiImages.update { currentMap ->
-            currentMap + (filename to data)
+            currentMap + (id to data)
             //filename to NiftiData
         }
+
     }
 
-    fun get(filename: String): NiftiData? {
-        val niftiData = _niftiImages.value[filename] ?: return null
+    fun get(id: String): NiftiData? {
+        val niftiData = _niftiImages.value[id] ?: return null
         return niftiData
     }
 
-    fun getSlicesFromVolume(view: NiftiView, filename: String): Triple<Array<Array<Array<Float>>>, Float, String> {
-        val images = get(filename) ?: return Triple(emptyArray(), 1f, "")
+    fun getSlicesFromVolume(view: NiftiView, images: NiftiData): Triple<Array<Array<Array<Float>>>, Float, String> {
         val spacing = images.voxelSpacing
 
         //because of transpose when parsing nifti, (Z, Y, X) → (X, Y, Z), but we don't transpose spacing
@@ -76,6 +80,12 @@ class NiftiRepo {
     fun hasFileMapping(key: String): Boolean {
         return _fileMapping.value.containsKey(key)
     }
+
+    fun getNameFromNiftiId(id: String): String {
+        //print("Nifti with id: ${id}: ${get(id)}")
+        return get(id)?.name ?: "NaN"
+    }
+
 
     fun updateFileMappingInput(key: String, newInput: List<String>) {
         _fileMapping.update { currentMap ->

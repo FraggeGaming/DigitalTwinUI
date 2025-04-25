@@ -2,6 +2,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
@@ -69,14 +70,15 @@ fun CardWithCheckboxes(
 @Composable
 fun buttonWithCheckbox(
     selectedData: Set<String>,
+    id: String,
     label: String,
     onCheckboxChanged: (String, Boolean) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth()
             .clickable {
-                val isCurrentlyChecked = selectedData.contains(label)
-                onCheckboxChanged(label, !isCurrentlyChecked)
+                val isCurrentlyChecked = selectedData.contains(id)
+                onCheckboxChanged(id, !isCurrentlyChecked)
             },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
@@ -84,9 +86,9 @@ fun buttonWithCheckbox(
 
 
         Checkbox(
-            checked = selectedData.contains(label),
+            checked = selectedData.contains(id),
             onCheckedChange = { isChecked ->
-                onCheckboxChanged(label, isChecked)
+                onCheckboxChanged(id, isChecked)
             },
             colors = CheckboxDefaults.colors(
                 checkedColor = LocalAppColors.current.primaryBlue,
@@ -144,8 +146,8 @@ fun buttonWithCheckboxSet(
 @Composable
 fun modalities(
     selectedData: Set<String>,
-    inputList: List<String>,
-    outputList: List<String>,
+    mainLabels: List<String>,
+    subLabels: List<String>,
     onCheckboxChanged: (String, Boolean) -> Unit,
     shape: Shape = RoundedCornerShape(8.dp),
     interfaceModel: InterfaceModel,
@@ -164,28 +166,29 @@ fun modalities(
             text = "Input",
             color = Color.Black,
 
-        )
+            )
 
-        println("input list: $inputList")
-        println("output list: $outputList")
-
-        inputList.forEach { mainLabel ->
-            buttonWithCheckbox(selectedData, mainLabel, onCheckboxChanged)
+        mainLabels.forEach { mainLabelId ->
+            val name = interfaceModel.niftiRepo.getNameFromNiftiId(mainLabelId)
+            //println(name)
+            buttonWithCheckbox(selectedData, mainLabelId ,name,  onCheckboxChanged)
         }
 
         Text(
             text = "Synthetic output",
             color = Color.Black,
         )
-        outputList.forEach { subLabel ->
-            buttonWithCheckbox(selectedData, subLabel, onCheckboxChanged)
+        subLabels.forEach { subLabelId ->
+            val name = interfaceModel.niftiRepo.getNameFromNiftiId(subLabelId)
+
+            buttonWithCheckbox(selectedData, subLabelId,name,  onCheckboxChanged)
         }
 
-        if (outputList.isNotEmpty()){
+        if (subLabels.isNotEmpty()){
             TextButton(
                 onClick = {
                     //save nifti to user choose of folder
-                    val path = interfaceModel.niftiRepo.get(outputList.first())?.gz_path
+                    val path = interfaceModel.niftiRepo.get(subLabels.first())?.gz_path
 
                     if (path != null) {
                         val sourceFile = File(path)
@@ -291,11 +294,13 @@ fun cardMenu(
                                 )
                                 if (isSelected) {
                                     getFileMapping(mainLabel)?.let { (inputList, outputList) ->
-
+                                        //println(inputList)
+                                        //println(outputList)
+                                        //println("selected Data: $selectedData")
                                         modalities(
                                             selectedData = selectedData,
-                                            inputList = inputList,
-                                            outputList = outputList,
+                                            mainLabels = inputList,
+                                            subLabels = outputList,
                                             onCheckboxChanged = onCheckboxChanged,
                                             shape = RoundedCornerShape(
                                                 topStart = 0.dp,
@@ -361,8 +366,8 @@ fun cardMenu(
                                         getFileMapping(selectedMainLabel)?.let { (inputList, outputList) ->
                                             modalities(
                                                 selectedData = selectedData,
-                                                inputList = inputList,
-                                                outputList = outputList,
+                                                mainLabels = inputList,
+                                                subLabels = outputList,
                                                 onCheckboxChanged = onCheckboxChanged,
                                                 shape = RoundedCornerShape(
                                                     topStart = 0.dp,
@@ -373,7 +378,7 @@ fun cardMenu(
                                                 interfaceModel = interfaceModel,
                                                 mainLabel = selectedMainLabel,
 
-                                            )
+                                                )
                                         }
                                     }
                                 }
@@ -438,7 +443,7 @@ fun activeSelected(
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        println(selectedData)
+        //println(selectedData)
         selectedData.toList().forEach { button ->
             if (button.isNotEmpty()) {
                 selectedButtonRemove(
@@ -490,10 +495,3 @@ fun selectedButtonRemove(modifier: Modifier = Modifier, text: String, onclick: (
         }
     }
 }
-
-
-
-
-
-
-

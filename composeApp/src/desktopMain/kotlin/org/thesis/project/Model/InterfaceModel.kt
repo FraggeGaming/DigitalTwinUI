@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import java.nio.file.Paths
+import java.util.*
 
 enum class NiftiView(val displayName: String) {
     AXIAL("Axial"),
@@ -35,7 +36,6 @@ enum class PathStrings(val path: String) {
 
     override fun toString(): String = path
 }
-
 @Serializable
 data class UploadFileMetadata(
     val filePath: String,
@@ -43,13 +43,14 @@ data class UploadFileMetadata(
     var modality: String,
     var region: String,
     var model: AIModel? = null,
-    val groundTruthFilePath: String
+    val groundTruthFilePath: String,
 )
 
 @Serializable
 data class AIModel(val id: Int, val title: String, val description: String, val inputModality: String, val outputModality: String, val region: String)
 
 data class NiftiData(
+    val id: String = UUID.randomUUID().toString(),
     val width: Int,
     val height: Int,
     val depth: Int,
@@ -65,6 +66,7 @@ data class NiftiData(
 ) {
     fun toSlim(): NiftiDataSlim {
         return NiftiDataSlim(
+            id = this.id,
             width = this.width,
             height = this.height,
             depth = this.depth,
@@ -73,7 +75,8 @@ data class NiftiData(
             region = this.region,
             npy_path = this.npy_path,
             gz_path = this.gz_path,
-            name = this.name
+            name = this.name,
+
         )
     }
 }
@@ -89,6 +92,7 @@ data class NiftiMeta(
 
 @Serializable
 data class NiftiDataSlim(
+    val id: String = "",
     val width: Int,
     val height: Int,
     val depth: Int,
@@ -97,7 +101,8 @@ data class NiftiDataSlim(
     val region: String = "",
     val npy_path: String = "",
     val gz_path: String = "",
-    var name: String = ""
+    var name: String = "",
+
 )
 
 @Serializable

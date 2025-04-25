@@ -21,18 +21,17 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
     val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
 
 
-    fun getImageIndices(filename: String): StateFlow<Triple<Int, Int, Int>> {
-        return combine(scrollStep, niftiRepo.niftiImages) { step, imagesMap ->
-            val images = imagesMap[filename] ?: return@combine Triple(0, 0, 0)
+    fun getImageIndices(data: NiftiData): StateFlow<Triple<Int, Int, Int>> {
+        return scrollStep.map { step ->
 
-            val axialSize = images.voxelVolume.size
-            val coronalSize = images.voxelVolume[0].size
-            val sagittalSize = images.voxelVolume[0][0].size
+            val axialSize = data.voxelVolume.size
+            val coronalSize = data.coronalVoxelSlices.size
+            val sagittalSize = data.sagittalVoxelSlices.size
 
             val maxLength = listOf(axialSize, coronalSize, sagittalSize).maxOrNull() ?: 1
 
             _maxSelectedImageIndex.update { currentMap ->
-                currentMap.toMutableMap().apply { put(filename, maxLength.toFloat()) }
+                currentMap.toMutableMap().apply { put(data.id, maxLength.toFloat()) }
             }
 
             val axialIndex = ((step * axialSize) / maxLength).toInt().coerceIn(0, axialSize - 1)
@@ -40,6 +39,7 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
             val sagittalIndex = ((step * sagittalSize) / maxLength).toInt().coerceIn(0, sagittalSize - 1)
 
             Triple(axialIndex, coronalIndex, sagittalIndex)
+
         }.stateIn(scope, SharingStarted.Lazily, Triple(0, 0, 0))
     }
 
@@ -73,13 +73,13 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
     val selectedData: StateFlow<Set<String>> = _selectedData
 
 
-    fun updateSelectedData(label: String, isSelected: Boolean) {
+    fun updateSelectedData(id: String, isSelected: Boolean) {
         _selectedData.update { currentSet ->
-            if (isSelected) currentSet + label else currentSet - label
+            if (isSelected) currentSet + id else currentSet - id
         }
         if (!isSelected) {
             _maxSelectedImageIndex.update { currentMap ->
-                currentMap.toMutableMap().apply { remove(label) } // Apply returns the modified map
+                currentMap.toMutableMap().apply { remove(id) } // Apply returns the modified map
             }
         }
     }
@@ -186,31 +186,31 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
 
     val windowingMap = mutableMapOf<String, MutableState<WindowingParams>>()
 
-    fun getWindowingState(filename: String): State<WindowingParams> {
-        return windowingMap.getOrPut(filename) {
+    fun getWindowingState(data: String): State<WindowingParams> {
+        return windowingMap.getOrPut(data) {
             mutableStateOf(WindowingParams(40f, 80f))
         }
     }
 
-    private fun getWindowingMutableState(filename: String): MutableState<WindowingParams> {
-        return windowingMap.getOrPut(filename) {
+    private fun getWindowingMutableState(data: String): MutableState<WindowingParams> {
+        return windowingMap.getOrPut(data) {
             mutableStateOf(WindowingParams(40f, 80f))
         }
     }
 
 
-    fun setWindowingCenter(center: Float, filename: String) {
-        val state = getWindowingMutableState(filename)
+    fun setWindowingCenter(center: Float, data: String) {
+        val state = getWindowingMutableState(data)
         state.value = state.value.copy(center = center)
     }
 
-    fun setWindowingWidth(width: Float, filename: String) {
-        val state = getWindowingMutableState(filename)
+    fun setWindowingWidth(width: Float, data: String) {
+        val state = getWindowingMutableState(data)
         state.value = state.value.copy(width = width)
     }
 
-    fun setPreset(preset: WindowingParams, filename: String) {
-        val state = getWindowingMutableState(filename)
+    fun setPreset(preset: WindowingParams, data: String) {
+        val state = getWindowingMutableState(data)
         state.value = preset
     }
 }

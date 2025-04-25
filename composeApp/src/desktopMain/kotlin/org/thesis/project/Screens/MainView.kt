@@ -1,6 +1,5 @@
 package org.thesis.project.Screens
 
-import CardWithCheckboxes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,7 +64,11 @@ fun imageViewer(
         rightPanelWidth = rightPanelWidth,
         rightPanelExpanded = rightPanelExpanded,
         toggleLeftPanel = { interfaceModel.panelLayout.toggleLeftPanelExpanded() },
-        toggleRightPanel = { interfaceModel.panelLayout.toggleRightPanelExpanded() },
+        toggleRightPanel = {
+            interfaceModel.panelLayout.toggleRightPanelExpanded()
+            TooltipManager.clear("scrollSlider")
+                           },
+        interfaceModel = interfaceModel,
 
         leftContent = {
 
@@ -149,36 +152,52 @@ fun imageViewer(
             }
         },
         rightContent = {
-            ComponentInfoBox(
-                id = "scrollSlider",
-                infoMode,
-                infoText =
-                    "Here you can scroll through the image slices",
-                content = {
-                    standardCard(
-                        content = {
-                            scrollSlider(
-                                selectedData = interfaceModel.imageController.selectedData,
-                                scrollStep = interfaceModel.imageController.scrollStep,
-                                maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
-                                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
-                            )
-                        }
-                    )
-                },
-                enabled = interfaceModel.imageController.selectedData.value.isNotEmpty()
+//            ComponentInfoBox(
+//                id = "scrollSlider",
+//                infoMode,
+//                infoText =
+//                    "This is the settings tab, where you can modify the contrast, and scroll through the image slices",
+//                content = {
+//                    standardCard(
+//                        content = {
+//                            scrollSlider(
+//                                selectedData = interfaceModel.imageController.selectedData,
+//                                scrollStep = interfaceModel.imageController.scrollStep,
+//                                maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
+//                                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
+//                            )
+//                        }
+//                    )
+//                },
+//                enabled = interfaceModel.imageController.selectedData.value.isNotEmpty(),
+//                arrowDirection = TooltipArrowDirection.Right
+//            )
+
+            scrollSlider(
+                selectedData = interfaceModel.imageController.selectedData,
+                scrollStep = interfaceModel.imageController.scrollStep,
+                maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
+                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
             )
 
-            ComponentInfoBox(
-                id = "windowControls",
-                infoMode,
-                infoText =
-                    "Here you can change windowing settings for color adjustment",
-                content = {
-                    windowControls(selectedData, interfaceModel)
-                },
-                enabled = interfaceModel.imageController.selectedData.value.isNotEmpty()
-            )
+//            println("Selected data inside windowcontrolls: $selectedData")
+//            ComponentInfoBox(
+//                id = "windowControls",
+//                infoMode,
+//                infoText =
+//                    "Here you can change windowing settings for color adjustment",
+//                modifier = Modifier
+//                    //.fillMaxHeight()//THIS COMPONENTINFO BOX IS BROKEN
+//                    .wrapContentHeight(),
+//                content = {
+//
+//                      windowControls(selectedData, interfaceModel)
+//
+//                },
+//                enabled = interfaceModel.imageController.selectedData.value.isNotEmpty(),
+//                arrowDirection = TooltipArrowDirection.Right
+//            )
+            windowControls(selectedData, interfaceModel)
 
 
         }
@@ -202,7 +221,7 @@ fun imageGrid(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            selectedData.forEach { filename ->
+            selectedData.forEach { id ->
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -216,7 +235,9 @@ fun imageGrid(
                     ) {
 
                         selectedViews.forEach { selectedView ->
-                            val imageIndices by interfaceModel.imageController.getImageIndices(filename)
+                            val nifti = interfaceModel.niftiRepo.get(id)
+                            //println("Fetched nifti $nifti, With id : ${id}")
+                            val imageIndices by interfaceModel.imageController.getImageIndices(nifti!!)
                                 .collectAsState()
                             val currentIndex = when (selectedView) {
                                 NiftiView.AXIAL -> imageIndices.first
@@ -226,7 +247,7 @@ fun imageGrid(
 
                             val (slices, spacingPx, modality) = interfaceModel.niftiRepo.getSlicesFromVolume(
                                 selectedView,
-                                filename
+                                nifti!!
                             )
 
                             Column(
@@ -255,7 +276,7 @@ fun imageGrid(
                                                 interfaceModel = interfaceModel,
                                                 modality = modality,
                                                 pixelSpacing = spacingPx,
-                                                windowing = interfaceModel.imageController.getWindowingState(filename)
+                                                windowing = interfaceModel.imageController.getWindowingState(id)
                                             )
                                         }
 
@@ -385,7 +406,7 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
         val windowingState = interfaceModel.imageController.getWindowingState(data)
         standardCard(
             content = {
-                Text(data)
+                Text(interfaceModel.niftiRepo.getNameFromNiftiId(data))
                 dropDownMenuCustom(
                     label = "Select Preset",
                     selected = selectedPresetLabel ?: "",
