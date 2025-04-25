@@ -218,7 +218,7 @@ class ModelRunner(
                 //VoxelSpacing transfer
                 if (outputNifti != null){
                     outputNifti!!.voxelSpacing = inputNifti.voxelSpacing
-                    niftiRepo.updateFileMappingInput(title, output)
+                    niftiRepo.updateFileMappingOutput(title, output)
                 }
             }
 

@@ -2,7 +2,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
@@ -145,8 +144,8 @@ fun buttonWithCheckboxSet(
 @Composable
 fun modalities(
     selectedData: Set<String>,
-    mainLabels: List<String>,
-    subLabels: List<String>,
+    inputList: List<String>,
+    outputList: List<String>,
     onCheckboxChanged: (String, Boolean) -> Unit,
     shape: Shape = RoundedCornerShape(8.dp),
     interfaceModel: InterfaceModel,
@@ -167,7 +166,10 @@ fun modalities(
 
         )
 
-        mainLabels.forEach { mainLabel ->
+        println("input list: $inputList")
+        println("output list: $outputList")
+
+        inputList.forEach { mainLabel ->
             buttonWithCheckbox(selectedData, mainLabel, onCheckboxChanged)
         }
 
@@ -175,15 +177,15 @@ fun modalities(
             text = "Synthetic output",
             color = Color.Black,
         )
-        subLabels.forEach { subLabel ->
+        outputList.forEach { subLabel ->
             buttonWithCheckbox(selectedData, subLabel, onCheckboxChanged)
         }
 
-        if (subLabels.isNotEmpty()){
+        if (outputList.isNotEmpty()){
             TextButton(
                 onClick = {
                     //save nifti to user choose of folder
-                    val path = interfaceModel.niftiRepo.get(subLabels.first())?.gz_path
+                    val path = interfaceModel.niftiRepo.get(outputList.first())?.gz_path
 
                     if (path != null) {
                         val sourceFile = File(path)
@@ -292,8 +294,8 @@ fun cardMenu(
 
                                         modalities(
                                             selectedData = selectedData,
-                                            mainLabels = inputList,
-                                            subLabels = outputList,
+                                            inputList = inputList,
+                                            outputList = outputList,
                                             onCheckboxChanged = onCheckboxChanged,
                                             shape = RoundedCornerShape(
                                                 topStart = 0.dp,
@@ -359,8 +361,8 @@ fun cardMenu(
                                         getFileMapping(selectedMainLabel)?.let { (inputList, outputList) ->
                                             modalities(
                                                 selectedData = selectedData,
-                                                mainLabels = inputList,
-                                                subLabels = outputList,
+                                                inputList = inputList,
+                                                outputList = outputList,
                                                 onCheckboxChanged = onCheckboxChanged,
                                                 shape = RoundedCornerShape(
                                                     topStart = 0.dp,
