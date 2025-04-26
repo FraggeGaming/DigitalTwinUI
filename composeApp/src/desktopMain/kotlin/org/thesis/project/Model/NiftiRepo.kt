@@ -11,18 +11,12 @@ class NiftiRepo {
     val niftiImages: StateFlow<Map<String, NiftiData>> = _niftiImages
     val jsonMapper = JsonMappingController()
 
-    private val _niftiImagesPairs = MutableStateFlow<Map<String, Pair<List<NiftiData>, List<NiftiData>>>>(emptyMap())
-    val niftiImagesPairs: StateFlow<Map<String, Pair<List<NiftiData>, List<NiftiData>>>> = _niftiImagesPairs
-
-
     fun store(id: String, data: NiftiData) {
         _niftiImages.update { currentMap ->
             currentMap + (id to data)
             //filename to NiftiData
         }
-
     }
-
     fun get(id: String): NiftiData? {
         val niftiData = _niftiImages.value[id] ?: return null
         return niftiData

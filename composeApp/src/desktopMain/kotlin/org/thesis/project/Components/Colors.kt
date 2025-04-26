@@ -67,7 +67,6 @@ val LightColors = AppColors(
     buttonPressedColor = Color(0xFF0066CC),
     buttonTextColor = Color.White,
 
-    // other light colors...
 )
 
 val DarkColors = AppColors(

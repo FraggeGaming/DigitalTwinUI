@@ -93,8 +93,6 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
                 }
             }
         }
-
-
         return Pair(canContinue, errorMsg)
     }
 }

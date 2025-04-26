@@ -40,17 +40,10 @@ fun App() {
 
                         topAppBar(
                             title = "App Name",
-                            modelName = "Model Name",
                             navMenu = { navigationButtons(navController, "upload") },
                             extraContent = { extraContent(interfaceModel, "upload") }
                         )
-
-                        uploadData(
-                            interfaceModel = interfaceModel,
-                            navMenu = { navigationButtons(navController, "upload") },
-                            navController
-                        )
-
+                        uploadData(interfaceModel = interfaceModel, navController)
                     }
 
                     TooltipOverlay()
@@ -64,24 +57,15 @@ fun App() {
 
                         topAppBar(
                             title = "App Name",
-                            modelName = "Model Name",
                             navMenu = { navigationButtons(navController, "main") },
                             extraContent = { extraContent(interfaceModel, "main") }
                         )
-                        imageViewer(
-                            interfaceModel = interfaceModel,
-                            navMenu = { navigationButtons(navController, "main") },
-                            navController
-                        )
-
+                        imageViewer(interfaceModel = interfaceModel)
                     }
 
                     TooltipOverlay()
                 }
-
-
             }
-
         }
     }
 }
@@ -92,7 +76,7 @@ fun TooltipOverlay() {
 }
 
 object TooltipManager {
-    // ✅ Now Compose will recompose when this changes
+    //recompose when this changes
     val tooltips = mutableStateMapOf<String, @Composable () -> Unit>()
 
     fun show(id: String, content: @Composable () -> Unit) {

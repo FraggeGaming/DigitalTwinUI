@@ -1,7 +1,7 @@
 package org.thesis.project.Model
 
 
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -14,18 +14,28 @@ import removeNiiExtension
 import transformToCoronalSlices
 import transformToSagittalSlices
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 class ModelRunner(
     private val niftiRepo: NiftiRepo,
     private val fileUploader: FileUploadController
 ) {
 
+    val client = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.MINUTES)
+        .writeTimeout(5, TimeUnit.MINUTES)
+        .readTimeout(30, TimeUnit.MINUTES)
+        .build()
+
     private val _mLModels = MutableStateFlow<List<AIModel>>(emptyList())
     val mLModels: StateFlow<List<AIModel>> = _mLModels.asStateFlow()
 
     private val _hasFetchedModels = MutableStateFlow(false)
     val hasFetchedModels: StateFlow<Boolean> = _hasFetchedModels
-    val progressState = mutableStateOf("0%")
+
+    val progressFlows = mutableStateMapOf<String, MutableStateFlow<Progress>>()
+    val progressKillFlows = mutableStateMapOf<String, MutableStateFlow<Progress>>()
+
 
     suspend fun fetchMLModels(metadata: UploadFileMetadata) = coroutineScope {
         _hasFetchedModels.value = false
@@ -33,77 +43,6 @@ class ModelRunner(
         if (models != null) {
             _mLModels.value = models
             _hasFetchedModels.value = true
-        }
-
-
-    }
-
-    private fun loadFromJson(){
-        niftiRepo.jsonMapper.selectedMappings.value.forEach { mapping ->
-
-            val title = mapping.title
-
-            if (niftiRepo.hasFileMapping(title)) {
-                println("Mapping for $title already exists")
-                return@forEach //Skip
-            }
-
-            val inputList = mutableListOf<String>()
-            val outputList = mutableListOf<String>()
-            mapping.inputs.forEach { input ->
-                val volume = loadNpyVoxelVolume(input.npy_path)
-
-                val coronalVoxel = transformToCoronalSlices(volume)
-                val sagittalVoxel = transformToSagittalSlices(volume)
-
-                val niftiData = NiftiData(
-                    width = input.width,
-                    height = input.height,
-                    depth = input.depth,
-                    voxelSpacing = input.voxelSpacing,
-                    modality = input.modality,
-                    region = input.region,
-                    voxelVolume = volume,
-                    coronalVoxelSlices = coronalVoxel,
-                    sagittalVoxelSlices = sagittalVoxel,
-                    npy_path = input.npy_path,
-                    gz_path = input.gz_path,
-                )
-
-                val fileName = removeNiiExtension(File(input.gz_path).nameWithoutExtension)
-                //niftiRepo.store(fileName, niftiData)
-                inputList.add(fileName)
-            }
-
-
-            mapping.outputs.forEach { output ->
-                val volume = loadNpyVoxelVolume(output.npy_path)
-
-
-                val coronalVoxel = transformToCoronalSlices(volume)
-                val sagittalVoxel = transformToSagittalSlices(volume)
-
-                val niftiData = NiftiData(
-                    width = output.width,
-                    height = output.height,
-                    depth = output.depth,
-                    voxelSpacing = output.voxelSpacing,
-                    modality = output.modality,
-                    region = output.region,
-                    voxelVolume = volume,
-                    coronalVoxelSlices = coronalVoxel,
-                    sagittalVoxelSlices = sagittalVoxel,
-                    npy_path = output.npy_path,
-                    gz_path = output.gz_path,
-                )
-
-                val fileName = removeNiiExtension(File(output.gz_path).nameWithoutExtension)
-                //niftiRepo.store(fileName, niftiData)
-                outputList.add(fileName)
-            }
-
-
-            //niftiRepo.addFileMapping(title, inputList, outputList)
         }
     }
 
@@ -206,18 +145,12 @@ class ModelRunner(
             niftiRepo.updateFileMappingInput(title, input)
 
             if (file.model != null){
-                val returnedNifti = sendNiftiToServer(file, PathStrings.SERVER_IP.toString())
+                val newProgressFlow = MutableStateFlow(
+                    Progress(step = 0, total = 1, percent = 0.0, jobId = title, finished = false)
+                )
+                progressFlows[title] = newProgressFlow
 
-                val client = OkHttpClient()
-                var inferenceProgress: Progress
-                pollProgress(
-                    jobId = file.title,
-                    serverUrl = PathStrings.SERVER_IP.toString(),
-                    client = client
-                ) { updated ->
-                    inferenceProgress = updated
-                    println("Updated progress: $inferenceProgress")
-                }
+                val returnedNifti = sendNiftiToServer(file, PathStrings.SERVER_IP.toString(), newProgressFlow, client, progressKillFlows)
 
                 returnedNifti?.let {
 
@@ -265,5 +198,11 @@ class ModelRunner(
             niftiRepo.jsonMapper.addMappingAndSave(mapping)
         }
 
+    }
+
+    fun cancelJob(jobId: String) {
+        cancelRunningInference(jobId, client)
+        progressKillFlows[jobId] = progressFlows[jobId]!!
+        progressFlows.remove(jobId)
     }
 }

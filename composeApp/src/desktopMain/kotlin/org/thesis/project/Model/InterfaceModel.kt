@@ -199,4 +199,5 @@ class InterfaceModel : ViewModel() {
     fun setInfoMode(state: Boolean) {
         _infoMode.update { state }
     }
+
 }

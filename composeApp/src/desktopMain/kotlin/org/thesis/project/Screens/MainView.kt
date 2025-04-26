@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import buttonWithCheckboxSet
 import cardMenu
 import org.thesis.project.Components.*
@@ -27,36 +26,30 @@ import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.NiftiView
 import org.thesis.project.Model.Settings
 import org.thesis.project.TooltipManager
+import androidx.compose.material3.LinearProgressIndicator
 
 @Composable
 fun imageViewer(
-    interfaceModel: InterfaceModel,
-    navMenu: @Composable () -> Unit,
-    navController: NavHostController
+    interfaceModel: InterfaceModel
 ) {
     val selectedData by interfaceModel.imageController.selectedData.collectAsState()
-    val selectedDistricts by interfaceModel.selectedDistricts.collectAsState()
-    val organs by interfaceModel.organs.collectAsState()
-
     val leftPanelWidth by interfaceModel.panelLayout.leftPanelWidth.collectAsState()
     val rightPanelWidth by interfaceModel.panelLayout.rightPanelWidth.collectAsState()
     val leftPanelExpanded by interfaceModel.panelLayout.leftPanelExpanded.collectAsState()
     val rightPanelExpanded by interfaceModel.panelLayout.rightPanelExpanded.collectAsState()
-
-
     val selectedViews by interfaceModel.imageController.selectedViews.collectAsState()
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
-
     val fileMapping by interfaceModel.niftiRepo.fileMapping.collectAsState()
     val infoMode = interfaceModel.infoMode.collectAsState()
-    interfaceModel.imageController.updateSelectedViews(NiftiView.AXIAL, true)
+
+
 
     LaunchedEffect(Unit) {
         interfaceModel.runModelIfTriggered()
         interfaceModel.setInfoMode(false)
         TooltipManager.clearAll()
+        interfaceModel.imageController.updateSelectedViews(NiftiView.AXIAL, true)
     }
-
 
     MainPanelLayout(
         leftPanelWidth = leftPanelWidth,
@@ -64,15 +57,10 @@ fun imageViewer(
         rightPanelWidth = rightPanelWidth,
         rightPanelExpanded = rightPanelExpanded,
         toggleLeftPanel = { interfaceModel.panelLayout.toggleLeftPanelExpanded() },
-        toggleRightPanel = {
-            interfaceModel.panelLayout.toggleRightPanelExpanded()
-
-                           },
+        toggleRightPanel = { interfaceModel.panelLayout.toggleRightPanelExpanded() },
         interfaceModel = interfaceModel,
 
         leftContent = {
-
-            //navMenu()
 
             ComponentInfoBox(
                 id = "cardMenu",
@@ -94,14 +82,9 @@ fun imageViewer(
                 arrowDirection = TooltipArrowDirection.Left
             )
 
-//            CardWithCheckboxes(
-//                selectedDistricts,
-//                items = organs,
-//                onCheckboxChanged = { organ, isChecked ->
-//                    interfaceModel.updateSelectedDistrict(organ, isChecked)
-//                }
-//            )
-
+            runningModelsList(
+                interfaceModel
+            )
         },
         centerContent = {
             Column(
@@ -152,57 +135,85 @@ fun imageViewer(
             }
         },
         rightContent = {
-//            ComponentInfoBox(
-//                id = "scrollSlider",
-//                infoMode,
-//                infoText =
-//                    "This is the settings tab, where you can modify the contrast, and scroll through the image slices",
-//                content = {
-//                    standardCard(
-//                        content = {
-//                            scrollSlider(
-//                                selectedData = interfaceModel.imageController.selectedData,
-//                                scrollStep = interfaceModel.imageController.scrollStep,
-//                                maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
-//                                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
-//                            )
-//                        }
-//                    )
-//                },
-//                enabled = interfaceModel.imageController.selectedData.value.isNotEmpty(),
-//                arrowDirection = TooltipArrowDirection.Right
-//            )
-
             scrollSlider(
                 selectedData = interfaceModel.imageController.selectedData,
                 scrollStep = interfaceModel.imageController.scrollStep,
                 maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
-                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } // Convert Int -> Float
+                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) }
             )
 
-//            println("Selected data inside windowcontrolls: $selectedData")
-//            ComponentInfoBox(
-//                id = "windowControls",
-//                infoMode,
-//                infoText =
-//                    "Here you can change windowing settings for color adjustment",
-//                modifier = Modifier
-//                    //.fillMaxHeight()//THIS COMPONENTINFO BOX IS BROKEN
-//                    .wrapContentHeight(),
-//                content = {
-//
-//                      windowControls(selectedData, interfaceModel)
-//
-//                },
-//                enabled = interfaceModel.imageController.selectedData.value.isNotEmpty(),
-//                arrowDirection = TooltipArrowDirection.Right
-//            )
             windowControls(selectedData, interfaceModel)
-
 
         }
     )
 }
+
+@Composable
+fun runningModelsList(interfaceModel: InterfaceModel) {
+    val jobs = interfaceModel.modelRunner.progressFlows.entries.toList()
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        jobs.forEach { (jobId, progressFlow) ->
+            val jobProgress by progressFlow.collectAsState()
+
+            standardCard(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Job: ${jobProgress.jobId}",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LinearProgressIndicator(
+                    progress = { (jobProgress.percent / 100f).coerceIn(0.0, 1.0).toFloat() },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (jobProgress.total == 1) {
+                    Text(
+                        text = "Loading model...",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                else{
+                    Text(
+                        text = "${String.format("%.1f", jobProgress.percent)}% done (${jobProgress.step}/${jobProgress.total} steps)",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (!jobProgress.finished) {
+                    Button(
+                        onClick = { interfaceModel.modelRunner.cancelJob(jobProgress.jobId) },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Cancel")
+                    }
+                } else {
+                    Text(
+                        text = "✅ Completed!",
+                        color = Color.Green,
+                        modifier = Modifier.align(Alignment.End),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun imageGrid(
@@ -300,7 +311,6 @@ fun menuCard(
     selectedViews: Set<NiftiView>,
     interfaceModel: InterfaceModel,
     selectedSettings: Set<Settings>,
-    //content: List<@Composable () -> Unit>
 ) {
     val buttonHeight = 60.dp
     val buttonWidth = 160.dp
@@ -308,8 +318,8 @@ fun menuCard(
     Card(
         modifier = modifier.padding(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White, // This is the background color of the Card
-            contentColor = Color.White      // Content color inside the Card
+            containerColor = Color.White,
+            contentColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 8.dp

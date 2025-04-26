@@ -21,22 +21,9 @@ fun runNiftiParser(niftiPath: String, outputDir: String): String {
     return output
 }
 
-
-
-
-//fun parseNiftiImages(jsonData: String, modality: String): NiftiData {
-//    val json = Json { ignoreUnknownKeys = true }
-//    val baseData = json.decodeFromString<NiftiData>(jsonData)
-//    return baseData.copy(modality = modality)
-//}
-
-//private val json = Json { ignoreUnknownKeys = true }
-
 fun parseNiftiImages(meta: NiftiMeta, metaData: UploadFileMetadata): NiftiData {
 
     val volume = loadNpyVoxelVolume(meta.npy_path)
-
-
     val coronalVoxel = transformToCoronalSlices(volume)
     val sagittalVoxel = transformToSagittalSlices(volume)
 
@@ -98,15 +85,6 @@ fun loadNpyVoxelVolume(npyPath: String): Array<Array<Array<Float>>> {
             }
         }
     }
-
-    //Delete the file after loading
-//    val deleted = file.delete()
-//    if (deleted) {
-//        println("File deleted successfully.")
-//    } else {
-//        println("Failed to delete the file.")
-//    }
-
     return result
 }
 

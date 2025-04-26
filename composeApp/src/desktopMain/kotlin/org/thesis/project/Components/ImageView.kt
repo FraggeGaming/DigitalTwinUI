@@ -140,35 +140,16 @@ fun voxelImageDisplay(
             offsetY = ((renderedImageSize.height - renderHeight) / 2f)
         }
 
-//        val cardModifier = if (imageSize.width > 0 && imageSize.height > 0) {
-//            Modifier.size(
-//                width = imageSize.width.dp,
-//                height = imageSize.height.dp
-//            )
-//        } else {
-//            Modifier.fillMaxSize() // allow first card to size itself
-//        }
-//
-//        standardCard(
-//            modifier = cardModifier,
-//
-//            contentAlignment = Alignment.CenterHorizontally,
-//            content = {
+
         Image(
             bitmap = bitmap,
             contentDescription = "Voxel image",
             modifier = Modifier.fillMaxSize() //wrapcontent
                 .onSizeChanged {
                     renderedImageSize = it
-//                            interfaceModel.setImageCardSize(IntSize(renderWidth, renderHeight))
-//                            println("Voxel image: ${renderWidth} ${renderHeight}")
                 }
                 .onGloballyPositioned { imageLayoutCoordinates = it }
         )
-
-//            }
-//        )
-
 
         // Canvas overlay drawn exactly over rendered image
         Canvas(

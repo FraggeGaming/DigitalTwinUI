@@ -1,76 +1,58 @@
 package org.thesis.project.Components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Android
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Text
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun topAppBar(title: String, modelName: String, extraContent: @Composable () -> Unit = {}, navMenu: @Composable () -> Unit = {}) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .background(Color(0xFF0050A0)),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+fun topAppBar(
+    title: String,
+    extraContent: @Composable RowScope.() -> Unit = {},
+    navMenu: @Composable () -> Unit = {}
+) {
+    CenterAlignedTopAppBar(
+        navigationIcon = {
             navMenu()
-        }
-        Row(
-            modifier = Modifier.padding(start = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-
-            //Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                color = Color.White
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Default.Android,
-                contentDescription = "App Logo",
-                tint = Color.White
-            )
-        }
-
-        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(modelName, color = Color.White)
+        },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.Default.Android,
-                    contentDescription = "Logo",
+                    contentDescription = "App Logo",
                     tint = Color.White
                 )
             }
-        }
-
-        extraContent()
-
-//        Row(
-//            verticalAlignment = Alignment.CenterVertically,
-//            horizontalArrangement = Arrangement.End,
-//            modifier = Modifier.padding(end = 16.dp)
-//        ) {
-//            IconButton(onClick = { /* show info */ }) {
-//                Icon(Icons.Default.Info, contentDescription = "Info", tint = Color.White)
-//            }
-//
-//            IconButton(
-//                onClick = { interfaceModel.toggleRightPanelExpanded() }
-//            ) {
-//                Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
-//            }
-//        }
-    }
+        },
+        actions = {
+            extraContent()
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color(0xFF0050A0),
+            titleContentColor = Color.White,
+            navigationIconContentColor = Color.White,
+            actionIconContentColor = Color.White
+        )
+    )
 }

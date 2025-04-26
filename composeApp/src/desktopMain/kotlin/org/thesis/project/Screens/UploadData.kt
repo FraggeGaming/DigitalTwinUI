@@ -32,7 +32,6 @@ import java.io.File
 @Composable
 fun uploadData(
     interfaceModel: InterfaceModel,
-    navMenu: @Composable () -> Unit,
     navController: NavHostController
 ) {
     val uploadedFiles by interfaceModel.fileUploader.uploadedFileMetadata.collectAsState()
@@ -42,7 +41,6 @@ fun uploadData(
     val selectedMappings by interfaceModel.niftiRepo.jsonMapper.selectedMappings.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
     val hasFetchedModels by interfaceModel.modelRunner.hasFetchedModels.collectAsState()
     val mappings by interfaceModel.niftiRepo.jsonMapper.mappings.collectAsState()
 
@@ -132,7 +130,6 @@ fun uploadData(
                 if(uploadedFiles.isNotEmpty() || selectedMappings.isNotEmpty()){
                     Button(
                         onClick = {
-
                             val (canContinue, errorMsg) = interfaceModel.fileUploader.uploadRunCheck(uploadedFiles, mappings)
 
                             if (canContinue){
@@ -155,10 +152,7 @@ fun uploadData(
                         Text("Run Generation", textAlign = TextAlign.Center, color = Color.White)
                     }
                 }
-
             }
-
-
             if (showModelPopup && currentlySelected != null) {
                 coroutineScope.launch {
                     interfaceModel.modelRunner.fetchMLModels(metadata = currentlySelected!!)
@@ -249,7 +243,6 @@ fun uploadData(
                     }
                 }
             }
-
         }
     }
 
@@ -365,8 +358,6 @@ fun UploadInputCard(
                 }
             }
 
-
-
             //Add ground truth
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -412,8 +403,6 @@ fun UploadInputCard(
                 }
             }
 
-
-            //Remove
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
@@ -509,23 +498,25 @@ fun ComponentInfoBox(
     val TOOLTIP_HEIGHT = 60f
 
     val arrowPadding = 70f
-    // Determine where to place the tooltip based on direction
+
+    //TODO move to interfacemodel
+    //Determine where to place the tooltip based on direction
     val tooltipOffset = when (arrowDirection) {
         TooltipArrowDirection.Left -> Offset(
             position.value.x + size.value.width - 15f,
-            position.value.y + size.value.height / 2f - TOOLTIP_HEIGHT / 2f // center vertically
+            position.value.y + size.value.height / 2f - TOOLTIP_HEIGHT / 2f
         )
         TooltipArrowDirection.Right -> Offset(
             position.value.x - TOOLTIP_WIDTH - 15f,
-            position.value.y + size.value.height / 2f - TOOLTIP_HEIGHT / 2f // center vertically
+            position.value.y + size.value.height / 2f - TOOLTIP_HEIGHT / 2f
         )
         TooltipArrowDirection.Bottom -> Offset(
-            position.value.x + size.value.width / 2f - 125f, // center horizontally, tooltip width = 250.dp
-            position.value.y - arrowPadding // space above the component
+            position.value.x + size.value.width / 2f - 125f,
+            position.value.y - arrowPadding
         )
         TooltipArrowDirection.Top -> Offset(
-            position.value.x + size.value.width / 2f - 125f, // center horizontally
-            position.value.y + size.value.height - 15f // below the component
+            position.value.x + size.value.width / 2f - 125f,
+            position.value.y + size.value.height - 15f
         )
     }
 

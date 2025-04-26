@@ -202,36 +202,10 @@ fun MainPanelLayout(
                         ) {
                             rightContent()
                         }
-
-
                     }
                 }
-
             }
-
-
-
-
-
-
         }
-
-//        else {
-//
-//            TextButton(
-//                modifier = Modifier
-//                    .width(48.dp)
-//                    .background(Color(0xFF0050A0)),
-//                onClick = {
-//                    toggleRightPanel()
-//                }
-//            ) {
-//
-//                Icon(Icons.Filled.Tune, contentDescription = "Expand Right", tint = Color.White)
-//
-//            }
-//
-//        }
     }
 }
 

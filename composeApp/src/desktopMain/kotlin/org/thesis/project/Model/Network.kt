@@ -1,8 +1,9 @@
 package org.thesis.project.Model
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
+import androidx.compose.runtime.snapshots.SnapshotStateMap
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -16,11 +17,13 @@ import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import java.nio.file.Paths
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 suspend fun sendNiftiToServer(
     metadata: UploadFileMetadata,
-    serverUrl: String
+    serverUrl: String,
+    progressFlow: MutableStateFlow<Progress>,
+    client: OkHttpClient,
+    progressKillFlows: SnapshotStateMap<String, MutableStateFlow<Progress>>
 ): File? = withContext(Dispatchers.IO) {
     try {
         val niftiFile = File(metadata.filePath)
@@ -40,38 +43,40 @@ suspend fun sendNiftiToServer(
             )
             .build()
 
-        val request = Request.Builder()
+
+        // 1. Start the model process
+        val processRequest = Request.Builder()
             .url("$serverUrl/process")
             .post(requestBody)
             .build()
 
-        val client = OkHttpClient.Builder()
-            .connectTimeout(5, TimeUnit.MINUTES)
-            .writeTimeout(5, TimeUnit.MINUTES)
-            .readTimeout(30, TimeUnit.MINUTES)
-            .build()
+        val processResponse = client.newCall(processRequest).execute()
 
-        val response = client.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            println("Request failed: ${response.code}")
+        if (!processResponse.isSuccessful) {
+            println("Request failed: ${processResponse.code}")
             return@withContext null
         }
 
-        val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
-        outputDir.mkdirs() // Ensure the folder exists
+        println("Model started successfully")
 
-        val returnedFileName = "returned_${UUID.randomUUID().toString().substring(0, 8)}.nii.gz"
-        val returnedFile = File(outputDir, returnedFileName)
 
-        // Save the response body to the file
-        returnedFile.outputStream().use { output ->
-            response.body?.byteStream()?.copyTo(output)
+        var nifti: File? = null
+
+        pollProgress(
+            jobId = metadata.title,
+            serverUrl = serverUrl,
+            client = client,
+            progressKillFlows
+        ) { updated -> progressFlow.value = updated
+            println("Updated progress: $updated")
+            if (updated.finished) {
+                println("Model finished, downloading output...")
+                nifti = downloadResult(metadata.title, serverUrl, client)
+                cancel()
+            }
         }
 
-        println("Saved returned file to: ${returnedFile.absolutePath}")
-
-        return@withContext returnedFile
+        return@withContext nifti
 
     } catch (e: Exception) {
         println("Error sending NIfTI to server: ${e.localizedMessage}")
@@ -79,6 +84,55 @@ suspend fun sendNiftiToServer(
         return@withContext null
     }
 }
+
+fun downloadResult(jobId: String, serverUrl: String, client: OkHttpClient): File? {
+    try {
+
+        val downloadRequest = Request.Builder()
+            .url("$serverUrl/download/$jobId")
+            .build()
+
+        val downloadResponse = client.newCall(downloadRequest).execute()
+
+        if (!downloadResponse.isSuccessful) {
+            println("Download failed: ${downloadResponse.code}")
+            return null
+        }
+
+        val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
+        outputDir.mkdirs()
+
+        val returnedFileName = "returned_${UUID.randomUUID().toString().substring(0, 8)}.nii.gz"
+        val returnedFile = File(outputDir, returnedFileName)
+
+        downloadResponse.body?.byteStream()?.use { input ->
+            returnedFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+
+        println("Saved returned file to: ${returnedFile.absolutePath}")
+
+        return returnedFile
+
+    } catch (e: Exception) {
+        println("Error downloading result: ${e.localizedMessage}")
+        e.printStackTrace()
+        return null
+    }
+}
+
+fun cancelRunningInference(jobId: String, client: OkHttpClient) {
+    CoroutineScope(Dispatchers.IO).launch {
+        val request = Request.Builder()
+            .url("${PathStrings.SERVER_IP}/cancel/$jobId")
+            .post("".toRequestBody()) // empty body
+            .build()
+
+        val response = client.newCall(request).execute()
+    }
+}
+
 
 suspend fun fetchAvailableModels(serverUrl: String, metadata: UploadFileMetadata): List<AIModel>? = withContext(Dispatchers.IO) {
     try {
@@ -114,29 +168,43 @@ suspend fun fetchAvailableModels(serverUrl: String, metadata: UploadFileMetadata
 
 }
 @Serializable
-data class Progress(val step: Int, val total: Int, val percent: Double)
+data class Progress(val step: Int, val total: Int, val percent: Double, @SerialName("job_id") val jobId: String, val finished: Boolean = false)
 
-suspend fun pollProgress(jobId: String, serverUrl: String, client: OkHttpClient ,onProgress: (Progress) -> Unit) {
-    val request = Request.Builder()
-        .url("$serverUrl/progress/$jobId")
-        .build()
+suspend fun pollProgress(
+    jobId: String,
+    serverUrl: String,
+    client: OkHttpClient,
+    progressKillFlows: SnapshotStateMap<String, MutableStateFlow<Progress>>,
+    onProgress: (Progress) -> Unit
+) {
 
     while (true) {
         try {
+            if (progressKillFlows[jobId] != null) {
+                progressKillFlows.remove(jobId)
+                break
+            }
+            println("Polling for $jobId ...")
+            val request = Request.Builder()
+                .url("$serverUrl/progress/$jobId")
+                .build()
+
             val response = client.newCall(request).execute()
             val body = response.body?.string()
+
             if (body != null) {
                 val progress = Json.decodeFromString<Progress>(body)
                 onProgress(progress)
                 if (progress.step >= progress.total) break
             }
         } catch (e: Exception) {
-            println("Polling error: ${e.message}")
+            println("Polling error: ${e.localizedMessage}")
             break
         }
         delay(1000)
     }
 }
+
 
 
 

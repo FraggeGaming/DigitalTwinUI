@@ -30,9 +30,7 @@ fun navigationButtons(navController: NavController, selected: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Button(
-
             onClick = { navController.navigate("upload") },
-            //shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
             shape = RoundedCornerShape(0.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor  = when {
@@ -51,20 +49,6 @@ fun navigationButtons(navController: NavController, selected: String) {
             Text("Upload", textAlign = TextAlign.Center)
         }
 
-
-//        Button(
-//            onClick = { navController.navigate("modelSelect") },
-//            shape = RectangleShape,
-//            colors = ButtonDefaults.buttonColors(
-//                backgroundColor = if (selected == "modelSelect") Color(0xFF0050A0) else Color(0xFF0050A0), // Blue background
-//                contentColor = Color.White
-//            ),
-//            modifier = Modifier
-//                .weight(1f)
-//                .fillMaxHeight()
-//        ) {
-//            Text("2. Model Select", textAlign = TextAlign.Center)
-//        }
         Button(
             onClick = { navController.navigate("main") },
             //shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp),

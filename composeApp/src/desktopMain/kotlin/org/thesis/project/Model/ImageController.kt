@@ -55,7 +55,7 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
     }
 
     fun decrementScrollPosition() {
-        _scrollStep.update { (it - 1f).coerceAtLeast(0f) } // **Finer decrement**
+        _scrollStep.update { (it - 1f).coerceAtLeast(0f) }
     }
 
 
@@ -79,7 +79,7 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
         }
         if (!isSelected) {
             _maxSelectedImageIndex.update { currentMap ->
-                currentMap.toMutableMap().apply { remove(id) } // Apply returns the modified map
+                currentMap.toMutableMap().apply { remove(id) } //Apply returns the modified map
             }
         }
     }

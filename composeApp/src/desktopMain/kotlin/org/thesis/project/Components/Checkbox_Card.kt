@@ -2,9 +2,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme.colors
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -75,30 +76,40 @@ fun buttonWithCheckbox(
     onCheckboxChanged: (String, Boolean) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .clickable {
                 val isCurrentlyChecked = selectedData.contains(id)
                 onCheckboxChanged(id, !isCurrentlyChecked)
-            },
+            }
+            .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-
-
-        Checkbox(
-            checked = selectedData.contains(id),
-            onCheckedChange = { isChecked ->
-                onCheckboxChanged(id, isChecked)
-            },
-            colors = CheckboxDefaults.colors(
-                checkedColor = LocalAppColors.current.primaryBlue,
-                uncheckedColor = LocalAppColors.current.primaryBlue,
-                checkmarkColor = Color.White
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = selectedData.contains(id),
+                onCheckedChange = { isChecked ->
+                    onCheckboxChanged(id, isChecked)
+                },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = LocalAppColors.current.primaryBlue,
+                    uncheckedColor = LocalAppColors.current.primaryBlue,
+                    checkmarkColor = Color.White
+                )
             )
-        )
 
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text = label, color = Color.Black)
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = label,
+                color = Color.Black
+            )
+        }
+
+
     }
 }
 
@@ -164,14 +175,18 @@ fun modalities(
     ) {
         Text(
             text = "Input",
-            color = Color.Black,
-
-            )
+            color = Color.Black
+        )
 
         mainLabels.forEach { mainLabelId ->
             val name = interfaceModel.niftiRepo.getNameFromNiftiId(mainLabelId)
             //println(name)
-            buttonWithCheckbox(selectedData, mainLabelId ,name,  onCheckboxChanged)
+            interfaceModel.niftiRepo.removeFileMapping(mainLabelId)
+            buttonWithCheckbox(
+                selectedData,
+                mainLabelId ,
+                name,
+                onCheckboxChanged)
         }
 
         Text(
@@ -280,18 +295,53 @@ fun cardMenu(
                                 verticalArrangement = Arrangement.spacedBy(0.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                menuButton(
-                                    mainLabel = mainLabel,
-                                    isSelected = isSelected,
-                                    onClick = { expandedMenu = if (isSelected) null else mainLabel },
-                                    widthFraction = 1f,
-                                    shapeSelected = RoundedCornerShape(
-                                        topStart = 8.dp,
-                                        bottomStart = 0.dp,
-                                        topEnd = 8.dp,
-                                        bottomEnd = 0.dp
+
+                                if (expandedMenu == null){
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            menuButton(
+                                                mainLabel = mainLabel,
+                                                isSelected = false,
+                                                onClick = { expandedMenu = mainLabel },
+                                                widthFraction = 1f,
+                                                shapeSelected = RoundedCornerShape(4.dp)
+                                            )
+                                        }
+
+                                        // 2. Trash Icon
+                                        IconButton(
+                                            onClick = { interfaceModel.niftiRepo.removeFileMapping(mainLabel) }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Remove",
+                                                tint = Color.Red
+                                            )
+                                        }
+                                    }
+                                }
+                                else{
+                                    menuButton(
+                                        mainLabel = mainLabel,
+                                        isSelected = isSelected,
+                                        onClick = { expandedMenu = if (isSelected) null else mainLabel },
+                                        widthFraction = 1f,
+                                        shapeSelected = RoundedCornerShape(
+                                            topStart = 8.dp,
+                                            bottomStart = 0.dp,
+                                            topEnd = 8.dp,
+                                            bottomEnd = 0.dp
+                                        )
                                     )
-                                )
+                                }
+
+
                                 if (isSelected) {
                                     getFileMapping(mainLabel)?.let { (inputList, outputList) ->
                                         //println(inputList)
@@ -325,13 +375,36 @@ fun cardMenu(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 fileKeys.forEach { mainLabel ->
-                                    menuButton(
-                                        mainLabel = mainLabel,
-                                        isSelected = false,
-                                        onClick = { expandedMenu = mainLabel },
-                                        widthFraction = 1f,
-                                        shapeSelected = RoundedCornerShape(4.dp)
-                                    )
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            menuButton(
+                                                mainLabel = mainLabel,
+                                                isSelected = false,
+                                                onClick = { expandedMenu = mainLabel },
+                                                widthFraction = 1f, // This can still stay
+                                                shapeSelected = RoundedCornerShape(4.dp)
+                                            )
+                                        }
+
+                                        // 2. Trash Icon
+                                        IconButton(
+                                            onClick = { interfaceModel.niftiRepo.removeFileMapping(mainLabel) }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Remove",
+                                                tint = Color.Red
+                                            )
+                                        }
+                                    }
+
                                 }
                             }
                         } else {
@@ -389,6 +462,7 @@ fun cardMenu(
                     activeSelected(
                         selectedData = selectedData,
                         onCheckboxChanged = onCheckboxChanged,
+                        interfaceModel = interfaceModel,
                     )
                 }
             }
@@ -408,9 +482,9 @@ fun menuButton(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxSize(widthFraction).height(40.dp)
+            .fillMaxWidth(widthFraction).height(40.dp)
             .background(
-                color = LocalAppColors.current.thirdlyBlue,
+                color = LocalAppColors.current.secondaryBlue,
                 shape = if (isSelected) {
                     shapeSelected
                 } else {
@@ -434,7 +508,8 @@ fun menuButton(
 @Composable
 fun activeSelected(
     selectedData: Set<String>,
-    onCheckboxChanged: (String, Boolean) -> Unit
+    onCheckboxChanged: (String, Boolean) -> Unit,
+    interfaceModel: InterfaceModel
 ) {
     FlowRow(
         modifier = Modifier
@@ -446,9 +521,10 @@ fun activeSelected(
         //println(selectedData)
         selectedData.toList().forEach { button ->
             if (button.isNotEmpty()) {
+                val name = interfaceModel.niftiRepo.getNameFromNiftiId(button)
                 selectedButtonRemove(
                     modifier = Modifier,
-                    text = button,
+                    text = name,
                     onclick = {
                         val isCurrentlyChecked = selectedData.contains(button)
                         onCheckboxChanged(button, !isCurrentlyChecked)
