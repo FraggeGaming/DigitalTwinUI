@@ -50,34 +50,39 @@ class ModelRunner(
         val data = mutableListOf<String>()
 
         mapping.forEach { output ->
-            val volume = loadNpyVoxelVolume(output.npy_path)
+            if (niftiRepo.get(output.id) != null) {
+                val volume = loadNpyVoxelVolume(output.npy_path)
 
 
-            val coronalVoxel = transformToCoronalSlices(volume)
-            val sagittalVoxel = transformToSagittalSlices(volume)
+                val coronalVoxel = transformToCoronalSlices(volume)
+                val sagittalVoxel = transformToSagittalSlices(volume)
 
-            val niftiData = NiftiData(
-                id = output.id,
-                width = output.width,
-                height = output.height,
-                depth = output.depth,
-                voxelSpacing = output.voxelSpacing,
-                modality = output.modality,
-                region = output.region,
-                voxelVolume = volume,
-                coronalVoxelSlices = coronalVoxel,
-                sagittalVoxelSlices = sagittalVoxel,
-                npy_path = output.npy_path,
-                gz_path = output.gz_path,
-                name = output.name,
-            )
+                val niftiData = NiftiData(
+                    id = output.id,
+                    width = output.width,
+                    height = output.height,
+                    depth = output.depth,
+                    voxelSpacing = output.voxelSpacing,
+                    modality = output.modality,
+                    region = output.region,
+                    voxelVolume = volume,
+                    coronalVoxelSlices = coronalVoxel,
+                    sagittalVoxelSlices = sagittalVoxel,
+                    npy_path = output.npy_path,
+                    gz_path = output.gz_path,
+                    name = output.name,
+                )
 
-            val fileName = removeNiiExtension(File(output.gz_path).nameWithoutExtension)
-            niftiRepo.store(niftiData.id, niftiData)
-            println("stored nifti: ${niftiData.id}")
+                val fileName = removeNiiExtension(File(output.gz_path).nameWithoutExtension)
+                niftiRepo.store(niftiData.id, niftiData)
+                println("stored nifti: ${niftiData.id}")
 
-            data.add(niftiData.id)
-
+                data.add(niftiData.id)
+            }
+            else {
+                println("Nifti already stored in cache")
+                data.add(output.id)
+            }
         }
 
         return data
