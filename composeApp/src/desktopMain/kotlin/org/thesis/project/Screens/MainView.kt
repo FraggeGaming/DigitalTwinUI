@@ -66,7 +66,7 @@ fun imageViewer(
         toggleLeftPanel = { interfaceModel.panelLayout.toggleLeftPanelExpanded() },
         toggleRightPanel = {
             interfaceModel.panelLayout.toggleRightPanelExpanded()
-            TooltipManager.clear("scrollSlider")
+
                            },
         interfaceModel = interfaceModel,
 

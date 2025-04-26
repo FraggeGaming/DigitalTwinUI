@@ -4,6 +4,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.thesis.project.TooltipManager
 
 class PanelLayoutController {
     // Define initial values as constants or properties
@@ -36,6 +37,7 @@ class PanelLayoutController {
     }
 
     fun toggleRightPanelExpanded() {
+        TooltipManager.clear("settings_tab")
         _rightPanelExpanded.value = !_rightPanelExpanded.value
     }
 }

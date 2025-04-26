@@ -121,76 +121,97 @@ fun MainPanelLayout(
                 }
             }
 
+
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(rightWidth.coerceIn(minPanelWidth, maxPanelWidth))
-                    .verticalScroll(rightScrollState)
                     .background(LocalAppColors.current.backgroundColor),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Start
             ) {
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .background(LocalAppColors.current.backgroundColor))
+                {
+                    ComponentInfoBox(
+                        id = "settings_tab",
+                        infoMode,
+                        infoText =
+                            "This is the settings tab, where you can modify the contrast, and scroll through the image slices",
+                        content = {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFF0050A0))
+                                    .clickable {
+                                        toggleRightPanel()
 
-                ComponentInfoBox(
-                    id = "scrollSlider",
-                    infoMode,
-                    infoText =
-                        "This is the settings tab, where you can modify the contrast, and scroll through the image slices",
-                    content = {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFF0050A0))
-                                .clickable {
-                                    toggleRightPanel()
+                                    }
+                                    .drawBehind {
+                                        // Draw top border
+                                        drawLine(
+                                            color = bkg,
+                                            start = Offset(0f, 0f),
+                                            end = Offset(size.width, 0f),
+                                            strokeWidth = 1.dp.toPx()
+                                        )
+                                    }
+                                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Collapse Right",
+                                    tint = Color.White
+                                )
 
-                                }
-                                .drawBehind {
-                                    // Draw top border
-                                    drawLine(
-                                        color = bkg,
-                                        start = Offset(0f, 0f),
-                                        end = Offset(size.width, 0f),
-                                        strokeWidth = 1.dp.toPx()
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "Settings and Controls",
+                                        color = Color.White
                                     )
                                 }
-                                .padding(vertical = 8.dp, horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Collapse Right",
-                                tint = Color.White
-                            )
-
-                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "Settings and Controls",
-                                    color = Color.White
-                                )
                             }
+                        },
+                        enabled = rightPanelExpanded,
+                        arrowDirection = TooltipArrowDirection.Right
+                    )
+                }
+                Row(modifier = Modifier
+                    .fillMaxSize()
+                    .background(LocalAppColors.current.backgroundColor))
+
+                {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(rightWidth.coerceIn(minPanelWidth, maxPanelWidth))
+                            .verticalScroll(rightScrollState)
+                            .background(LocalAppColors.current.backgroundColor),
+                        verticalArrangement = Arrangement.Top,
+                        horizontalAlignment = Alignment.Start
+                    ) {
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            rightContent()
                         }
-                    },
-                    enabled = rightPanelExpanded,
-                    arrowDirection = TooltipArrowDirection.Right
-                )
 
 
-
-
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    rightContent()
+                    }
                 }
 
-
             }
+
+
+
+
 
 
         }
