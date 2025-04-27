@@ -30,6 +30,7 @@ enum class Settings(val settingName: String) {
 enum class PathStrings(val path: String) {
     OUTPUT_PATH_GZ("src/desktopMain/resources/output_gz"),
     OUTPUT_PATH_NPY("src/desktopMain/resources/output_npy"),
+    INPUT_PATH_GZ("src/desktopMain/resources/input_gz"),
     //PREV_VIEWED_PATH("src/desktopMain/resources/prev_view.xml"),
     SAVED_MAPPING("src/desktopMain/resources/saved_mapping.txt"),
     SERVER_IP("http://localhost:8000");
@@ -38,7 +39,7 @@ enum class PathStrings(val path: String) {
 }
 @Serializable
 data class UploadFileMetadata(
-    val filePath: String,
+    var filePath: String,
     var title: String,
     var modality: String,
     var region: String,
@@ -199,5 +200,7 @@ class InterfaceModel : ViewModel() {
     fun setInfoMode(state: Boolean) {
         _infoMode.update { state }
     }
+
+
 
 }

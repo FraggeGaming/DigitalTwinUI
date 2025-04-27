@@ -14,6 +14,9 @@ import removeNiiExtension
 import transformToCoronalSlices
 import transformToSagittalSlices
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.concurrent.TimeUnit
 
 class ModelRunner(
@@ -46,11 +49,13 @@ class ModelRunner(
         }
     }
 
-    fun loadMapping(mapping: List<NiftiDataSlim>, isInput: Boolean = true, title:String): MutableList<String>{
+    fun loadMapping(mapping: List<NiftiDataSlim>): MutableList<String>{
         val data = mutableListOf<String>()
 
         mapping.forEach { output ->
-            if (niftiRepo.get(output.id) != null) {
+            println(output)
+            println(niftiRepo.get(output.id))
+            if (niftiRepo.get(output.id) == null) {
                 val volume = loadNpyVoxelVolume(output.npy_path)
 
 
@@ -90,22 +95,25 @@ class ModelRunner(
 
     suspend fun runModel() = coroutineScope {
 
-        //loadFromJson()
-        niftiRepo.jsonMapper.selectedMappings.value.forEach { mapping ->
+        val mappings = niftiRepo.jsonMapper.selectedMappings.value.toList()
+
+        mappings.forEach { mapping ->
             val title = mapping.title
             if (niftiRepo.hasFileMapping(title)) {
                 println("Mapping for $title already exists")
                 return@forEach //Skip
             }
 
-            val inputList = loadMapping(mapping.inputs, true, title)
-            val outputList = loadMapping(mapping.outputs, false, title)
+            val inputList = loadMapping(mapping.inputs)
+            val outputList = loadMapping(mapping.outputs)
             niftiRepo.addFileMapping(title, inputList, outputList)
             println(niftiRepo.getFileMapping(title))
         }
 
 
-        fileUploader.uploadedFileMetadata.value.forEach { file ->
+        val uploadedFiles = fileUploader.uploadedFileMetadata.value.toList()
+
+        uploadedFiles.forEach { file ->
             val input = mutableListOf<String>()
             val output = mutableListOf<String>()
             val inputNifti: NiftiData?
@@ -113,6 +121,9 @@ class ModelRunner(
             var outputNifti: NiftiData? = null
             val title = file.title
             println("Model: ${file.model}")
+
+            //Changing the name by adding the title for a unique name
+            file.filePath = copyAndChangeName(file.title, file.filePath)
 
             //Fetching/parsing the input nifti
             inputNifti = async(Dispatchers.IO) { fileUploader.loadNifti(file) }.await()
@@ -137,6 +148,7 @@ class ModelRunner(
                     groundTruthFilePath = ""
                 )
 
+                newGTFile.filePath = copyAndChangeName(newGTFile.title, newGTFile.filePath)
                 gt_inputnifti = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }.await()
                 gt_inputnifti.gz_path = newGTFile.filePath
                 gt_inputnifti.name = removeNiiExtension(File(file.groundTruthFilePath).nameWithoutExtension)
@@ -167,6 +179,7 @@ class ModelRunner(
                         model = file.model,
                         groundTruthFilePath = ""
                     )
+
                     outputNifti = async(Dispatchers.IO) { fileUploader.loadNifti(predictedMetadata) }.await()
                     outputNifti!!.gz_path = predictedMetadata.filePath
                     outputNifti!!.name = "Gen_${inputNifti.name}"
@@ -201,7 +214,14 @@ class ModelRunner(
             )
 
             niftiRepo.jsonMapper.addMappingAndSave(mapping)
+
+            if (progressFlows.containsKey(title)) {
+                progressFlows.remove(title)
+            }
         }
+
+        fileUploader.clear()
+
 
     }
 
@@ -209,5 +229,26 @@ class ModelRunner(
         cancelRunningInference(jobId, client)
         progressKillFlows[jobId] = progressFlows[jobId]!!
         progressFlows.remove(jobId)
+    }
+
+    fun copyAndChangeName(name: String, filePath: String): String {
+        val path = Paths.get(filePath)
+        val fileName = path.fileName.toString()
+
+        val dotIndex = fileName.indexOf(".")
+        val newFileName = if (dotIndex != -1) {
+            fileName.substring(0, dotIndex) + "_$name" + fileName.substring(dotIndex)
+        } else {
+            fileName + "_$name"
+        }
+
+        val targetDir = Paths.get(PathStrings.INPUT_PATH_GZ.path)
+        Files.createDirectories(targetDir)
+
+        val newPath = targetDir.resolve(newFileName)
+
+        Files.copy(path, newPath, StandardCopyOption.REPLACE_EXISTING)
+
+        return newPath.toString()
     }
 }

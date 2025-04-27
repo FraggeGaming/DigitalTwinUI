@@ -27,6 +27,7 @@ import org.thesis.project.Model.NiftiView
 import org.thesis.project.Model.Settings
 import org.thesis.project.TooltipManager
 import androidx.compose.material3.LinearProgressIndicator
+import cardMenu2
 
 @Composable
 fun imageViewer(
@@ -68,7 +69,7 @@ fun imageViewer(
                 infoText =
                     "This section displays the loaded NIfTI files. Use the checkboxes to pick what files to visualize",
                 content = {
-                    cardMenu(
+                    cardMenu2(
                         fileKeys = fileMapping.keys.toList(),
                         selectedData = selectedData,
                         getFileMapping = interfaceModel.niftiRepo::getFileMapping,
@@ -186,7 +187,7 @@ fun runningModelsList(interfaceModel: InterfaceModel) {
                 }
                 else{
                     Text(
-                        text = "${String.format("%.1f", jobProgress.percent)}% done (${jobProgress.step}/${jobProgress.total} steps)",
+                        text = "${String.format("%.1f", jobProgress.percent)}% done (${jobProgress.step}/${jobProgress.total-1} steps)",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

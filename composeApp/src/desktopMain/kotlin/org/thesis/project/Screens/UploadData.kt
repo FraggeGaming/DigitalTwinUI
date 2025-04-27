@@ -2,7 +2,6 @@ package org.thesis.project.Screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
@@ -460,7 +459,7 @@ fun previousSavedCards(
 
                         IconButton(onClick = {
                             println("Would remove mapping: ${mapping.title}")
-                            interfaceModel.niftiRepo.jsonMapper.removeMapping(mapping)
+                            interfaceModel.niftiRepo.fullDelete(mapping)
                         }) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete Mapping")
                         }

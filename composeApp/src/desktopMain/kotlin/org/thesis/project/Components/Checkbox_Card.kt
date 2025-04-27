@@ -1,4 +1,5 @@
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,8 @@ import org.thesis.project.Model.NiftiView
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -114,6 +117,40 @@ fun buttonWithCheckbox(
 }
 
 @Composable
+fun buttonNifti(
+    selectedData: Set<String>,
+    id: String,
+    label: String,
+    onCheckboxChanged: (String, Boolean) -> Unit,
+) {
+    val isSelected = selectedData.contains(id)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .then(
+                if (isSelected) Modifier.border(
+                    width = 3.dp,
+                    color = Color.Blue,
+                    shape = RoundedCornerShape(8.dp)
+                ) else Modifier
+            )
+            .background(Color.Green, RoundedCornerShape(8.dp))
+            .clickable {
+                onCheckboxChanged(id, !isSelected)
+            }
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = Color.Black
+        )
+    }
+}
+
+@Composable
 fun buttonWithCheckboxSet(
     selectedData: Set<NiftiView>,
     label: NiftiView,
@@ -156,6 +193,106 @@ fun buttonWithCheckboxSet(
 
 @Composable
 fun modalities(
+    selectedData: Set<String>,
+    mainLabels: List<String>,
+    subLabels: List<String>,
+    onCheckboxChanged: (String, Boolean) -> Unit,
+    shape: Shape = RoundedCornerShape(8.dp),
+    interfaceModel: InterfaceModel,
+    mainLabel: String
+) {
+    Column(
+        modifier = Modifier
+            .wrapContentSize(Alignment.Center)
+            .clip(shape)
+            .background(LocalAppColors.current.thirdlyBlue)
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Input",
+            color = Color.Black
+        )
+
+        mainLabels.forEach { mainLabelId ->
+            val name = interfaceModel.niftiRepo.getNameFromNiftiId(mainLabelId)
+            //println(name)
+            interfaceModel.niftiRepo.removeFileMapping(mainLabelId)
+            buttonWithCheckbox(
+                selectedData,
+                mainLabelId ,
+                name,
+                onCheckboxChanged)
+        }
+
+        Text(
+            text = "Synthetic output",
+            color = Color.Black,
+        )
+        subLabels.forEach { subLabelId ->
+            val name = interfaceModel.niftiRepo.getNameFromNiftiId(subLabelId)
+
+            buttonWithCheckbox(selectedData, subLabelId,name,  onCheckboxChanged)
+        }
+
+        if (subLabels.isNotEmpty()){
+            TextButton(
+                onClick = {
+                    //save nifti to user choose of folder
+                    val path = interfaceModel.niftiRepo.get(subLabels.first())?.gz_path
+
+                    if (path != null) {
+                        val sourceFile = File(path)
+
+                        //Create a native Save dialog
+                        val dialog = FileDialog(null as Frame?, "Save NIfTI File", FileDialog.SAVE)
+                        dialog.file = sourceFile.name // suggest filename
+                        dialog.isVisible = true
+
+                        if (dialog.file != null && dialog.directory != null) {
+                            val chosenFile = File(dialog.directory, dialog.file)
+                            //Copy file to chosen location
+                            sourceFile.copyTo(chosenFile, overwrite = true)
+                            //println("File saved to: ${chosenFile.absolutePath}")
+                        } else {
+                            //println("User canceled the save dialog.")
+                        }
+                    }
+                },
+                colors = ButtonDefaults.textButtonColors(
+                    containerColor  = LocalAppColors.current.thirdlyBlue,
+                    contentColor = Color.Black
+                ),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxSize()
+
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Download synthetic nifti")
+
+                    Icon(
+                        imageVector = Icons.Filled.Download,
+                        contentDescription = "Download synthetic nifti",
+                        modifier = Modifier
+                            .size(24.dp)
+                    )
+                }
+            }
+        }
+
+    }
+}
+
+
+
+
+@Composable
+fun modalitiesTest(
     selectedData: Set<String>,
     mainLabels: List<String>,
     subLabels: List<String>,
@@ -473,6 +610,209 @@ fun cardMenu(
 
 
 @Composable
+fun cardMenu2(
+    selectedData: Set<String>,
+    fileKeys: List<String>,
+    getFileMapping: (String) -> Pair<List<String>, List<String>>?,
+    onCheckboxChanged: (String, Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    interfaceModel: InterfaceModel
+) {
+    var expandedMenu by remember { mutableStateOf<String?>(null) }
+
+    standardCard(
+        modifier = modifier,
+        content = {
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "Select files to view",
+                        color = LocalAppColors.current.primaryBlue,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                        fileKeys.forEach { mainLabel ->
+                            val isSelected = expandedMenu == mainLabel
+                            Column(
+                                modifier = Modifier.wrapContentSize(),
+                                verticalArrangement = Arrangement.spacedBy(0.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+
+                                if (expandedMenu == null){
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            menuButton2(
+                                                mainLabel = mainLabel,
+                                                isSelected = false,
+                                                onClick = { expandedMenu = mainLabel },
+                                                widthFraction = 1f,
+                                                shapeSelected = RoundedCornerShape(4.dp)
+                                            )
+                                        }
+
+                                        // 2. Trash Icon
+                                        IconButton(
+                                            onClick = { interfaceModel.niftiRepo.removeFileMapping(mainLabel) }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Remove",
+                                                tint = Color.Red
+                                            )
+                                        }
+                                    }
+                                }
+                                else{
+                                    menuButton2(
+                                        mainLabel = mainLabel,
+                                        isSelected = isSelected,
+                                        onClick = { expandedMenu = if (isSelected) null else mainLabel },
+                                        widthFraction = 1f,
+                                        shapeSelected = RoundedCornerShape(
+                                            topStart = 8.dp,
+                                            bottomStart = 0.dp,
+                                            topEnd = 8.dp,
+                                            bottomEnd = 0.dp
+                                        )
+                                    )
+                                }
+
+
+                                if (isSelected) {
+                                    getFileMapping(mainLabel)?.let { (inputList, outputList) ->
+                                        Column(
+                                            modifier = Modifier
+                                                .wrapContentSize(Alignment.Center)
+                                                .padding(8.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+
+                                            inputList.forEach { mainLabelId ->
+                                                val name = interfaceModel.niftiRepo.getNameFromNiftiId(mainLabelId)
+                                                interfaceModel.niftiRepo.removeFileMapping(mainLabelId)
+                                                buttonNifti(selectedData, mainLabelId , name, onCheckboxChanged)
+                                            }
+
+                                            outputList.forEach { subLabelId ->
+                                                val name = interfaceModel.niftiRepo.getNameFromNiftiId(subLabelId)
+                                                buttonNifti(selectedData, subLabelId,name,  onCheckboxChanged)
+                                            }
+
+
+                                                TextButton(
+                                                    onClick = {
+                                                        val paths = mutableListOf<String>()
+
+
+                                                        inputList.forEach { id ->
+                                                            interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
+                                                                paths.add(path)
+                                                            }
+                                                        }
+
+
+                                                        outputList.forEach { id ->
+                                                            interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
+                                                                paths.add(path)
+                                                            }
+                                                        }
+
+                                                        if (paths.isNotEmpty()) {
+                                                            //temporary ZIP file
+                                                            val tempZipFile = File.createTempFile("nifti_archive_", ".zip")
+
+                                                            //Write files into  ZIP
+                                                            ZipOutputStream(tempZipFile.outputStream()).use { zipOut ->
+                                                                paths.forEach { filePath ->
+                                                                    val file = File(filePath)
+                                                                    if (file.exists()) {
+                                                                        val entry = ZipEntry(file.name)
+                                                                        zipOut.putNextEntry(entry)
+                                                                        file.inputStream().use { input ->
+                                                                            input.copyTo(zipOut)
+                                                                        }
+                                                                        zipOut.closeEntry()
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            //Open save dialog
+                                                            val dialog = FileDialog(null as Frame?, "Save ZIP Archive", FileDialog.SAVE)
+                                                            dialog.file = "${mainLabel}.zip" // suggest a default name
+                                                            dialog.isVisible = true
+
+                                                            //Save to chosen location
+                                                            if (dialog.file != null && dialog.directory != null) {
+                                                                val chosenFile = File(dialog.directory, dialog.file)
+                                                                tempZipFile.copyTo(chosenFile, overwrite = true)
+                                                                println("Zip file saved to: ${chosenFile.absolutePath}")
+                                                            } else {
+                                                                println("User canceled the save dialog.")
+                                                            }
+
+                                                            //Delete temp file after use
+                                                            tempZipFile.deleteOnExit()
+                                                        }
+                                                    },
+                                                    colors = ButtonDefaults.textButtonColors(
+                                                        containerColor  = LocalAppColors.current.thirdlyBlue,
+                                                        contentColor = Color.Black
+                                                    ),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier.fillMaxSize()
+
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceEvenly,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Text(text = "Download ZIP")
+
+                                                        Icon(
+                                                            imageVector = Icons.Filled.Download,
+                                                            contentDescription = "Download patient ZIP",
+                                                            modifier = Modifier
+                                                                .size(24.dp)
+                                                        )
+                                                    }
+                                                }
+
+
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+
+
+                    activeSelected(
+                        selectedData = selectedData,
+                        onCheckboxChanged = onCheckboxChanged,
+                        interfaceModel = interfaceModel,
+                    )
+                }
+            }
+        }
+    )
+
+}
+
+
+@Composable
 fun menuButton(
     mainLabel: String,
     isSelected: Boolean,
@@ -491,6 +831,31 @@ fun menuButton(
                     RoundedCornerShape(4.dp)
                 }
             ).clickable {onClick()}
+        ,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = mainLabel,
+            textAlign = TextAlign.Center,
+            color = Color.Black
+        )
+    }
+}
+
+
+@Composable
+fun menuButton2(
+    mainLabel: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    widthFraction: Float,
+    shapeSelected: Shape
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth(widthFraction).height(40.dp)
+            .clickable {onClick()}
         ,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center

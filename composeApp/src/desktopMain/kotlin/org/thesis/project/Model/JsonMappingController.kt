@@ -65,10 +65,16 @@ class JsonMappingController {
         (mappingToRemove.inputs).forEach { nifti ->
             try {
                 val npyFile = File(nifti.npy_path)
+                val gzFile = File(nifti.gz_path)
 
                 if (npyFile.exists()) {
                     npyFile.delete()
                     println("Deleted NPY: ${npyFile.absolutePath}")
+                }
+
+                if (gzFile.exists()) {
+                    gzFile.delete()
+                    println("Deleted GZ: ${gzFile.absolutePath}")
                 }
 
             } catch (e: Exception) {
@@ -94,6 +100,8 @@ class JsonMappingController {
                 println("Failed to delete file(s) for ${nifti.gz_path}: ${e.message}")
             }
         }
+
+
 
         loadMappings()
         _mappings.update { it.filterNot { it.title == mappingToRemove.title } }

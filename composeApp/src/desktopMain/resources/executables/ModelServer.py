@@ -51,8 +51,6 @@ CHECKPOINTS_DIR = os.path.join(BASE_DIR, "checkpoints")
 OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 PROGRESS_DIR = os.path.join(BASE_DIR, "progress_files")
-LOG_FILE = os.path.join(BASE_DIR, "upload_log.csv")
-OUTPUT_PATH = os.path.join(OUTPUT_DIR, "generated_image_1.nii.gz")
 
 
 # Ensure necessary folders exist
@@ -135,9 +133,10 @@ def get_models():
 def get_progress(job_id):
     path = os.path.join(PROGRESS_DIR, f"progress_{job_id}.json")
     if not os.path.exists(path):
+        #If the file does not exist, just return a "waiting" progress status
         return jsonify({
             "step": 0,
-            "total": 1,
+            "total": 1,  # prevent divide-by-zero
             "percent": 0.0,
             "job_id": job_id,
             "finished": False
@@ -153,13 +152,36 @@ def get_progress(job_id):
 
 @app.route("/download/<job_id>", methods=["GET"])
 def download_output(job_id):
-    output_path = os.path.join(OUTPUT_DIR, f"{job_id}.nii.gz")
 
-    if not os.path.exists(output_path):
+    nifti_output = os.path.join(OUTPUT_DIR, f"{job_id}.nii.gz")
+    img = nib.load(nifti_output)
+    data = img.get_fdata()
+    denormalized_data = data * 20
+    denorm_img = nib.Nifti1Image(denormalized_data, img.affine, img.header)
+    nib.save(denorm_img, nifti_output)
+
+    remove_progress_file(job_id)
+    remove_uploaded_nifti(job_id)
+    if not os.path.exists(nifti_output):
         return "Output file not ready yet.", 404
 
-    return send_file(output_path, mimetype="application/octet-stream", as_attachment=True)
+    return send_file(nifti_output, mimetype="application/octet-stream", as_attachment=True)
 
+def remove_progress_file(job_id):
+    path = os.path.join(PROGRESS_DIR, f"progress_{job_id}.json")
+    if os.path.exists(path):
+        os.remove(path)
+        print(f"Deleted progress file: {path}")
+    else:
+        print(f"Progress file not found: {path}")
+
+def remove_uploaded_nifti(job_id):
+    path = os.path.join(UPLOAD_DIR, f"{job_id}.nii.gz")
+    if os.path.exists(path):
+        os.remove(path)
+        print(f"Deleted progress file: {path}")
+    else:
+        print(f"Progress file not found: {path}")
 
 @app.route("/cancel/<job_id>", methods=["POST"])
 def cancel_job(job_id):
@@ -170,6 +192,9 @@ def cancel_job(job_id):
         if process:
             kill_subprocess(process)
             del running_processes[job_id]
+            remove_progress_file(job_id)
+            remove_uploaded_nifti(job_id)
+
             return jsonify({"status": "Cancelled"}), 200
         else:
             return jsonify({"error": "No such job running"}), 404
@@ -191,11 +216,11 @@ def process_nifti():
 
     try:
         # Save uploaded NIfTI file
-        upload_path = os.path.join(UPLOAD_DIR, f"{metadata['title']}_uploaded.nii.gz")
+        upload_path = os.path.join(UPLOAD_DIR, f"{metadata['title']}.nii.gz")
         uploaded_file.save(upload_path)
         print(f"Saved uploaded file to: {upload_path}")
 
-
+        job_id = metadata['title']
 
 
         print(f"Upload path to be written into CSV: {upload_path}")
@@ -223,9 +248,6 @@ def process_nifti():
         which_epoch = 'BEST_final_200'
         test_district = region
 
-        job_id = metadata['title']
-
-
         # Launch subprocess with env var
         env = os.environ.copy()
 
@@ -238,6 +260,8 @@ def process_nifti():
             f'--test_district "{test_district}" '
             f'--which_epoch {which_epoch} '
             f'--name "{name}" '
+            f'--out_path "{OUTPUT_DIR}" '
+            f'--upload_dir "{upload_path}" '
             f'--checkpoints_dir "{CHECKPOINTS_DIR}"'
         )
 
@@ -252,19 +276,17 @@ def process_nifti():
             return f"Error starting model: {e}", 500
 
 
-        # Denormalize output
-        img = nib.load(OUTPUT_PATH)
-        data = img.get_fdata()
-        denormalized_data = data * 20
-        denorm_img = nib.Nifti1Image(denormalized_data, img.affine, img.header)
-        nib.save(denorm_img, OUTPUT_PATH)
+        print("We Got HERE atleast------------")
 
 
-        print(f"Returning output file: {OUTPUT_PATH}")
-        return send_file(OUTPUT_PATH, mimetype="application/octet-stream", as_attachment=True)
+        return jsonify({"status": "Running model"}), 200
+
+
+        #return send_file(nifti_output, mimetype="application/octet-stream", as_attachment=True)
 
 
     except Exception as e:
+        print("what happened here?")
         return f"Error: {e}", 500
 
 

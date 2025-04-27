@@ -3,7 +3,6 @@ package org.thesis.project.Model
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
-import java.nio.file.Paths
 
 class NiftiRepo {
     //Stores the niftiData by Filename
@@ -20,6 +19,12 @@ class NiftiRepo {
     fun get(id: String): NiftiData? {
         val niftiData = _niftiImages.value[id] ?: return null
         return niftiData
+    }
+
+    fun delete(id: String) {
+        _niftiImages.update { currentMap ->
+            currentMap - id
+        }
     }
 
     fun getSlicesFromVolume(view: NiftiView, images: NiftiData): Triple<Array<Array<Array<Float>>>, Float, String> {
@@ -93,5 +98,39 @@ class NiftiRepo {
             val existingInput = currentMap[key]?.first ?: emptyList()
             currentMap + (key to (existingInput to newOutput))
         }
+    }
+
+    fun fullDelete(mapping: FileMappingFull){
+        jsonMapper.removeMapping(mapping)
+        if (hasFileMapping(mapping.title)){
+            removeFileMapping(mapping.title)
+            println("Deleting ${mapping}")
+            mapping.inputs.forEach { data ->
+                delete(data.id)
+            }
+
+            mapping.outputs.forEach { data ->
+                delete(data.id)
+            }
+        }
+
+        println("\n-----Remaining data-----")
+
+        println("Nifti Images cached: \n")
+        niftiImages.value.forEach { data ->
+            println("${data.value.id} : ${data.value.name}\n")
+        }
+
+
+        println("File mapping cached: \n${fileMapping.value.values}\n")
+
+        println("Hard saved mappings: \n")
+        jsonMapper.mappings.value.forEach { data ->
+            println("Title: ${data.title}")
+            println("Inputs: ${data.inputs.first().id} : ${data.inputs.first().id}\n")
+        }
+
+       
+
     }
 }

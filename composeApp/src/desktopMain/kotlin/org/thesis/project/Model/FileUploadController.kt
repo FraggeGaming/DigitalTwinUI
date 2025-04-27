@@ -38,6 +38,10 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
             }
         }
     }
+
+    fun clear() {
+        _uploadedFileMetadata.update { emptyList() }
+    }
     private val json = Json { ignoreUnknownKeys = true }
     suspend fun loadNifti(niftiStorage: UploadFileMetadata): NiftiData = withContext(Dispatchers.IO) {
 
@@ -59,6 +63,8 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
         var errorMsg = "Accepted"
         var canContinue = true
 
+
+
         val titles = uploadedFiles.map { it.title }
         val duplicateTitles = titles.groupingBy { it }.eachCount().filter { it.value > 1 }
         val existingTitles = mappings.map { it.title }.toSet()
@@ -78,6 +84,8 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
 
         else{
             for (file in uploadedFiles) {
+
+
                 val missingField = when {
                     file.title.isBlank() -> "Title"
                     file.modality.isBlank() -> "Modality"
@@ -86,8 +94,10 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
                 }
 
                 if (missingField != null) {
+                    val path = Paths.get(file.filePath)
+                    val fileName = path.fileName.toString()
 
-                    errorMsg = "Please select a $missingField for ${file.filePath}."
+                    errorMsg = "Please select a $missingField for ${fileName}."
                     canContinue = false
                     break
                 }

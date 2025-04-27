@@ -53,7 +53,7 @@ suspend fun sendNiftiToServer(
         val processResponse = client.newCall(processRequest).execute()
 
         if (!processResponse.isSuccessful) {
-            println("Request failed: ${processResponse.code}")
+            println("Request failed: ${processResponse.code} ${processResponse.message}")
             return@withContext null
         }
 
@@ -61,20 +61,25 @@ suspend fun sendNiftiToServer(
 
 
         var nifti: File? = null
+        var finished = false
 
         pollProgress(
             jobId = metadata.title,
             serverUrl = serverUrl,
             client = client,
-            progressKillFlows
-        ) { updated -> progressFlow.value = updated
-            println("Updated progress: $updated")
-            if (updated.finished) {
-                println("Model finished, downloading output...")
-                nifti = downloadResult(metadata.title, serverUrl, client)
-                cancel()
-            }
-        }
+            progressKillFlows = progressKillFlows,
+            onProgress = { updated ->
+                progressFlow.value = updated
+                println("Updated progress: $updated")
+                if (updated.finished) {
+                    println("Model finished, downloading output...")
+                    nifti = downloadResult(metadata.title, serverUrl, client)
+                    finished = true
+                }
+            },
+            shouldStop = { finished }
+        )
+
 
         return@withContext nifti
 
@@ -102,7 +107,7 @@ fun downloadResult(jobId: String, serverUrl: String, client: OkHttpClient): File
         val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
         outputDir.mkdirs()
 
-        val returnedFileName = "returned_${UUID.randomUUID().toString().substring(0, 8)}.nii.gz"
+        val returnedFileName = "generated_${jobId}.nii.gz"
         val returnedFile = File(outputDir, returnedFileName)
 
         downloadResponse.body?.byteStream()?.use { input ->
@@ -175,13 +180,17 @@ suspend fun pollProgress(
     serverUrl: String,
     client: OkHttpClient,
     progressKillFlows: SnapshotStateMap<String, MutableStateFlow<Progress>>,
-    onProgress: (Progress) -> Unit
+    onProgress: (Progress) -> Unit,
+    shouldStop: () -> Boolean
 ) {
+    val json = Json { ignoreUnknownKeys = true }
 
     while (true) {
         try {
-            if (progressKillFlows[jobId] != null) {
+            if (progressKillFlows[jobId] != null || shouldStop()) {
                 progressKillFlows.remove(jobId)
+                print(progressKillFlows.values)
+                println("stopping polling progress...")
                 break
             }
             println("Polling for $jobId ...")
@@ -193,12 +202,12 @@ suspend fun pollProgress(
             val body = response.body?.string()
 
             if (body != null) {
-                val progress = Json.decodeFromString<Progress>(body)
+                val progress = json.decodeFromString<Progress>(body)
                 onProgress(progress)
                 if (progress.step >= progress.total) break
             }
         } catch (e: Exception) {
-            println("Polling error: ${e.localizedMessage}")
+            println("Polling error: ${e.localizedMessage} : ${e.message}")
             break
         }
         delay(1000)
