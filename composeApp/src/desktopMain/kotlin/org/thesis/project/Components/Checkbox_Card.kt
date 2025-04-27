@@ -128,15 +128,15 @@ fun buttonNifti(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
             .then(
                 if (isSelected) Modifier.border(
                     width = 3.dp,
-                    color = Color.Blue,
+                    color = LocalAppColors.current.primaryBlue,
                     shape = RoundedCornerShape(8.dp)
                 ) else Modifier
             )
-            .background(Color.Green, RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(8.dp))
+            .background(LocalAppColors.current.secondaryBlue)
             .clickable {
                 onCheckboxChanged(id, !isSelected)
             }
@@ -628,6 +628,7 @@ fun cardMenu2(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
                         text = "Select files to view",
@@ -635,7 +636,7 @@ fun cardMenu2(
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
-                        fileKeys.forEach { mainLabel ->
+                        fileKeys.forEachIndexed {index, mainLabel ->
                             val isSelected = expandedMenu == mainLabel
                             Column(
                                 modifier = Modifier.wrapContentSize(),
@@ -652,13 +653,20 @@ fun cardMenu2(
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Box(modifier = Modifier.weight(1f)) {
-                                            menuButton2(
-                                                mainLabel = mainLabel,
-                                                isSelected = false,
-                                                onClick = { expandedMenu = mainLabel },
-                                                widthFraction = 1f,
-                                                shapeSelected = RoundedCornerShape(4.dp)
-                                            )
+                                            Row(
+                                                modifier = Modifier
+                                                    .height(40.dp).fillMaxWidth()
+                                                    .clickable { expandedMenu = if (isSelected) null else mainLabel }
+                                                ,
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Text(
+                                                    text = mainLabel,
+                                                    textAlign = TextAlign.Center,
+                                                    color = Color.Black
+                                                )
+                                            }
                                         }
 
                                         // 2. Trash Icon
@@ -674,27 +682,29 @@ fun cardMenu2(
                                     }
                                 }
                                 else{
-                                    menuButton2(
-                                        mainLabel = mainLabel,
-                                        isSelected = isSelected,
-                                        onClick = { expandedMenu = if (isSelected) null else mainLabel },
-                                        widthFraction = 1f,
-                                        shapeSelected = RoundedCornerShape(
-                                            topStart = 8.dp,
-                                            bottomStart = 0.dp,
-                                            topEnd = 8.dp,
-                                            bottomEnd = 0.dp
-                                        )
-                                    )
-                                }
+                                    Row(
+                                        modifier = Modifier
+                                            .height(40.dp).fillMaxWidth()
+                                            .clickable { expandedMenu = if (isSelected) null else mainLabel }
 
+                                        ,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = mainLabel,
+                                            textAlign = TextAlign.Center,
+                                            color = Color.Black
+                                        )
+                                    }
+                                }
+                                //TODO fix spacing between main lable and rest of the mappings
 
                                 if (isSelected) {
                                     getFileMapping(mainLabel)?.let { (inputList, outputList) ->
                                         Column(
                                             modifier = Modifier
-                                                .wrapContentSize(Alignment.Center)
-                                                .padding(8.dp),
+                                                .wrapContentSize(Alignment.Center),
                                             verticalArrangement = Arrangement.spacedBy(8.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
@@ -711,99 +721,112 @@ fun cardMenu2(
                                             }
 
 
-                                                TextButton(
-                                                    onClick = {
-                                                        val paths = mutableListOf<String>()
+                                            TextButton(
+                                                onClick = {
+                                                    val paths = mutableListOf<String>()
 
 
-                                                        inputList.forEach { id ->
-                                                            interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
-                                                                paths.add(path)
-                                                            }
+                                                    inputList.forEach { id ->
+                                                        interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
+                                                            paths.add(path)
                                                         }
+                                                    }
 
 
-                                                        outputList.forEach { id ->
-                                                            interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
-                                                                paths.add(path)
-                                                            }
+                                                    outputList.forEach { id ->
+                                                        interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
+                                                            paths.add(path)
                                                         }
+                                                    }
 
-                                                        if (paths.isNotEmpty()) {
-                                                            //temporary ZIP file
-                                                            val tempZipFile = File.createTempFile("nifti_archive_", ".zip")
+                                                    if (paths.isNotEmpty()) {
+                                                        //temporary ZIP file
+                                                        val tempZipFile = File.createTempFile("nifti_archive_", ".zip")
 
-                                                            //Write files into  ZIP
-                                                            ZipOutputStream(tempZipFile.outputStream()).use { zipOut ->
-                                                                paths.forEach { filePath ->
-                                                                    val file = File(filePath)
-                                                                    if (file.exists()) {
-                                                                        val entry = ZipEntry(file.name)
-                                                                        zipOut.putNextEntry(entry)
-                                                                        file.inputStream().use { input ->
-                                                                            input.copyTo(zipOut)
-                                                                        }
-                                                                        zipOut.closeEntry()
+                                                        //Write files into  ZIP
+                                                        ZipOutputStream(tempZipFile.outputStream()).use { zipOut ->
+                                                            paths.forEach { filePath ->
+                                                                val file = File(filePath)
+                                                                if (file.exists()) {
+                                                                    val entry = ZipEntry(file.name)
+                                                                    zipOut.putNextEntry(entry)
+                                                                    file.inputStream().use { input ->
+                                                                        input.copyTo(zipOut)
                                                                     }
+                                                                    zipOut.closeEntry()
                                                                 }
                                                             }
-
-                                                            //Open save dialog
-                                                            val dialog = FileDialog(null as Frame?, "Save ZIP Archive", FileDialog.SAVE)
-                                                            dialog.file = "${mainLabel}.zip" // suggest a default name
-                                                            dialog.isVisible = true
-
-                                                            //Save to chosen location
-                                                            if (dialog.file != null && dialog.directory != null) {
-                                                                val chosenFile = File(dialog.directory, dialog.file)
-                                                                tempZipFile.copyTo(chosenFile, overwrite = true)
-                                                                println("Zip file saved to: ${chosenFile.absolutePath}")
-                                                            } else {
-                                                                println("User canceled the save dialog.")
-                                                            }
-
-                                                            //Delete temp file after use
-                                                            tempZipFile.deleteOnExit()
                                                         }
-                                                    },
-                                                    colors = ButtonDefaults.textButtonColors(
-                                                        containerColor  = LocalAppColors.current.thirdlyBlue,
-                                                        contentColor = Color.Black
-                                                    ),
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    modifier = Modifier.fillMaxSize()
 
-                                                ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.SpaceEvenly,
-                                                        modifier = Modifier.fillMaxWidth()
-                                                    ) {
-                                                        Text(text = "Download ZIP")
+                                                        //Open save dialog
+                                                        val dialog = FileDialog(null as Frame?, "Save ZIP Archive", FileDialog.SAVE)
+                                                        dialog.file = "${mainLabel}.zip" // suggest a default name
+                                                        dialog.isVisible = true
 
-                                                        Icon(
-                                                            imageVector = Icons.Filled.Download,
-                                                            contentDescription = "Download patient ZIP",
-                                                            modifier = Modifier
-                                                                .size(24.dp)
-                                                        )
+                                                        //Save to chosen location
+                                                        if (dialog.file != null && dialog.directory != null) {
+                                                            val chosenFile = File(dialog.directory, dialog.file)
+                                                            tempZipFile.copyTo(chosenFile, overwrite = true)
+                                                            println("Zip file saved to: ${chosenFile.absolutePath}")
+                                                        } else {
+                                                            println("User canceled the save dialog.")
+                                                        }
+
+                                                        //Delete temp file after use
+                                                        tempZipFile.deleteOnExit()
                                                     }
-                                                }
+                                                },
+                                                colors = ButtonDefaults.textButtonColors(
+                                                    containerColor  = Color.Transparent,
+                                                    contentColor = Color.Black
+                                                ),
+                                                modifier = Modifier.fillMaxSize()
+                                                    .border(
+                                                        width = 3.dp,
+                                                        color = LocalAppColors.current.primaryGray,
+                                                        shape = RoundedCornerShape(8.dp)
+                                                    )
+                                                    .clip(RoundedCornerShape(8.dp))
 
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Text(text = "Download ZIP")
+
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Download,
+                                                        contentDescription = "Download patient ZIP",
+                                                        modifier = Modifier
+                                                            .size(24.dp)
+                                                    )
+                                                }
+                                            }
 
                                         }
                                     }
                                 }
+
+                                if (index != fileKeys.lastIndex){
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                        thickness = 1.dp,
+                                        color = LocalAppColors.current.primaryGray
+                                    )
+                                }
+
                             }
 
                         }
 
 
-                    activeSelected(
-                        selectedData = selectedData,
-                        onCheckboxChanged = onCheckboxChanged,
-                        interfaceModel = interfaceModel,
-                    )
+//                    activeSelected(
+//                        selectedData = selectedData,
+//                        onCheckboxChanged = onCheckboxChanged,
+//                        interfaceModel = interfaceModel,
+//                    )
                 }
             }
         }
@@ -844,29 +867,7 @@ fun menuButton(
 }
 
 
-@Composable
-fun menuButton2(
-    mainLabel: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    widthFraction: Float,
-    shapeSelected: Shape
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth(widthFraction).height(40.dp)
-            .clickable {onClick()}
-        ,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = mainLabel,
-            textAlign = TextAlign.Center,
-            color = Color.Black
-        )
-    }
-}
+
 
 
 @OptIn(ExperimentalLayoutApi::class)
