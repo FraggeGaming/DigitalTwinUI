@@ -248,60 +248,58 @@ fun imageGrid(
 
                         selectedViews.forEach { selectedView ->
                             val nifti = interfaceModel.niftiRepo.get(id)
-                            //println("Fetched nifti $nifti, With id : ${id}")
-                            val imageIndices by interfaceModel.imageController.getImageIndices(nifti!!)
-                                .collectAsState()
-                            val currentIndex = when (selectedView) {
-                                NiftiView.AXIAL -> imageIndices.first
-                                NiftiView.CORONAL -> imageIndices.second
-                                NiftiView.SAGITTAL -> imageIndices.third
-                            }
+                            if (nifti != null) {
+                                //println("Fetched nifti $nifti, With id : ${id}")
+                                val imageIndices by interfaceModel.imageController.getImageIndicesInd(nifti)
+                                    .collectAsState()
+                                val currentIndex = when (selectedView) {
+                                    NiftiView.AXIAL -> imageIndices.first
+                                    NiftiView.CORONAL -> imageIndices.second
+                                    NiftiView.SAGITTAL -> imageIndices.third
+                                }
 
-                            val (slices, spacingPx, modality) = interfaceModel.niftiRepo.getSlicesFromVolume(
-                                selectedView,
-                                nifti!!
-                            )
+                                val (slices, spacingPx, modality) = interfaceModel.niftiRepo.getSliceInd(
+                                    selectedView,
+                                    nifti, currentIndex
+                                )
 
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(containerHeight / selectedData.size)
-                                    .padding(8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-
-                                standardCard(
+                                Column(
                                     modifier = Modifier
-                                        .wrapContentSize()
-                                        .aspectRatio(1f),
+                                        .weight(1f)
+                                        .height(containerHeight / selectedData.size)
+                                        .padding(8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
 
-                                    contentAlignment = Alignment.CenterHorizontally,
-                                    content = {
-                                        Text(
-                                            text = "${selectedView.displayName} - Slice $currentIndex",
-                                            style = MaterialTheme.typography.displaySmall
-                                        )
-                                        if (slices.isNotEmpty()){
-                                            voxelImageDisplay(
-                                                voxelSlice = slices[currentIndex],
+                                    standardCard(
+                                        modifier = Modifier
+                                            .wrapContentSize()
+                                            .aspectRatio(1f),
+
+                                        contentAlignment = Alignment.CenterHorizontally,
+                                        content = {
+                                            Text(
+                                                text = "${selectedView.displayName} ${nifti.name} - Slice $currentIndex",
+                                                style = MaterialTheme.typography.titleSmall
+                                            )
+                                            voxelImageDisplayInd(
+                                                voxelSlice = slices,
                                                 interfaceModel = interfaceModel,
                                                 modality = modality,
                                                 pixelSpacing = spacingPx,
                                                 windowing = interfaceModel.imageController.getWindowingState(id)
                                             )
                                         }
-
-                                    }
-                                )
+                                    )
+                                }
                             }
+
                         }
                     }
                 }
             }
         }
-
-
     }
 }
 
@@ -417,7 +415,7 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
         val windowingState = interfaceModel.imageController.getWindowingState(data)
         standardCard(
             content = {
-                Text(interfaceModel.niftiRepo.getNameFromNiftiId(data))
+                Text(interfaceModel.niftiRepo.getNameFromNiftiId(data), style = MaterialTheme.typography.titleMedium)
                 dropDownMenuCustom(
                     label = "Select Preset",
                     selected = selectedPresetLabel ?: "",

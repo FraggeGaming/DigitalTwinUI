@@ -103,7 +103,7 @@ fun uploadData(
                 )
 
                 uploadedFiles.forEachIndexed { index, metadata ->
-                    //println(uploadedFiles.toString())
+                    println(uploadedFiles.toString())
 
                     ComponentInfoBox(
                         id = "UploadInputCard",
@@ -477,7 +477,7 @@ fun previousSavedCards(
                             println("Would remove mapping: ${mapping.title}")
                             interfaceModel.niftiRepo.fullDelete(mapping)
                         }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Mapping")
+                            Icon(Icons.Default.Delete, contentDescription = "Delete Mapping", tint = Color.Red)
                         }
                     }
                 }

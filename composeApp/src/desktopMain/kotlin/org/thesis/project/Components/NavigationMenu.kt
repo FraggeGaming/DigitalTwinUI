@@ -34,7 +34,7 @@ fun navigationButtons(navController: NavController, selected: String) {
             shape = RoundedCornerShape(0.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor  = when {
-                    selected == "upload" -> LocalAppColors.current.buttonPressedColor.copy(alpha = 0.7f)
+                    selected == "upload" -> LocalAppColors.current.buttonPressedColor
                     isHoveredUpload -> LocalAppColors.current.buttonColor.copy(alpha = 0.7f)
                     else -> LocalAppColors.current.buttonColor
                 },
@@ -55,7 +55,7 @@ fun navigationButtons(navController: NavController, selected: String) {
             shape = RoundedCornerShape(0.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor  = when {
-                    selected == "main" -> LocalAppColors.current.buttonPressedColor.copy(alpha = 0.7f)
+                    selected == "main" -> LocalAppColors.current.buttonPressedColor
                     isHoveredResult -> LocalAppColors.current.buttonColor.copy(alpha = 0.7f)
                     else -> LocalAppColors.current.buttonColor
                 },

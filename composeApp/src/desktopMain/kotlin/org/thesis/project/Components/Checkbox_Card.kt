@@ -300,102 +300,6 @@ fun modalities(
 
 
 
-@Composable
-fun modalitiesTest(
-    selectedData: Set<String>,
-    mainLabels: List<String>,
-    subLabels: List<String>,
-    onCheckboxChanged: (String, Boolean) -> Unit,
-    shape: Shape = RoundedCornerShape(8.dp),
-    interfaceModel: InterfaceModel,
-    mainLabel: String
-) {
-    Column(
-        modifier = Modifier
-            .wrapContentSize(Alignment.Center)
-            .clip(shape)
-            .background(LocalAppColors.current.thirdlyBlue)
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Input",
-            color = Color.Black
-        )
-
-        mainLabels.forEach { mainLabelId ->
-            val name = interfaceModel.niftiRepo.getNameFromNiftiId(mainLabelId)
-            //println(name)
-            interfaceModel.niftiRepo.removeFileMapping(mainLabelId)
-            buttonWithCheckbox(
-                selectedData,
-                mainLabelId ,
-                name,
-                onCheckboxChanged)
-        }
-
-        Text(
-            text = "Synthetic output",
-            color = Color.Black,
-        )
-        subLabels.forEach { subLabelId ->
-            val name = interfaceModel.niftiRepo.getNameFromNiftiId(subLabelId)
-
-            buttonWithCheckbox(selectedData, subLabelId,name,  onCheckboxChanged)
-        }
-
-        if (subLabels.isNotEmpty()){
-            TextButton(
-                onClick = {
-                    //save nifti to user choose of folder
-                    val path = interfaceModel.niftiRepo.get(subLabels.first())?.gz_path
-
-                    if (path != null) {
-                        val sourceFile = File(path)
-
-                        //Create a native Save dialog
-                        val dialog = FileDialog(null as Frame?, "Save NIfTI File", FileDialog.SAVE)
-                        dialog.file = sourceFile.name // suggest filename
-                        dialog.isVisible = true
-
-                        if (dialog.file != null && dialog.directory != null) {
-                            val chosenFile = File(dialog.directory, dialog.file)
-                            //Copy file to chosen location
-                            sourceFile.copyTo(chosenFile, overwrite = true)
-                            //println("File saved to: ${chosenFile.absolutePath}")
-                        } else {
-                            //println("User canceled the save dialog.")
-                        }
-                    }
-                },
-                colors = ButtonDefaults.textButtonColors(
-                    containerColor  = LocalAppColors.current.thirdlyBlue,
-                    contentColor = Color.Black
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxSize()
-
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = "Download synthetic nifti")
-
-                    Icon(
-                        imageVector = Icons.Filled.Download,
-                        contentDescription = "Download synthetic nifti",
-                        modifier = Modifier
-                            .size(24.dp)
-                    )
-                }
-            }
-        }
-
-    }
-}
 
 
 @Composable
@@ -715,7 +619,6 @@ fun cardMenu2(
 
                                     inputList.forEach { mainLabelId ->
                                         val name = interfaceModel.niftiRepo.getNameFromNiftiId(mainLabelId)
-                                        interfaceModel.niftiRepo.removeFileMapping(mainLabelId)
                                         buttonNifti(selectedData, mainLabelId , name, onCheckboxChanged)
                                     }
 

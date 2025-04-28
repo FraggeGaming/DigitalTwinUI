@@ -202,6 +202,11 @@ suspend fun pollProgress(
             val body = response.body?.string()
 
             if (body != null) {
+
+                if (body.contains("error")) {
+                    println("Polling returned error: $body")
+                    break // stop polling
+                }
                 val progress = json.decodeFromString<Progress>(body)
                 onProgress(progress)
                 if (progress.step >= progress.total) break

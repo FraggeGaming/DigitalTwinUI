@@ -1,4 +1,5 @@
 import kotlinx.serialization.json.Json
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.thesis.project.Model.NiftiData
 import org.thesis.project.Model.NiftiMeta
@@ -23,9 +24,11 @@ fun runNiftiParser(niftiPath: String, outputDir: String): String {
 
 fun parseNiftiImages(meta: NiftiMeta, metaData: UploadFileMetadata): NiftiData {
 
-    val volume = loadNpyVoxelVolume(meta.npy_path)
-    val coronalVoxel = transformToCoronalSlices(volume)
-    val sagittalVoxel = transformToSagittalSlices(volume)
+//    val volume = loadNpyVoxelVolume(meta.npy_path)
+    val v = getNpy(meta.npy_path)
+//    val axialVoxel = transformToAxialSlices(volume)
+//    val coronalVoxel = transformToCoronalSlices(volume)
+//    val sagittalVoxel = transformToSagittalSlices(volume)
 
     return NiftiData(
         width = meta.width,
@@ -34,9 +37,10 @@ fun parseNiftiImages(meta: NiftiMeta, metaData: UploadFileMetadata): NiftiData {
         voxelSpacing = meta.voxel_spacing,
         modality = metaData.modality,
         region = metaData.region,
-        voxelVolume = volume,
-        coronalVoxelSlices = coronalVoxel,
-        sagittalVoxelSlices = sagittalVoxel,
+        voxelVolume_ind = v,
+//        voxelVolume = axialVoxel,
+//        coronalVoxelSlices = coronalVoxel,
+//        sagittalVoxelSlices = sagittalVoxel,
     )
 }
 
@@ -69,23 +73,45 @@ fun transformToSagittalSlices(voxelVolume: Array<Array<Array<Float>>>): Array<Ar
     }
 }
 
-fun loadNpyVoxelVolume(npyPath: String): Array<Array<Array<Float>>> {
-    val file = File(npyPath)
-    val ndArray = Nd4j.createFromNpyFile(file)
-    val shape = ndArray.shape()
+fun transformToAxialSlices(voxelVolume: Array<Array<Array<Float>>>): Array<Array<Array<Float>>> {
+    val depth = voxelVolume.size
+    val height = voxelVolume[0].size
+    val width = voxelVolume[0][0].size
 
-    val width = shape[0].toInt()
-    val height = shape[1].toInt()
-    val depth = shape[2].toInt()
-
-    val result = Array(width) { x ->
+    return Array(depth) { z ->
         Array(height) { y ->
-            Array(depth) { z ->
-                ndArray.getFloat(x, y, z)
+            Array(width) { x ->
+                voxelVolume[z][y][x]
             }
         }
     }
-    return result
+}
+
+//fun loadNpyVoxelVolume(npyPath: String): Array<Array<Array<Float>>> {
+//    val file = File(npyPath)
+//    val ndArray = Nd4j.createFromNpyFile(file)
+//    val shape = ndArray.shape()
+//
+//    val width = shape[0].toInt()
+//    val height = shape[1].toInt()
+//    val depth = shape[2].toInt()
+//
+//    val result = Array(width) { x ->
+//        Array(height) { y ->
+//            Array(depth) { z ->
+//                ndArray.getFloat(x, y, z)
+//            }
+//        }
+//    }
+//    ndArray.close()
+//    return result
+//}
+
+fun getNpy(npyPath: String): INDArray {
+    val file = File(npyPath)
+    val ndArray = Nd4j.createFromNpyFile(file)
+
+    return ndArray
 }
 
 

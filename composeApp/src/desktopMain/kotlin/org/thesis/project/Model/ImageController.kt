@@ -11,8 +11,11 @@ import kotlin.math.floor
 import kotlin.math.sqrt
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
+import org.nd4j.linalg.api.ndarray.INDArray
+import kotlin.math.roundToInt
 
-class ImageController(private val niftiRepo: NiftiRepo, private val scope: CoroutineScope) {
+
+class ImageController(private val scope: CoroutineScope) {
 
     private val _scrollStep = MutableStateFlow(0f)
     val scrollStep: StateFlow<Float> = _scrollStep
@@ -21,27 +24,56 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
     val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
 
 
-    fun getImageIndices(data: NiftiData): StateFlow<Triple<Int, Int, Int>> {
+//    fun getImageIndices(data: NiftiData): StateFlow<Triple<Int, Int, Int>> {
+//        return scrollStep.map { step ->
+//
+//            val axialSize = data.voxelVolume.size
+//            val coronalSize = data.coronalVoxelSlices.size
+//            val sagittalSize = data.sagittalVoxelSlices.size
+//
+//            val maxLength = listOf(axialSize, coronalSize, sagittalSize).maxOrNull() ?: 1
+//
+//            _maxSelectedImageIndex.update { currentMap ->
+//                currentMap.toMutableMap().apply { put(data.id, maxLength.toFloat()) }
+//            }
+//
+//            val axialIndex = ((step * axialSize) / maxLength).toInt().coerceIn(0, axialSize - 1)
+//            val coronalIndex = ((step * coronalSize) / maxLength).toInt().coerceIn(0, coronalSize - 1)
+//            val sagittalIndex = ((step * sagittalSize) / maxLength).toInt().coerceIn(0, sagittalSize - 1)
+//
+//            Triple(axialIndex, coronalIndex, sagittalIndex)
+//
+//        }.stateIn(scope, SharingStarted.Lazily, Triple(0, 0, 0))
+//    }
+
+    fun getImageIndicesInd(data: NiftiData): StateFlow<Triple<Int, Int, Int>> {
         return scrollStep.map { step ->
 
-            val axialSize = data.voxelVolume.size
-            val coronalSize = data.coronalVoxelSlices.size
-            val sagittalSize = data.sagittalVoxelSlices.size
+            val shape = data.voxelVolume_ind.shape()
 
-            val maxLength = listOf(axialSize, coronalSize, sagittalSize).maxOrNull() ?: 1
+            val axialMax = shape[0].toInt() - 1
+            val coronalMax = shape[1].toInt() - 1
+            val sagittalMax = shape[2].toInt() - 1
 
             _maxSelectedImageIndex.update { currentMap ->
-                currentMap.toMutableMap().apply { put(data.id, maxLength.toFloat()) }
+                currentMap.toMutableMap().apply {
+                    put(data.id, listOf(axialMax, coronalMax, sagittalMax).maxOrNull()?.toFloat() ?: 1f)
+                }
             }
 
-            val axialIndex = ((step * axialSize) / maxLength).toInt().coerceIn(0, axialSize - 1)
-            val coronalIndex = ((step * coronalSize) / maxLength).toInt().coerceIn(0, coronalSize - 1)
-            val sagittalIndex = ((step * sagittalSize) / maxLength).toInt().coerceIn(0, sagittalSize - 1)
+            val axialIndex = step.toInt().coerceIn(0, axialMax)
+            val coronalIndex = step.toInt().coerceIn(0, coronalMax)
+            val sagittalIndex = step.toInt().coerceIn(0, sagittalMax)
 
             Triple(axialIndex, coronalIndex, sagittalIndex)
 
         }.stateIn(scope, SharingStarted.Lazily, Triple(0, 0, 0))
     }
+
+
+
+
+
 
 
     fun incrementScrollPosition() {
@@ -82,6 +114,70 @@ class ImageController(private val niftiRepo: NiftiRepo, private val scope: Corou
                 currentMap.toMutableMap().apply { remove(id) } //Apply returns the modified map
             }
         }
+    }
+
+    fun removeSelectedData(id: String) {
+        _selectedData.update { currentSet ->
+            currentSet - id
+        }
+        _maxSelectedImageIndex.update { currentMap ->
+            currentMap.toMutableMap().apply { remove(id) }
+        }
+    }
+
+    fun calculateDistanceInd(
+        uiState: MutableState<VoxelImageUIState>,
+        position: Offset,
+        scaleFactor: Float,
+        bitmap: ImageBitmap,
+        pixelSpacing: Float,
+        voxelSlice: INDArray // <-- CHANGED
+    ) {
+        val voxelData = getVoxelInfoInd(
+            position = position,
+            scaleFactor = scaleFactor,
+            imageWidth = bitmap.width,
+            imageHeight = bitmap.height,
+            voxelSlice = voxelSlice
+        )
+
+        voxelData?.let { data ->
+            val newPoint = Point(data.x, data.y)
+
+            val updatedState = when {
+                uiState.value.point1 == null -> uiState.value.copy(point1 = newPoint)
+                uiState.value.point2 == null -> uiState.value.copy(point2 = newPoint)
+                else -> uiState.value.copy(point1 = newPoint, point2 = null)
+            }
+
+            val distance = if (updatedState.point1 != null && updatedState.point2 != null) {
+                calculateVoxelDistance(
+                    updatedState.point1,
+                    updatedState.point2,
+                    pixelSpacing,
+                    pixelSpacing
+                )
+            } else null
+
+            uiState.value = updatedState.copy(distance = distance)
+        }
+    }
+
+    fun getVoxelInfoInd(
+        position: Offset,
+        scaleFactor: Float,
+        imageWidth: Int,
+        imageHeight: Int,
+        voxelSlice: INDArray // <-- CHANGED
+    ): VoxelData? {
+        val x = floor(position.x / scaleFactor).toInt()
+        val y = floor(position.y / scaleFactor).toInt()
+
+        val outOfBounds = x < 0 || x >= imageWidth || y < 0 || y >= imageHeight
+        if (outOfBounds) return null
+
+        val voxelValue = voxelSlice.getFloat(x.toLong(), y.toLong()) // <-- Use Long indexes
+        return VoxelData(x, y, position, voxelValue)
     }
 
     fun calculateDistance(

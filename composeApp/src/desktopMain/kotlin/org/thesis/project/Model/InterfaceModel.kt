@@ -11,6 +11,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import java.nio.file.Paths
 import java.util.*
+import org.nd4j.linalg.api.ndarray.INDArray
+
 
 enum class NiftiView(val displayName: String) {
     AXIAL("Axial"),
@@ -58,9 +60,10 @@ data class NiftiData(
     var voxelSpacing: List<Float>,
     val modality: String = "",
     var region: String = "",
-    val voxelVolume: Array<Array<Array<Float>>>,
-    var coronalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(),
-    var sagittalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(),
+    var voxelVolume_ind: INDArray,
+//    var voxelVolume: Array<Array<Array<Float>>> = emptyArray(),
+//    var coronalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(),
+//    var sagittalVoxelSlices: Array<Array<Array<Float>>> = emptyArray(),
     var npy_path: String = "",
     var gz_path: String = "",
     var name: String = "",
@@ -79,6 +82,13 @@ data class NiftiData(
             name = this.name,
 
         )
+    }
+
+    fun clearData() {
+        voxelVolume_ind.close()
+//        voxelVolume = arrayOf()
+//        coronalVoxelSlices = arrayOf()
+//        sagittalVoxelSlices = arrayOf()
     }
 }
 
@@ -115,12 +125,13 @@ data class FileMappingFull(
 
 
 class InterfaceModel : ViewModel() {
-    val niftiRepo = NiftiRepo()
+    val imageController = ImageController(viewModelScope)
+    val niftiRepo = NiftiRepo(imageController)
     val fileUploader = FileUploadController(niftiRepo)
     val panelLayout = PanelLayoutController()
 
     val modelRunner = ModelRunner(niftiRepo, fileUploader)
-    val imageController = ImageController(niftiRepo, viewModelScope)
+
 
 
     private val _organs = MutableStateFlow(listOf("Liver", "Heart", "Lung", "Kidney", "Brain"))

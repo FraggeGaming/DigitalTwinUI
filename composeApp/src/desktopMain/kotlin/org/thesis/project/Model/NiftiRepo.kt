@@ -3,12 +3,14 @@ package org.thesis.project.Model
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import org.nd4j.linalg.api.ndarray.INDArray
 
-class NiftiRepo {
+class NiftiRepo(imageController: ImageController) {
     //Stores the niftiData by Filename
     private val _niftiImages = MutableStateFlow<Map<String, NiftiData>>(emptyMap())
     val niftiImages: StateFlow<Map<String, NiftiData>> = _niftiImages
     val jsonMapper = JsonMappingController()
+    val imageController = imageController
 
     fun store(id: String, data: NiftiData) {
         _niftiImages.update { currentMap ->
@@ -23,25 +25,58 @@ class NiftiRepo {
 
     fun delete(id: String) {
         _niftiImages.update { currentMap ->
+            val nifti = currentMap[id]
+            nifti?.clearData()
             currentMap - id
         }
     }
 
-    fun getSlicesFromVolume(view: NiftiView, images: NiftiData): Triple<Array<Array<Array<Float>>>, Float, String> {
+    fun getAxialSlice(z: Int, nifti: NiftiData): INDArray {
+        return nifti.voxelVolume_ind.tensorAlongDimension(z.toLong(), 1, 2)
+    }
+
+    fun getCoronalSlice(y: Int, nifti: NiftiData): INDArray {
+        return nifti.voxelVolume_ind.tensorAlongDimension(y.toLong(), 0, 2)
+    }
+
+    fun getSagittalSlice(x: Int, nifti: NiftiData): INDArray {
+        return nifti.voxelVolume_ind.tensorAlongDimension(x.toLong(), 0, 1)
+    }
+
+//    fun getSlicesFromVolume(view: NiftiView, images: NiftiData): Triple<Array<Array<Array<Float>>>, Float, String> {
+//        val spacing = images.voxelSpacing
+//
+//        //because of transpose when parsing nifti, (Z, Y, X) → (X, Y, Z), but we don't transpose spacing
+//        return when (view) {
+//            NiftiView.AXIAL -> {
+//                Triple(images.voxelVolume, spacing[2], images.modality)
+//            }
+//
+//            NiftiView.CORONAL -> {
+//                Triple(images.coronalVoxelSlices, spacing[1], images.modality)
+//            }
+//
+//            NiftiView.SAGITTAL -> {
+//                Triple(images.sagittalVoxelSlices, spacing[0], images.modality)
+//            }
+//        }
+//
+//    }
+
+    fun getSliceInd(view: NiftiView, images: NiftiData, slice: Int): Triple<INDArray, Float, String> {
         val spacing = images.voxelSpacing
 
-        //because of transpose when parsing nifti, (Z, Y, X) → (X, Y, Z), but we don't transpose spacing
         return when (view) {
             NiftiView.AXIAL -> {
-                Triple(images.voxelVolume, spacing[2], images.modality)
+                Triple(getAxialSlice(slice, images), spacing[2], images.modality)
             }
 
             NiftiView.CORONAL -> {
-                Triple(images.coronalVoxelSlices, spacing[1], images.modality)
+                Triple(getCoronalSlice(slice, images), spacing[1], images.modality)
             }
 
             NiftiView.SAGITTAL -> {
-                Triple(images.sagittalVoxelSlices, spacing[0], images.modality)
+                Triple(getSagittalSlice(slice, images), spacing[0], images.modality)
             }
         }
     }
@@ -70,6 +105,20 @@ class NiftiRepo {
 
     //Remove an entry from the mapping
     fun removeFileMapping(key: String) {
+        val mappings = getFileMapping(key)
+
+        if (mappings != null) {
+            mappings.first.forEach { data ->
+                if (imageController.selectedData.value.contains(data))
+                    imageController.removeSelectedData(data)
+                delete(data)
+            }
+
+            mappings.second.forEach { data ->
+                delete(data)
+            }
+        }
+
         _fileMapping.update { currentMap ->
             currentMap - key
         }
@@ -104,14 +153,6 @@ class NiftiRepo {
         jsonMapper.removeMapping(mapping)
         if (hasFileMapping(mapping.title)){
             removeFileMapping(mapping.title)
-            println("Deleting ${mapping}")
-            mapping.inputs.forEach { data ->
-                delete(data.id)
-            }
-
-            mapping.outputs.forEach { data ->
-                delete(data.id)
-            }
         }
 
         println("\n-----Remaining data-----")

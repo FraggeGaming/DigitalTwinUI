@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.thesis.project.Model.ImageController
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.Settings
@@ -214,6 +215,183 @@ fun voxelImageDisplay(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun voxelImageDisplayInd(
+    modifier: Modifier = Modifier,
+    voxelSlice: INDArray,
+    interfaceModel: InterfaceModel,
+    modality: String,
+    pixelSpacing: Float = 1f,
+    windowing: State<ImageController.WindowingParams>,
+) {
+    val uiState = remember { mutableStateOf(VoxelImageUIState()) }
+    val selectedSettings by interfaceModel.selectedSettings.collectAsState()
+    val bitmap = voxelSliceToBitmapFromINDArray(voxelSlice, windowing.value.center, windowing.value.width)
+
+    var imageLayoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var boxCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var renderedImageSize by remember { mutableStateOf(IntSize.Zero) }
+
+    Box(
+        modifier = modifier
+            .onGloballyPositioned { boxCoordinates = it }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { localPos ->
+                        if (selectedSettings.contains(Settings.MEASUREMENT)) {
+                            val correctedPos = mapToImageCoordinatesAspectAware(
+                                rawPointerPos = localPos,
+                                boxSize = renderedImageSize,
+                                bitmap = bitmap
+                            )
+                            interfaceModel.imageController.calculateDistanceInd(
+                                uiState,
+                                correctedPos,
+                                1f,
+                                bitmap,
+                                pixelSpacing,
+                                voxelSlice
+                            )
+                        }
+                    },
+                    onLongPress = {
+                        uiState.value = uiState.value.copy(point1 = null, point2 = null, distance = null)
+                    }
+                )
+            }
+            .onPointerEvent(PointerEventType.Move) { event ->
+                if (uiState.value.isHovering) {
+                    val localPos = event.changes.first().position
+                    uiState.value = uiState.value.copy(cursorPosition = localPos)
+
+                    val correctedPos = mapToImageCoordinatesAspectAware(
+                        rawPointerPos = localPos,
+                        boxSize = renderedImageSize,
+                        bitmap = bitmap
+                    )
+
+                    val voxelData = interfaceModel.imageController.getVoxelInfoInd(
+                        position = correctedPos,
+                        scaleFactor = 1f,
+                        imageWidth = bitmap.width,
+                        imageHeight = bitmap.height,
+                        voxelSlice = voxelSlice
+                    )
+
+                    uiState.value = uiState.value.copy(
+                        hoverVoxelValue = voxelData?.voxelValue,
+                        hoverVoxelPosition = voxelData?.let { Point(it.x, it.y) }
+                    )
+                }
+            }
+            .onPointerEvent(PointerEventType.Enter) {
+                uiState.value = uiState.value.copy(isHovering = true)
+            }
+            .onPointerEvent(PointerEventType.Exit) {
+                uiState.value = uiState.value.copy(
+                    isHovering = false,
+                    hoverVoxelValue = null,
+                    hoverVoxelPosition = null
+                )
+            }
+    ) {
+
+        // Compute actual image rendering area
+        val imageAspect = bitmap.width.toFloat() / bitmap.height.toFloat()
+        val boxAspect = renderedImageSize.width.toFloat() / renderedImageSize.height.toFloat()
+
+        val renderWidth: Int
+        val renderHeight: Int
+        val offsetX: Float
+        val offsetY: Float
+
+        if (boxAspect > imageAspect) {
+            renderHeight = renderedImageSize.height
+            renderWidth = (renderHeight * imageAspect).toInt()
+            offsetX = ((renderedImageSize.width - renderWidth) / 2f)
+            offsetY = 0f
+        } else {
+            renderWidth = renderedImageSize.width
+            renderHeight = (renderWidth / imageAspect).toInt()
+            offsetX = 0f
+            offsetY = ((renderedImageSize.height - renderHeight) / 2f)
+        }
+
+
+        Image(
+            bitmap = bitmap,
+            contentDescription = "Voxel image",
+            modifier = Modifier.fillMaxSize() //wrapcontent
+                .onSizeChanged {
+                    renderedImageSize = it
+                }
+                .onGloballyPositioned { imageLayoutCoordinates = it }
+        )
+
+        // Canvas overlay drawn exactly over rendered image
+        Canvas(
+            modifier = Modifier
+                .size(
+                    with(LocalDensity.current) { renderWidth.toDp() },
+                    with(LocalDensity.current) { renderHeight.toDp() })
+                .offset { IntOffset(offsetX.toInt(), offsetY.toInt()) }
+        ) {
+            val scaleX = size.width / bitmap.width
+            val scaleY = size.height / bitmap.height
+
+            uiState.value.point1?.let { p1 ->
+                drawCircle(
+                    color = Color.Green,
+                    radius = 5.dp.toPx(),
+                    center = Offset(p1.x * scaleX, p1.y * scaleY)
+                )
+            }
+
+            uiState.value.point2?.let { p2 ->
+                drawCircle(
+                    color = Color.Green,
+                    radius = 5.dp.toPx(),
+                    center = Offset(p2.x * scaleX, p2.y * scaleY)
+                )
+                uiState.value.point1?.let { p1 ->
+                    drawLine(
+                        color = Color.Yellow,
+                        start = Offset(p1.x * scaleX, p1.y * scaleY),
+                        end = Offset(p2.x * scaleX, p2.y * scaleY),
+                        strokeWidth = 2.dp.toPx()
+                    )
+                }
+            }
+        }
+
+        if (
+            selectedSettings.contains(Settings.PIXEL) &&
+            uiState.value.hoverVoxelValue != null &&
+            uiState.value.hoverVoxelPosition != null &&
+            uiState.value.isHovering
+        ) {
+            HoverPopup(
+                cursorPosition = uiState.value.cursorPosition,
+                hoverPosition = uiState.value.hoverVoxelPosition!!,
+                string = formatVoxelValue(uiState.value.hoverVoxelValue!!, modality)
+            )
+
+        }
+
+        if (selectedSettings.contains(Settings.MEASUREMENT) && uiState.value.distance != null) {
+            Text(
+                text = "Distance: ${"%.2f".format(uiState.value.distance)} mm",
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .padding(8.dp),
+                color = Color.White
+            )
+        }
+    }
+}
+
 data class VoxelImageUIState(
     var layoutCoordinates: LayoutCoordinates? = null,
     var hoverVoxelValue: Float? = null,
@@ -224,6 +402,35 @@ data class VoxelImageUIState(
     var point2: Point? = null,
     var distance: Double? = null
 )
+
+fun voxelSliceToBitmapFromINDArray(
+    voxelSlice: INDArray,
+    windowCenter: Float,
+    windowWidth: Float
+): ImageBitmap {
+    val shape = voxelSlice.shape()
+    val width = shape[0].toInt()
+    val height = shape[1].toInt()
+
+    val bufferedImage = BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY)
+
+    val minIntensity = windowCenter - windowWidth / 2
+    val maxIntensity = windowCenter + windowWidth / 2
+
+    for (x in 0 until width) {
+        for (y in 0 until height) {
+            var value = voxelSlice.getFloat(x.toLong(), y.toLong())
+
+            value = ((value - minIntensity) / (maxIntensity - minIntensity)).coerceIn(0f, 1f)
+            val pixel = (value * 255).toInt()
+
+            val rgb = (pixel shl 16) or (pixel shl 8) or pixel
+            bufferedImage.setRGB(x, y, rgb)
+        }
+    }
+
+    return bufferedImage.toComposeImageBitmap()
+}
 
 fun voxelSliceToBitmap(
     slice: Array<Array<Float>>,
