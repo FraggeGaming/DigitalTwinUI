@@ -205,7 +205,7 @@ suspend fun pollProgress(
 
                 if (body.contains("error")) {
                     println("Polling returned error: $body")
-                    break // stop polling
+                    break
                 }
                 val progress = json.decodeFromString<Progress>(body)
                 onProgress(progress)
@@ -215,7 +215,7 @@ suspend fun pollProgress(
             println("Polling error: ${e.localizedMessage} : ${e.message}")
             break
         }
-        delay(1000)
+        delay(2000)
     }
 }
 
