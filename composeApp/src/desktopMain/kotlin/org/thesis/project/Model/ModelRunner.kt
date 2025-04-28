@@ -39,6 +39,19 @@ class ModelRunner(
     val progressFlows = mutableStateMapOf<String, MutableStateFlow<Progress>>()
     val progressKillFlows = mutableStateMapOf<String, MutableStateFlow<Progress>>()
 
+//    init {
+//        val dummyProgress = Progress(
+//            step = 0,
+//            total = 10,
+//            percent = 0.0,
+//            jobId = "dummy_job",
+//            finished = false
+//        )
+//
+//        val dummyProgressFlow = MutableStateFlow(dummyProgress)
+//
+//        progressFlows["dummy_job"] = dummyProgressFlow
+//    }
 
     suspend fun fetchMLModels(metadata: UploadFileMetadata) = coroutineScope {
         _hasFetchedModels.value = false

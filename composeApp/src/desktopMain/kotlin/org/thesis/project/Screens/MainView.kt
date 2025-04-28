@@ -204,7 +204,7 @@ fun runningModelsList(interfaceModel: InterfaceModel) {
                     }
                 } else {
                     Text(
-                        text = "✅ Completed!",
+                        text = "Completed!",
                         color = Color.Green,
                         modifier = Modifier.align(Alignment.End),
                         style = MaterialTheme.typography.bodySmall

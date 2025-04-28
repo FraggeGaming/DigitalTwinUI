@@ -39,7 +39,7 @@ fun dropDownMenuCustom(
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier
                 .padding(bottom = 4.dp)
-                .width(180.dp)
+                .fillMaxWidth()
         ) {
             Text(text)
             Spacer(modifier = Modifier.width(8.dp))
@@ -50,7 +50,7 @@ fun dropDownMenuCustom(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier
-                .width(180.dp) // optional
+                .width(180.dp)
                 //.background(LocalAppColors.current.thirdlyBlue, RoundedCornerShape(12.dp))
             , containerColor = LocalAppColors.current.thirdlyBlue
         ) {

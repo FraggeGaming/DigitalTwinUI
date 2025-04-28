@@ -8,13 +8,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.thesis.project.Components.LocalAppColors
@@ -26,6 +30,10 @@ import java.awt.Frame
 import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+
+
+
+
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -136,7 +144,7 @@ fun buttonNifti(
                 ) else Modifier
             )
             .clip(RoundedCornerShape(8.dp))
-            .background(LocalAppColors.current.secondaryBlue)
+            .background(LocalAppColors.current.thirdlyBlue)
             .clickable {
                 onCheckboxChanged(id, !isSelected)
             }
@@ -145,7 +153,8 @@ fun buttonNifti(
     ) {
         Text(
             text = label,
-            color = Color.Black
+            color = Color.Black,
+            style = MaterialTheme.typography.bodySmall
         )
     }
 }
@@ -618,8 +627,7 @@ fun cardMenu2(
     modifier: Modifier = Modifier,
     interfaceModel: InterfaceModel
 ) {
-    var expandedMenu by remember { mutableStateOf<String?>(null) }
-
+    var expandedMenus by remember { mutableStateOf<Set<String>>(emptySet()) }
     standardCard(
         modifier = modifier,
         content = {
@@ -634,199 +642,177 @@ fun cardMenu2(
                         text = "Select files to view",
                         color = LocalAppColors.current.primaryBlue,
                         modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                        fileKeys.forEachIndexed {index, mainLabel ->
-                            val isSelected = expandedMenu == mainLabel
-                            Column(
-                                modifier = Modifier.wrapContentSize(),
-                                verticalArrangement = Arrangement.spacedBy(0.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
+                        textAlign = TextAlign.Center,
 
-                                if (expandedMenu == null){
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Box(modifier = Modifier.weight(1f)) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .height(40.dp).fillMaxWidth()
-                                                    .clickable { expandedMenu = if (isSelected) null else mainLabel }
-                                                ,
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.Center
-                                            ) {
-                                                Text(
-                                                    text = mainLabel,
-                                                    textAlign = TextAlign.Center,
-                                                    color = Color.Black
-                                                )
+                    )
+
+                    fileKeys.forEachIndexed {index, mainLabel ->
+                        val isSelected = expandedMenus.contains(mainLabel)
+                        Column(
+                            modifier = Modifier.wrapContentSize(),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            expandedMenus = if (expandedMenus.contains(mainLabel)) {
+                                                expandedMenus - mainLabel
+                                            } else {
+                                                expandedMenus + mainLabel
                                             }
                                         }
-
-                                        // 2. Trash Icon
-                                        IconButton(
-                                            onClick = { interfaceModel.niftiRepo.removeFileMapping(mainLabel) }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = "Remove",
-                                                tint = Color.Red
-                                            )
-                                        }
-                                    }
-                                }
-                                else{
+                                        .height(40.dp)
+                                        .fillMaxWidth()
+                                ) {
                                     Row(
-                                        modifier = Modifier
-                                            .height(40.dp).fillMaxWidth()
-                                            .clickable { expandedMenu = if (isSelected) null else mainLabel }
-
-                                        ,
+                                        modifier = Modifier.fillMaxSize(),
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center
+                                        horizontalArrangement = Arrangement.SpaceEvenly
                                     ) {
                                         Text(
                                             text = mainLabel,
                                             textAlign = TextAlign.Center,
-                                            color = Color.Black
+                                            color = Color.Black,
+                                            style = MaterialTheme.typography.titleMedium
+                                        )
+
+                                        Icon(
+                                            imageVector = Icons.Default.KeyboardArrowDown,
+                                            contentDescription = if (expandedMenus.contains(mainLabel)) "Collapse" else "Expand",
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .graphicsLayer {
+                                                    rotationZ = if (expandedMenus.contains(mainLabel)) 180f else 0f
+                                                }
                                         )
                                     }
                                 }
-                                //TODO fix spacing between main lable and rest of the mappings
 
-                                if (isSelected) {
-                                    getFileMapping(mainLabel)?.let { (inputList, outputList) ->
-                                        Column(
-                                            modifier = Modifier
-                                                .wrapContentSize(Alignment.Center),
-                                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
+                                // Trash Icon
+                                IconButton(
+                                    onClick = { interfaceModel.niftiRepo.removeFileMapping(mainLabel) }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Remove",
+                                        tint = Color.Red
+                                    )
+                                }
+                            }
 
-                                            inputList.forEach { mainLabelId ->
-                                                val name = interfaceModel.niftiRepo.getNameFromNiftiId(mainLabelId)
-                                                interfaceModel.niftiRepo.removeFileMapping(mainLabelId)
-                                                buttonNifti(selectedData, mainLabelId , name, onCheckboxChanged)
-                                            }
-
-                                            outputList.forEach { subLabelId ->
-                                                val name = interfaceModel.niftiRepo.getNameFromNiftiId(subLabelId)
-                                                buttonNifti(selectedData, subLabelId,name,  onCheckboxChanged)
-                                            }
+                            if (isSelected) {
+                                getFileMapping(mainLabel)?.let { (inputList, outputList) ->
 
 
-                                            TextButton(
-                                                onClick = {
-                                                    val paths = mutableListOf<String>()
+                                    inputList.forEach { mainLabelId ->
+                                        val name = interfaceModel.niftiRepo.getNameFromNiftiId(mainLabelId)
+                                        interfaceModel.niftiRepo.removeFileMapping(mainLabelId)
+                                        buttonNifti(selectedData, mainLabelId , name, onCheckboxChanged)
+                                    }
 
+                                    outputList.forEach { subLabelId ->
+                                        val name = interfaceModel.niftiRepo.getNameFromNiftiId(subLabelId)
+                                        buttonNifti(selectedData, subLabelId,name,  onCheckboxChanged)
+                                    }
 
-                                                    inputList.forEach { id ->
-                                                        interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
-                                                            paths.add(path)
-                                                        }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(
+                                                width = 3.dp,
+                                                color = LocalAppColors.current.primaryGray,
+                                                shape = RoundedCornerShape(8.dp)
+                                            )
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color.Transparent)
+                                            .clickable {
+                                                val paths = mutableListOf<String>()
+                                                inputList.forEach { id ->
+                                                    interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
+                                                        paths.add(path)
                                                     }
-
-
-                                                    outputList.forEach { id ->
-                                                        interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
-                                                            paths.add(path)
-                                                        }
+                                                }
+                                                outputList.forEach { id ->
+                                                    interfaceModel.niftiRepo.get(id)?.gz_path?.let { path ->
+                                                        paths.add(path)
                                                     }
+                                                }
 
-                                                    if (paths.isNotEmpty()) {
-                                                        //temporary ZIP file
-                                                        val tempZipFile = File.createTempFile("nifti_archive_", ".zip")
+                                                if (paths.isNotEmpty()) {
+                                                    val tempZipFile = File.createTempFile("nifti_archive_", ".zip")
 
-                                                        //Write files into  ZIP
-                                                        ZipOutputStream(tempZipFile.outputStream()).use { zipOut ->
-                                                            paths.forEach { filePath ->
-                                                                val file = File(filePath)
-                                                                if (file.exists()) {
-                                                                    val entry = ZipEntry(file.name)
-                                                                    zipOut.putNextEntry(entry)
-                                                                    file.inputStream().use { input ->
-                                                                        input.copyTo(zipOut)
-                                                                    }
-                                                                    zipOut.closeEntry()
+                                                    ZipOutputStream(tempZipFile.outputStream()).use { zipOut ->
+                                                        paths.forEach { filePath ->
+                                                            val file = File(filePath)
+                                                            if (file.exists()) {
+                                                                val entry = ZipEntry(file.name)
+                                                                zipOut.putNextEntry(entry)
+                                                                file.inputStream().use { input ->
+                                                                    input.copyTo(zipOut)
                                                                 }
+                                                                zipOut.closeEntry()
                                                             }
                                                         }
-
-                                                        //Open save dialog
-                                                        val dialog = FileDialog(null as Frame?, "Save ZIP Archive", FileDialog.SAVE)
-                                                        dialog.file = "${mainLabel}.zip" // suggest a default name
-                                                        dialog.isVisible = true
-
-                                                        //Save to chosen location
-                                                        if (dialog.file != null && dialog.directory != null) {
-                                                            val chosenFile = File(dialog.directory, dialog.file)
-                                                            tempZipFile.copyTo(chosenFile, overwrite = true)
-                                                            println("Zip file saved to: ${chosenFile.absolutePath}")
-                                                        } else {
-                                                            println("User canceled the save dialog.")
-                                                        }
-
-                                                        //Delete temp file after use
-                                                        tempZipFile.deleteOnExit()
                                                     }
-                                                },
-                                                colors = ButtonDefaults.textButtonColors(
-                                                    containerColor  = Color.Transparent,
-                                                    contentColor = Color.Black
-                                                ),
-                                                modifier = Modifier.fillMaxSize()
-                                                    .border(
-                                                        width = 3.dp,
-                                                        color = LocalAppColors.current.primaryGray,
-                                                        shape = RoundedCornerShape(8.dp)
-                                                    )
-                                                    .clip(RoundedCornerShape(8.dp))
 
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                    Text(text = "Download ZIP")
+                                                    val dialog = FileDialog(null as Frame?, "Save ZIP Archive", FileDialog.SAVE)
+                                                    dialog.file = "${mainLabel}.zip"
+                                                    dialog.isVisible = true
 
-                                                    Icon(
-                                                        imageVector = Icons.Filled.Download,
-                                                        contentDescription = "Download patient ZIP",
-                                                        modifier = Modifier
-                                                            .size(24.dp)
-                                                    )
+                                                    if (dialog.file != null && dialog.directory != null) {
+                                                        val chosenFile = File(dialog.directory, dialog.file)
+                                                        tempZipFile.copyTo(chosenFile, overwrite = true)
+                                                        println("Zip file saved to: ${chosenFile.absolutePath}")
+                                                    } else {
+                                                        println("User canceled the save dialog.")
+                                                    }
+
+                                                    tempZipFile.deleteOnExit()
                                                 }
                                             }
-
+                                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceEvenly,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = "Download ZIP",
+                                                color = Color.Black,
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Filled.Download,
+                                                contentDescription = "Download patient ZIP",
+                                                modifier = Modifier.size(16.dp)
+                                            )
                                         }
                                     }
                                 }
+                            }
 
-                                if (index != fileKeys.lastIndex){
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(vertical = 8.dp),
-                                        thickness = 1.dp,
-                                        color = LocalAppColors.current.primaryGray
-                                    )
-                                }
-
+                            if (index != fileKeys.lastIndex){
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 8.dp).padding(top = 8.dp),
+                                    thickness = 1.dp,
+                                    color = LocalAppColors.current.primaryDarkGray
+                                )
                             }
 
                         }
 
-
-//                    activeSelected(
-//                        selectedData = selectedData,
-//                        onCheckboxChanged = onCheckboxChanged,
-//                        interfaceModel = interfaceModel,
-//                    )
+                    }
                 }
             }
         }

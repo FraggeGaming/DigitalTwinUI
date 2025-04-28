@@ -67,7 +67,7 @@ fun fileUploadCircle(
 
     Box(
         modifier = Modifier
-            .size(64.dp) //Circular size
+            .size(32.dp) //Circular size
             .clip(CircleShape)
             .background(Color.LightGray)
             .clickable {
@@ -83,7 +83,7 @@ fun fileUploadCircle(
             imageVector = Icons.Default.Add,
             contentDescription = "Add Files",
             tint = Color.DarkGray,
-            modifier = Modifier.size(32.dp)
+            modifier = Modifier.size(24.dp)
         )
     }
 }

@@ -59,7 +59,7 @@ fun uploadData(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ComponentInfoBox(
@@ -75,6 +75,7 @@ fun uploadData(
                             interfaceModel = interfaceModel,
                         )
                     },
+                    modifier = Modifier.fillMaxWidth(),
                     enabled = mappings.isNotEmpty(),
                     arrowDirection = TooltipArrowDirection.Top
                 )
@@ -85,7 +86,7 @@ fun uploadData(
                 modifier = Modifier
                     .fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 ComponentInfoBox(
                     id = "FileUploadComponent",
@@ -101,13 +102,14 @@ fun uploadData(
                     arrowDirection = TooltipArrowDirection.Bottom
                 )
 
-                ComponentInfoBox(
-                    id = "UploadInputCard",
-                    infoMode,
-                    infoText = "Fill out the form to run the generation, or to visualize the added data",
-                    content = {
-                        uploadedFiles.forEachIndexed { index, metadata ->
-                            //println(uploadedFiles.toString())
+                uploadedFiles.forEachIndexed { index, metadata ->
+                    //println(uploadedFiles.toString())
+
+                    ComponentInfoBox(
+                        id = "UploadInputCard",
+                        infoMode,
+                        infoText = "Fill out the form to run the generation, or to visualize the added data",
+                        content = {
                             UploadInputCard(
                                 metadata = metadata,
                                 interfaceModel = interfaceModel,
@@ -119,37 +121,46 @@ fun uploadData(
                                 uploadedFiles
 
                             )
-                        }
-                    },
-                    enabled = uploadedFiles.isNotEmpty(),
-                    arrowDirection = TooltipArrowDirection.Top
-                )
+                        },
+                        enabled = uploadedFiles.isNotEmpty(),
+                        arrowDirection = TooltipArrowDirection.Top
+                    )
 
+                }
 
                 if(uploadedFiles.isNotEmpty() || selectedMappings.isNotEmpty()){
-                    Button(
-                        onClick = {
-                            val (canContinue, errorMsg) = interfaceModel.fileUploader.uploadRunCheck(uploadedFiles, mappings)
+                    ComponentInfoBox(
+                        id = "RunModelComponent",
+                        infoMode,
+                        infoText = "Use this button to view the selected files",
+                        content = {
+                            Button(
+                                onClick = {
+                                    val (canContinue, errorMsg) = interfaceModel.fileUploader.uploadRunCheck(uploadedFiles, mappings)
 
-                            if (canContinue){
-                                interfaceModel.triggerModelRun()
-                                navController.navigate("main")
-                            }
-                            else{
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(errorMsg)
-                                }
+                                    if (canContinue){
+                                        interfaceModel.triggerModelRun()
+                                        navController.navigate("main")
+                                    }
+                                    else{
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar(errorMsg)
+                                        }
+                                    }
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = LocalAppColors.current.primaryBlue,
+                                    contentColor = LocalAppColors.current.textColor
+                                ),
+                                modifier = Modifier.width(200.dp).height(100.dp)
+                            ) {
+                                Text("View files", textAlign = TextAlign.Center, color = Color.White)
                             }
                         },
-                        shape = RoundedCornerShape(4.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = LocalAppColors.current.primaryBlue,
-                            contentColor = LocalAppColors.current.textColor
-                        ),
-                        modifier = Modifier.width(200.dp).height(100.dp)
-                    ) {
-                        Text("Run Generation", textAlign = TextAlign.Center, color = Color.White)
-                    }
+                        enabled = true,
+                        arrowDirection = TooltipArrowDirection.Bottom
+                    )
                 }
             }
             if (showModelPopup && currentlySelected != null) {
@@ -325,7 +336,9 @@ fun UploadInputCard(
 
             //Select Model
             else{
-                Text("Without a selected model, the file won't be translated — it will only be displayed.")
+                Text("Without a selected model, the file won't be translated — it will only be displayed.",
+                    style = MaterialTheme.typography.bodySmall
+                )
 
                 Button(
                     onClick = {
@@ -375,31 +388,28 @@ fun UploadInputCard(
                 }
 
                 else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = File(metadata.groundTruthFilePath).name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
 
-                        IconButton(
-                            onClick = {
-                                val updated = metadata.copy(groundTruthFilePath = "")
-                                interfaceModel.fileUploader.updateMetadata(index, updated)
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = "Remove file",
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                    Text(
+                        text = File(metadata.groundTruthFilePath).name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    IconButton(
+                        onClick = {
+                            val updated = metadata.copy(groundTruthFilePath = "")
+                            interfaceModel.fileUploader.updateMetadata(index, updated)
                         }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Remove file",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
+
             }
 
             Row(
@@ -421,11 +431,13 @@ fun previousSavedCards(
     interfaceModel: InterfaceModel,
 ) {
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center)
+        {
         mappings.forEachIndexed { index, mapping ->
             val isSelected = mapping in selectedMappings
 
@@ -433,7 +445,7 @@ fun previousSavedCards(
                 modifier = Modifier
                     .width(200.dp)
                     .wrapContentHeight()
-                    .background(if (isSelected) Color(0xFFA5D6A7) else Color.White),
+                    ,
                 contentAlignment = Alignment.CenterHorizontally,
                 content = {
                     Text(
@@ -454,7 +466,11 @@ fun previousSavedCards(
 
                             println("Selected mappings: ${selectedMappings.map { it.title }}")
                         }) {
-                            Icon(Icons.Default.Check, contentDescription = "Select Mapping")
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Select Mapping",
+                                tint = if (isSelected) Color.Green else Color.Black
+                            )
                         }
 
                         IconButton(onClick = {

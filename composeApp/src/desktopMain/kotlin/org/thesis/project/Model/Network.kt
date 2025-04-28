@@ -50,14 +50,14 @@ suspend fun sendNiftiToServer(
             .post(requestBody)
             .build()
 
-        val processResponse = client.newCall(processRequest).execute()
+        client.newCall(processRequest).execute().use { processResponse ->
+            if (!processResponse.isSuccessful) {
+                println("Request failed: ${processResponse.code} ${processResponse.message}")
+                return@withContext null
+            }
 
-        if (!processResponse.isSuccessful) {
-            println("Request failed: ${processResponse.code} ${processResponse.message}")
-            return@withContext null
+            println("Model started successfully")
         }
-
-        println("Model started successfully")
 
 
         var nifti: File? = null
