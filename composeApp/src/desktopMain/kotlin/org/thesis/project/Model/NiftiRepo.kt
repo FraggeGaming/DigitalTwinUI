@@ -154,24 +154,5 @@ class NiftiRepo(imageController: ImageController) {
         if (hasFileMapping(mapping.title)){
             removeFileMapping(mapping.title)
         }
-
-        println("\n-----Remaining data-----")
-
-        println("Nifti Images cached: \n")
-        niftiImages.value.forEach { data ->
-            println("${data.value.id} : ${data.value.name}\n")
-        }
-
-
-        println("File mapping cached: \n${fileMapping.value.values}\n")
-
-        println("Hard saved mappings: \n")
-        jsonMapper.mappings.value.forEach { data ->
-            println("Title: ${data.title}")
-            println("Inputs: ${data.inputs.first().id} : ${data.inputs.first().id}\n")
-        }
-
-       
-
     }
 }
