@@ -12,9 +12,7 @@ import kotlinx.serialization.Serializable
 import java.nio.file.Paths
 import java.util.*
 import org.nd4j.linalg.api.ndarray.INDArray
-
-
-
+import org.nd4j.linalg.factory.Nd4j
 
 
 enum class NiftiView(val displayName: String) {
@@ -88,10 +86,16 @@ data class NiftiData(
     }
 
     fun clearData() {
-        voxelVolume_ind.close()
-//        voxelVolume = arrayOf()
-//        coronalVoxelSlices = arrayOf()
-//        sagittalVoxelSlices = arrayOf()
+        try {
+            voxelVolume_ind.close()
+            println("data cleared")
+        }
+        catch (e: Exception) {
+            println(e)
+        }
+
+        voxelVolume_ind = Nd4j.empty()
+
     }
 }
 

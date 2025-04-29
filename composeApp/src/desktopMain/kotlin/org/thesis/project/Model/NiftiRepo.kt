@@ -30,6 +30,8 @@ class NiftiRepo(imageController: ImageController) {
             nifti?.clearData()
             currentMap - id
         }
+
+
     }
 
     fun getAxialSlice(z: Int, nifti: NiftiData): INDArray {
@@ -126,6 +128,8 @@ class NiftiRepo(imageController: ImageController) {
         _fileMapping.update { currentMap ->
             currentMap - key
         }
+
+        System.gc()
     }
 
     //Check if a key exists in the mapping
