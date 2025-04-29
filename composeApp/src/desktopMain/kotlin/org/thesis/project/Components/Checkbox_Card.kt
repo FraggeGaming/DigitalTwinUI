@@ -281,7 +281,10 @@ fun cardMenu2(
 
                                 // Trash Icon
                                 IconButton(
-                                    onClick = { interfaceModel.niftiRepo.removeFileMapping(mainLabel) }
+                                    onClick = {
+                                        interfaceModel.modelRunner.cancelJob(mainLabel)
+                                        interfaceModel.niftiRepo.removeFileMapping(mainLabel)
+                                    }
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,

@@ -69,6 +69,11 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
         val duplicateTitles = titles.groupingBy { it }.eachCount().filter { it.value > 1 }
         val existingTitles = mappings.map { it.title }.toSet()
         val overlappingTitles = titles.filter { it in existingTitles }
+        val containsNonAscii = titles.any { title -> title.any { it.code > 127 } }
+        if (containsNonAscii){
+            errorMsg = "Only Ascii characters are allowed"
+            canContinue = false
+        }
 
         if (duplicateTitles.isNotEmpty()) {
             errorMsg = "Duplicate titles found: ${duplicateTitles.keys}"

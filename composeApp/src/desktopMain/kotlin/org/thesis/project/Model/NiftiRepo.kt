@@ -48,26 +48,6 @@ class NiftiRepo(imageController: ImageController) {
     }
 
 
-//    fun getSlicesFromVolume(view: NiftiView, images: NiftiData): Triple<Array<Array<Array<Float>>>, Float, String> {
-//        val spacing = images.voxelSpacing
-//
-//        //because of transpose when parsing nifti, (Z, Y, X) → (X, Y, Z), but we don't transpose spacing
-//        return when (view) {
-//            NiftiView.AXIAL -> {
-//                Triple(images.voxelVolume, spacing[2], images.modality)
-//            }
-//
-//            NiftiView.CORONAL -> {
-//                Triple(images.coronalVoxelSlices, spacing[1], images.modality)
-//            }
-//
-//            NiftiView.SAGITTAL -> {
-//                Triple(images.sagittalVoxelSlices, spacing[0], images.modality)
-//            }
-//        }
-//
-//    }
-
     fun getSliceInd(view: NiftiView, images: NiftiData, slice: Int): Triple<INDArray, Float, String> {
         val spacing = images.voxelSpacing
 

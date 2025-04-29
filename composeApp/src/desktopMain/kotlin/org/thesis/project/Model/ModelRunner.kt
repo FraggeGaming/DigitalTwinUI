@@ -250,9 +250,12 @@ class ModelRunner(
     }
 
     fun cancelJob(jobId: String) {
-        cancelRunningInference(jobId, client)
-        progressKillFlows[jobId] = progressFlows[jobId]!!
-        progressFlows.remove(jobId)
+        if (progressFlows.containsKey(jobId)) {
+            cancelRunningInference(jobId, client)
+            progressKillFlows[jobId] = progressFlows[jobId]!!
+            progressFlows.remove(jobId)
+        }
+
     }
 
     fun copyAndChangeName(name: String, filePath: String): String {
