@@ -36,10 +36,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.swing)
             implementation("org.jetbrains.compose.ui:ui-desktop:1.6.0")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-            implementation("org.nd4j:nd4j-native-platform:1.0.0-M2.1")
             implementation("com.squareup.okhttp3:okhttp:4.12.0")
             implementation("org.json:json:20231013")
-
+            implementation("org.nd4j:nd4j-native-platform:1.0.0-beta7")
         }
     }
 }

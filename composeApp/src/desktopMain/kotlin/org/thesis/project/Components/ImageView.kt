@@ -340,11 +340,17 @@ fun voxelImageDisplayInd(
             val scaleX = size.width / bitmap.width
             val scaleY = size.height / bitmap.height
 
+            fun rotatePoint(p: Point): Offset {
+                val rotatedX = p.y
+                val rotatedY = bitmap.height - p.x - 1
+                return Offset(rotatedX * scaleX, rotatedY * scaleY)
+            }
+
             uiState.value.point1?.let { p1 ->
                 drawCircle(
                     color = Color.Green,
                     radius = 5.dp.toPx(),
-                    center = Offset(p1.x * scaleX, p1.y * scaleY)
+                    center = rotatePoint(p1)
                 )
             }
 
@@ -352,13 +358,13 @@ fun voxelImageDisplayInd(
                 drawCircle(
                     color = Color.Green,
                     radius = 5.dp.toPx(),
-                    center = Offset(p2.x * scaleX, p2.y * scaleY)
+                    center = rotatePoint(p2)
                 )
                 uiState.value.point1?.let { p1 ->
                     drawLine(
                         color = Color.Yellow,
-                        start = Offset(p1.x * scaleX, p1.y * scaleY),
-                        end = Offset(p2.x * scaleX, p2.y * scaleY),
+                        start = rotatePoint(p1),
+                        end = rotatePoint(p2),
                         strokeWidth = 2.dp.toPx()
                     )
                 }
@@ -392,6 +398,8 @@ fun voxelImageDisplayInd(
     }
 }
 
+
+
 data class VoxelImageUIState(
     var layoutCoordinates: LayoutCoordinates? = null,
     var hoverVoxelValue: Float? = null,
@@ -409,23 +417,28 @@ fun voxelSliceToBitmapFromINDArray(
     windowWidth: Float
 ): ImageBitmap {
     val shape = voxelSlice.shape()
-    val width = shape[0].toInt()
-    val height = shape[1].toInt()
+    val originalWidth = shape[0].toInt()
+    val originalHeight = shape[1].toInt()
 
-    val bufferedImage = BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY)
+    val rotatedWidth = originalHeight
+    val rotatedHeight = originalWidth
+
+    val bufferedImage = BufferedImage(rotatedWidth, rotatedHeight, BufferedImage.TYPE_BYTE_GRAY)
 
     val minIntensity = windowCenter - windowWidth / 2
     val maxIntensity = windowCenter + windowWidth / 2
 
-    for (x in 0 until width) {
-        for (y in 0 until height) {
+    for (x in 0 until originalWidth) {
+        for (y in 0 until originalHeight) {
             var value = voxelSlice.getFloat(x.toLong(), y.toLong())
 
             value = ((value - minIntensity) / (maxIntensity - minIntensity)).coerceIn(0f, 1f)
             val pixel = (value * 255).toInt()
 
             val rgb = (pixel shl 16) or (pixel shl 8) or pixel
-            bufferedImage.setRGB(x, y, rgb)
+
+
+            bufferedImage.setRGB(y, originalWidth - x - 1, rgb)
         }
     }
 

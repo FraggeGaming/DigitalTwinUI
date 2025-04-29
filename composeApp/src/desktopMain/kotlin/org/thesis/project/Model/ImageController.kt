@@ -168,16 +168,25 @@ class ImageController(private val scope: CoroutineScope) {
         scaleFactor: Float,
         imageWidth: Int,
         imageHeight: Int,
-        voxelSlice: INDArray // <-- CHANGED
+        voxelSlice: INDArray
     ): VoxelData? {
-        val x = floor(position.x / scaleFactor).toInt()
-        val y = floor(position.y / scaleFactor).toInt()
+        val clickX = floor(position.x / scaleFactor).toInt()
+        val clickY = floor(position.y / scaleFactor).toInt()
 
-        val outOfBounds = x < 0 || x >= imageWidth || y < 0 || y >= imageHeight
+        val outOfBounds = clickX < 0 || clickX >= imageWidth || clickY < 0 || clickY >= imageHeight
         if (outOfBounds) return null
 
-        val voxelValue = voxelSlice.getFloat(x.toLong(), y.toLong()) // <-- Use Long indexes
-        return VoxelData(x, y, position, voxelValue)
+        // 🔥 Undo the 90° counterclockwise rotation:
+        val originalX = imageHeight - clickY - 1
+        val originalY = clickX
+
+        if (originalX !in 0 until voxelSlice.shape()[0] || originalY !in 0 until voxelSlice.shape()[1]) {
+            return null  // prevent crash if out of bounds
+        }
+
+        val voxelValue = voxelSlice.getFloat(originalX.toLong(), originalY.toLong())
+
+        return VoxelData(originalX, originalY, position, voxelValue)
     }
 
     fun calculateDistance(

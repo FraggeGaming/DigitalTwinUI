@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 
 class NiftiRepo(imageController: ImageController) {
     //Stores the niftiData by Filename
@@ -35,13 +36,15 @@ class NiftiRepo(imageController: ImageController) {
         return nifti.voxelVolume_ind.tensorAlongDimension(z.toLong(), 1, 2)
     }
 
+
     fun getCoronalSlice(y: Int, nifti: NiftiData): INDArray {
-        return nifti.voxelVolume_ind.tensorAlongDimension(y.toLong(), 0, 2)
+        return nifti.voxelVolume_ind.tensorAlongDimension(y.toLong(), 0, 1)
     }
 
     fun getSagittalSlice(x: Int, nifti: NiftiData): INDArray {
-        return nifti.voxelVolume_ind.tensorAlongDimension(x.toLong(), 0, 1)
+        return nifti.voxelVolume_ind.tensorAlongDimension(x.toLong(), 0, 2)
     }
+
 
 //    fun getSlicesFromVolume(view: NiftiView, images: NiftiData): Triple<Array<Array<Array<Float>>>, Float, String> {
 //        val spacing = images.voxelSpacing
@@ -80,6 +83,7 @@ class NiftiRepo(imageController: ImageController) {
             }
         }
     }
+
 
     //Connects multiple filenames together, ex: Patient_1 : List("CT_img1", "PET_real"), List("Syntet_PET")
     private val _fileMapping = MutableStateFlow<Map<String, Pair<List<String>, List<String>>>>(emptyMap())
