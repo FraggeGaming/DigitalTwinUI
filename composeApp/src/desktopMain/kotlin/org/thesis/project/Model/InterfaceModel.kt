@@ -3,6 +3,7 @@ package org.thesis.project.Model
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -146,6 +147,28 @@ class InterfaceModel : ViewModel() {
 
     private val _selectedDistricts = MutableStateFlow<Set<String>>(setOf())
     val selectedDistricts: StateFlow<Set<String>> = _selectedDistricts
+
+    private val _regions = MutableStateFlow<List<String>>(listOf())
+    val regions: StateFlow<List<String>> = _regions
+
+    private val _modalities = MutableStateFlow<List<String>>(listOf())
+    val modalities: StateFlow<List<String>> = _modalities
+
+    fun resetRegionsAndModalities() {
+        _regions.value = listOf()
+        _modalities.value = listOf()
+    }
+
+    suspend fun fetchRegions() = coroutineScope{
+        val regions = fetchAvaliableRegions(PathStrings.SERVER_IP.toString())
+        println("regions: $regions")
+        _regions.value = regions ?: listOf("Head", "Lung", "Total Body")
+    }
+
+    suspend fun fetchModalities() = coroutineScope{
+        val modalities = fetchAvaliableModalities(PathStrings.SERVER_IP.toString())
+        _modalities.value = modalities ?: listOf("CT", "PET", "MRI")
+    }
 
     fun updateSelectedDistrict(label: String, isSelected: Boolean) {
         _selectedDistricts.update { currentSet ->

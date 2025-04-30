@@ -64,6 +64,8 @@ class ModelRunner(
         }
     }
 
+
+
     fun loadMapping(mapping: List<NiftiDataSlim>): MutableList<String>{
         val data = mutableListOf<String>()
 
@@ -185,7 +187,7 @@ class ModelRunner(
 
                 if (file.model != null){
                     val newProgressFlow = MutableStateFlow(
-                        Progress(step = 0, total = 1, percent = 0.0, jobId = title, finished = false)
+                        Progress(step = 0, total = 1, jobId = title, finished = false)
                     )
                     progressFlows[title] = newProgressFlow
 

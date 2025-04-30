@@ -90,11 +90,10 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
         else{
             for (file in uploadedFiles) {
 
-
                 val missingField = when {
                     file.title.isBlank() -> "Title"
-                    file.modality.isBlank() -> "Modality"
-                    file.region.isBlank() -> "Region"
+//                    file.modality.isBlank() -> "Modality"
+//                    file.region.isBlank() -> "Region"
                     else -> null
                 }
 

@@ -53,6 +53,7 @@ fun uploadData(
             interfaceModel.niftiRepo.jsonMapper.loadMappings()
             interfaceModel.setInfoMode(false)
             TooltipManager.clearAll()
+            interfaceModel.resetRegionsAndModalities()
         }
 
         Column(modifier = Modifier.padding(12.dp)) {
@@ -269,6 +270,23 @@ fun UploadInputCard(
     snackbarHostState: SnackbarHostState,
     uploadedFiles: List<UploadFileMetadata>
 ) {
+
+    val regions by interfaceModel.regions.collectAsState()
+    val modalities by interfaceModel.modalities.collectAsState()
+
+    if (modalities.isEmpty()){
+        coroutineScope.launch {
+            interfaceModel.fetchModalities()
+        }
+
+    }
+
+    if (regions.isEmpty()){
+        coroutineScope.launch {
+            interfaceModel.fetchRegions()
+        }
+    }
+
     standardCard(
         modifier = Modifier.width(300.dp).wrapContentHeight(),
         contentAlignment = Alignment.CenterHorizontally,
@@ -286,10 +304,23 @@ fun UploadInputCard(
             )
 
 
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                thickness = 1.dp,
+                color = Color.Gray
+            )
+
+            if(metadata.model == null){
+                Text("Only fill out the fields below if the file is to be translated",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+            }
+
             dropDownMenuCustom(
                 label = "Modality",
                 selected = metadata.modality,
-                options = listOf("CT", "PET", "MRI"),
+                options = interfaceModel.modalities.value,
                 onSelected = {
                     val updated = metadata.copy(modality = it).copy(model = null)
                     interfaceModel.fileUploader.updateMetadata(index, updated)
@@ -299,7 +330,7 @@ fun UploadInputCard(
             dropDownMenuCustom(
                 label = "Region",
                 selected = metadata.region,
-                options = listOf("Head", "Lung", "Total Body"),
+                options = interfaceModel.regions.value,
                 onSelected = {
                     val updated = metadata.copy(region = it).copy(model = null)
                     interfaceModel.fileUploader.updateMetadata(index, updated)
@@ -336,10 +367,6 @@ fun UploadInputCard(
 
             //Select Model
             else{
-                Text("Without a selected model, the file won't be translated — it will only be displayed.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-
                 Button(
                     onClick = {
                         val missingField = when {
@@ -411,6 +438,12 @@ fun UploadInputCard(
                 }
 
             }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                thickness = 1.dp,
+                color = Color.Gray
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

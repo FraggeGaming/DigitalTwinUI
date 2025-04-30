@@ -139,7 +139,7 @@ fun imageViewer(
                 selectedData = interfaceModel.imageController.selectedData,
                 scrollStep = interfaceModel.imageController.scrollStep,
                 maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
-                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) }
+                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } //fix this bug
             )
 
             windowControls(selectedData, interfaceModel)
@@ -172,21 +172,28 @@ fun runningModelsList(interfaceModel: InterfaceModel) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 LinearProgressIndicator(
-                    progress = { (jobProgress.percent / 100f).coerceIn(0.0, 1.0).toFloat() },
+                    progress = {
+                        (jobProgress.step.toFloat() / jobProgress.total.toFloat()).coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                if (jobProgress.total == 1) {
+                if (jobProgress.finished) {
                     Text(
-                        text = "Loading model...",
+                        text = "Finished inference, downloading result...",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                else if (jobProgress.total == 1) {
+                    Text(
+                        text = "Initializing model...",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
                 else{
                     Text(
-                        text = "${String.format("%.1f", jobProgress.percent)}% done (${jobProgress.step}/${jobProgress.total-1} steps)",
+                        text = "${String.format("%.1f", (jobProgress.step.toFloat() / jobProgress.total.toFloat())* 100)}% done (${jobProgress.step}/${jobProgress.total-1} steps)",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

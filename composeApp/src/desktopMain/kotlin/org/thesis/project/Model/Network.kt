@@ -172,8 +172,62 @@ suspend fun fetchAvailableModels(serverUrl: String, metadata: UploadFileMetadata
     }
 
 }
+
+
+
+suspend fun fetchAvaliableModalities(serverUrl: String): List<String>? = withContext(Dispatchers.IO) {
+    try {
+        val request = Request.Builder()
+            .url("$serverUrl/modalities")
+            .get()
+            .build()
+
+        val client = OkHttpClient()
+        val response = client.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            println("Request failed: ${response.code}")
+            return@withContext null
+        }
+
+        val bodyString = response.body?.string() ?: return@withContext null
+        return@withContext Json.decodeFromString<List<String>>(bodyString)
+
+    } catch (e: Exception) {
+        println("Error fetching modalities: ${e.localizedMessage}")
+        e.printStackTrace()
+        return@withContext null
+    }
+}
+
+suspend fun fetchAvaliableRegions(serverUrl: String): List<String>? = withContext(Dispatchers.IO) {
+    try {
+        val request = Request.Builder()
+            .url("$serverUrl/regions")
+            .get()
+            .build()
+
+        val client = OkHttpClient()
+        val response = client.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            println("Request failed: ${response.code}")
+            return@withContext null
+        }
+
+        val bodyString = response.body?.string() ?: return@withContext null
+        return@withContext Json.decodeFromString<List<String>>(bodyString)
+
+    } catch (e: Exception) {
+        println("Error fetching regions: ${e.localizedMessage}")
+        e.printStackTrace()
+        return@withContext null
+    }
+}
+
+
 @Serializable
-data class Progress(val step: Int, val total: Int, val percent: Double, @SerialName("job_id") val jobId: String, val finished: Boolean = false)
+data class Progress(val step: Int, val total: Int, @SerialName("job_id") val jobId: String, val finished: Boolean = false)
 
 suspend fun pollProgress(
     jobId: String,
@@ -199,6 +253,11 @@ suspend fun pollProgress(
                 .build()
 
             val response = client.newCall(request).execute()
+            if (response.code == 204) {
+                //Server tried to read and write to the progress at the same time, just continue and send another request
+                delay(2000)
+                continue
+            }
             val body = response.body?.string()
 
             if (body != null) {
