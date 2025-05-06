@@ -25,13 +25,12 @@ class NiftiRepo(imageController: ImageController) {
     }
 
     fun delete(id: String) {
+        imageController.removeSelectedData(id)
         _niftiImages.update { currentMap ->
             val nifti = currentMap[id]
             nifti?.clearData()
             currentMap - id
         }
-
-
     }
 
     fun getAxialSlice(z: Int, nifti: NiftiData): INDArray {

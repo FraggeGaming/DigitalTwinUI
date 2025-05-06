@@ -419,6 +419,7 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
     selectedData.forEach { data ->
         var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
         val windowingState = interfaceModel.imageController.getWindowingState(data)
+
         standardCard(
             content = {
                 Text(interfaceModel.niftiRepo.getNameFromNiftiId(data), style = MaterialTheme.typography.titleMedium)

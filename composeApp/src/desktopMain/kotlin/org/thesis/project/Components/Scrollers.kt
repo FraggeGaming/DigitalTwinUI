@@ -36,15 +36,18 @@ fun scrollSlider(
     var sliderPosition by remember { mutableStateOf(currentScrollStep) }
 
 
-    scrollWithTitle(
-        title = "Slice",
-        value = sliderPosition,
-        onValueChange = { newValue ->
-            sliderPosition = newValue
-            onUpdate(newValue)
-        },
-        valueRange = 0f..maxValue,
-    )
+    if(selectedData.value.isNotEmpty()){
+        scrollWithTitle(
+            title = "Slice",
+            value = sliderPosition,
+            onValueChange = { newValue ->
+                sliderPosition = newValue
+                onUpdate(newValue)
+            },
+            valueRange = 0f..maxValue,
+        )
+    }
+
 
 
 
