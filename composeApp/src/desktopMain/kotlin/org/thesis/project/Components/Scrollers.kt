@@ -69,7 +69,7 @@ fun scrollWithTitle(
     Column(modifier = modifier.fillMaxWidth()) {
         Text(title, color = LocalAppColors.current.primaryBlue)
 
-        var inputText by remember { mutableStateOf(value.toInt().toString()) }
+        var inputText by remember(value) { mutableStateOf(value.toInt().toString()) }
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
