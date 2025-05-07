@@ -276,6 +276,46 @@ class ImageController(private val scope: CoroutineScope) {
 
 
     //Windowing
+//    val windowPresets = mapOf(
+//        "CT - Brain" to WindowingParams(40f, 80f),
+//        "CT - Lung" to WindowingParams(-600f, 1500f),
+//        "CT - Bone" to WindowingParams(300f, 1500f),
+//        "PET SUV" to WindowingParams(2f, 5f)
+//    )
+//
+//    data class WindowingParams(
+//        val center: Float,
+//        val width: Float
+//    )
+//
+//    val windowingMap = mutableMapOf<String, MutableStateFlow<WindowingParams>>()
+//
+//    fun getWindowingState(data: String): StateFlow<WindowingParams> {
+//        return windowingMap.getOrPut(data) {
+//            MutableStateFlow(WindowingParams(40f, 80f))
+//        }.asStateFlow()
+//    }
+//
+//    private fun getWindowingMutableState(data: String): MutableStateFlow<WindowingParams> {
+//        return windowingMap.getOrPut(data) {
+//            MutableStateFlow(WindowingParams(40f, 80f))
+//        }
+//    }
+//
+//    fun setWindowingCenter(center: Float, data: String) {
+//        val state = getWindowingMutableState(data)
+//        state.value = state.value.copy(center = center)
+//    }
+//
+//    fun setWindowingWidth(width: Float, data: String) {
+//        val state = getWindowingMutableState(data)
+//        state.value = state.value.copy(width = width)
+//    }
+//
+//    fun setPreset(preset: WindowingParams, data: String) {
+//        val state = getWindowingMutableState(data)
+//        state.value = preset
+//    }
 
     val windowPresets = mapOf(
         "CT - Brain" to WindowingParams(40f, 80f),

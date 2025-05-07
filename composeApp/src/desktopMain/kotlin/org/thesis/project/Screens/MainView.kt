@@ -435,7 +435,7 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
 
                 scrollWithTitle(
                     title = "Window Center",
-                    value = windowingState.value.center,
+                    value = interfaceModel.imageController.getWindowingState(data).value.center,//windowingState.value.center,
                     onValueChange = { interfaceModel.imageController.setWindowingCenter(it, data) },
                     valueRange = -1000f..1000f,
                     modifier = Modifier.fillMaxWidth()
@@ -443,7 +443,7 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
 
                 scrollWithTitle(
                     title = "Window Width",
-                    value = windowingState.value.width,
+                    value = interfaceModel.imageController.getWindowingState(data).value.width,
                     onValueChange = { interfaceModel.imageController.setWindowingWidth(it, data) },
                     valueRange = 1f..2500f,
                     modifier = Modifier.fillMaxWidth()
