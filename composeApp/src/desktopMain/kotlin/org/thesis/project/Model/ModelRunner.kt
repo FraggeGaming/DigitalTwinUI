@@ -147,52 +147,66 @@ class ModelRunner(
                 println("Model: ${file.model}")
 
                 //Changing the name by adding the title for a unique name
-                file.filePath = copyAndChangeName(file.title, file.filePath)
+                val newPath = copyAndChangeName(file.title, file.filePath)
+                if (newPath != null) {
+                    file.filePath = newPath
 
-                //Fetching/parsing the input nifti
-                inputNifti = async(Dispatchers.IO) { fileUploader.loadNifti(file) }.await()
-                inputNifti.gz_path = file.filePath
+                    //Fetching/parsing the input nifti
+                    inputNifti = async(Dispatchers.IO) { fileUploader.loadNifti(file) }.await()
+                    inputNifti.gz_path = file.filePath
 
-                val fileName = removeNiiExtension(File(file.filePath).nameWithoutExtension)
-                inputNifti.name = fileName
+                    val fileName = removeNiiExtension(File(file.filePath).nameWithoutExtension)
+                    inputNifti.name = fileName
 
-                niftiRepo.store(inputNifti.id, inputNifti)
-                println("stored nifti: ${inputNifti.id}")
-                input.add(inputNifti.id)
+                    niftiRepo.store(inputNifti.id, inputNifti)
+                    println("stored nifti: ${inputNifti.id}")
+                    input.add(inputNifti.id)
+                } else {
+
+                    println("File does not exist or failed to copy.")
+                    return@async
+                }
+
 
                 //If ground truth file was uploaded. Parse that as well
                 if (file.groundTruthFilePath.isNotBlank()){
                     //Create new UploadFileMetadata for the ground truth
                     val newGTFile = UploadFileMetadata(
                         filePath = file.groundTruthFilePath,
-                        title = "${file.groundTruthFilePath.substringAfterLast("/")}_GT",
+                        title = File(file.groundTruthFilePath).nameWithoutExtension + "_GT",
                         modality = file.model?.outputModality ?: "",
                         region = file.region,
                         model = file.model,
                         groundTruthFilePath = ""
                     )
 
-                    newGTFile.filePath = copyAndChangeName(newGTFile.title, newGTFile.filePath)
-                    gt_inputnifti = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }.await()
-                    gt_inputnifti.gz_path = newGTFile.filePath
-                    gt_inputnifti.name = removeNiiExtension(File(file.groundTruthFilePath).nameWithoutExtension)
 
-                    niftiRepo.store(gt_inputnifti.id, gt_inputnifti)
-                    println("stored nifti: ${gt_inputnifti.id}")
-                    input.add(gt_inputnifti.id)
+                    val newPathGT = copyAndChangeName(newGTFile.title, newGTFile.filePath)
+                    if (newPathGT != null) {
+                        file.filePath = newPathGT
 
+                        gt_inputnifti = async(Dispatchers.IO) { fileUploader.loadNifti(newGTFile) }.await()
+                        gt_inputnifti.gz_path = newGTFile.filePath
+                        gt_inputnifti.name = removeNiiExtension(File(file.groundTruthFilePath).nameWithoutExtension)
+
+                        niftiRepo.store(gt_inputnifti.id, gt_inputnifti)
+                        println("stored nifti: ${gt_inputnifti.id}")
+                        input.add(gt_inputnifti.id)
+                    } else {
+                        println("File does not exist or failed to copy.")
+                    }
                 }
 
                 niftiRepo.updateFileMappingInput(title, input)
 
                 if (file.model != null){
                     val newProgressFlow = MutableStateFlow(
-                        Progress(step = 0, total = 1, jobId = title, finished = false)
+                        Progress(step = 0, total = 1, jobId = title, finished = false, status = "Sending job", error = false)
                     )
                     progressFlows[title] = newProgressFlow
 
                     val returnedNifti = sendNiftiToServer(file, PathStrings.SERVER_IP.toString(), newProgressFlow, client, progressKillFlows)
-
+                    println(progressFlows[title])
                     returnedNifti?.let {
 
                         val predictedMetadata = UploadFileMetadata(
@@ -221,9 +235,8 @@ class ModelRunner(
                     }
                 }
 
-
                 val inputs = listOfNotNull(
-                    inputNifti.toSlim(),
+                    inputNifti?.toSlim(),
                     gt_inputnifti?.toSlim()
                 )
 
@@ -239,9 +252,10 @@ class ModelRunner(
 
                 niftiRepo.jsonMapper.addMappingAndSave(mapping)
 
-                if (progressFlows.containsKey(title)) {
-                    progressFlows.remove(title)
-                }
+//                if (progressFlows.containsKey(title)) {
+//                    if (progressFlows[title]?.value?.error == false)
+//                        progressFlows.remove(title)
+//                }
             }
 
         }
@@ -251,16 +265,23 @@ class ModelRunner(
 
     }
 
+    fun removeJob(jobId: String){
+        if (progressFlows.containsKey(jobId)) {
+            //progressKillFlows[jobId] = progressFlows[jobId]!!
+            progressFlows.remove(jobId)
+        }
+    }
+
     fun cancelJob(jobId: String) {
         if (progressFlows.containsKey(jobId)) {
             cancelRunningInference(jobId, client)
-            progressKillFlows[jobId] = progressFlows[jobId]!!
+            //progressKillFlows[jobId] = progressFlows[jobId]!!
             progressFlows.remove(jobId)
         }
 
     }
 
-    fun copyAndChangeName(name: String, filePath: String): String {
+    fun copyAndChangeName(name: String, filePath: String): String? {
         val path = Paths.get(filePath)
         val fileName = path.fileName.toString()
 
@@ -276,8 +297,12 @@ class ModelRunner(
 
         val newPath = targetDir.resolve(newFileName)
 
-        Files.copy(path, newPath, StandardCopyOption.REPLACE_EXISTING)
-
-        return newPath.toString()
+        return try {
+            Files.copy(path, newPath, StandardCopyOption.REPLACE_EXISTING)
+            newPath.toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 }

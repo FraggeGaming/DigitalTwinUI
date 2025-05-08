@@ -179,42 +179,70 @@ fun runningModelsList(interfaceModel: InterfaceModel) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                if (jobProgress.finished) {
+                if (jobProgress.error){
                     Text(
-                        text = "Finished inference, downloading result...",
+                        text = "Error in model inference:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Red
+                    )
+
+                    Text(
+                        text = jobProgress.status,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
-                else if (jobProgress.total == 1) {
-                    Text(
-                        text = "Initializing model...",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+
                 else{
-                    Text(
-                        text = "${String.format("%.1f", (jobProgress.step.toFloat() / jobProgress.total.toFloat())* 100)}% done (${jobProgress.step}/${jobProgress.total-1} steps)",
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    if (jobProgress.finished) {
+                        Text(
+                            text = "Finished inference, downloading result...",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    else if (jobProgress.total == 1) {
+                        Text(
+                            text = jobProgress.status,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    else{
+                        Text(
+                            text = "${String.format("%.1f", (jobProgress.step.toFloat() / jobProgress.total.toFloat())* 100)}% done (${jobProgress.step}/${jobProgress.total-1} steps)",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
+
+
+
+
 
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                if (!jobProgress.finished) {
+                if (!jobProgress.finished && !jobProgress.error) {
                     Button(
                         onClick = { interfaceModel.modelRunner.cancelJob(jobProgress.jobId) },
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Text("Cancel")
                     }
-                } else {
+                } else if (jobProgress.finished) {
                     Text(
                         text = "Completed!",
                         color = Color.Green,
                         modifier = Modifier.align(Alignment.End),
                         style = MaterialTheme.typography.bodySmall
                     )
+                }
+
+                if (jobProgress.error || jobProgress.finished){
+                    Button(
+                        onClick = { interfaceModel.modelRunner.removeJob(jobProgress.jobId) },
+                        modifier = Modifier.align(Alignment.End),
+                    ) {
+                        Text("Remove", color = Color.Red)
+                    }
                 }
             }
         }

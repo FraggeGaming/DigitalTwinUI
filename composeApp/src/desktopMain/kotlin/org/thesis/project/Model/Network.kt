@@ -76,6 +76,10 @@ suspend fun sendNiftiToServer(
                     nifti = downloadResult(metadata.title, serverUrl, client)
                     finished = true
                 }
+                else if (updated.error){
+                    println("Error in model inference: ${updated.status}")
+                    finished = true
+                }
             },
             shouldStop = { finished }
         )
@@ -227,7 +231,7 @@ suspend fun fetchAvaliableRegions(serverUrl: String): List<String>? = withContex
 
 
 @Serializable
-data class Progress(val step: Int, val total: Int, @SerialName("job_id") val jobId: String, val finished: Boolean = false)
+data class Progress(val step: Int = 1, val total: Int = 1, @SerialName("job_id") val jobId: String, val finished: Boolean = false, val status: String ,val error: Boolean = false)
 
 suspend fun pollProgress(
     jobId: String,
@@ -241,8 +245,9 @@ suspend fun pollProgress(
 
     while (true) {
         try {
-            if (progressKillFlows[jobId] != null || shouldStop()) {
-                progressKillFlows.remove(jobId)
+            //progressKillFlows[jobId] != null ||
+            if (shouldStop()) {
+                //progressKillFlows.remove(jobId)
                 print(progressKillFlows.values)
                 println("stopping polling progress...")
                 break
@@ -261,14 +266,8 @@ suspend fun pollProgress(
             val body = response.body?.string()
 
             if (body != null) {
-
-                if (body.contains("error")) {
-                    println("Polling returned error: $body")
-                    break
-                }
                 val progress = json.decodeFromString<Progress>(body)
                 onProgress(progress)
-                if (progress.step >= progress.total) break
             }
         } catch (e: Exception) {
             println("Polling error: ${e.localizedMessage} : ${e.message}")

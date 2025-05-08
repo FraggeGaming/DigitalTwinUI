@@ -1,6 +1,7 @@
 package org.thesis.project.Screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +49,6 @@ fun uploadData(
 
     //Determines if info popout should appear
     val infoMode = interfaceModel.infoMode.collectAsState()
-    val density = LocalDensity.current
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) {
@@ -475,11 +475,15 @@ fun previousSavedCards(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(12.dp),
+            .padding(12.dp)
+            .horizontalScroll(rememberScrollState()),
+
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center)
         {
         mappings.forEachIndexed { index, mapping ->
+
+
             val isSelected = mapping in selectedMappings
 
             standardCard(
