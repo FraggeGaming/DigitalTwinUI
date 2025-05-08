@@ -13,9 +13,9 @@ fun runNiftiParser(niftiPath: String, outputDir: String): String {
     val osName = System.getProperty("os.name").lowercase()
 
     val exePath = when {
-        osName.contains("win") -> Paths.get("src/desktopMain/resources/executables/nifti_visualize.exe")
-        osName.contains("mac") -> Paths.get("src/desktopMain/resources/executables/nifti_visualize_macos")
-        osName.contains("nix") || osName.contains("nux") -> Paths.get("src/desktopMain/resources/executables/nifti_visualize_linux")
+        osName.contains("win") -> Paths.get("src/desktopMain/resources/executables/nifti_visualize_windows/nifti_visualize.exe")
+        osName.contains("mac") -> Paths.get("src/desktopMain/resources/executables/nifti_visualize_macos/nifti_visualize_macos")
+        osName.contains("nix") || osName.contains("nux") -> Paths.get("src/desktopMain/resources/executables/nifti_visualize_linux/nifti_visualize_linux")
         else -> throw UnsupportedOperationException("Unsupported OS: $osName")
     }
 
