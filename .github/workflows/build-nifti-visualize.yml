@@ -1,0 +1,56 @@
+name: Build NIfTI Visualizer Binaries
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install pyinstaller nibabel numpy
+      - run: |
+          pyinstaller --onefile composeApp/src/desktopMain/resources/executables/nifti_visualize.py
+          mv dist/nifti_visualize nifti_visualize_linux
+      - uses: actions/upload-artifact@v3
+        with:
+          name: nifti_visualize_linux
+          path: nifti_visualize_linux
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install pyinstaller nibabel numpy
+      - run: |
+          pyinstaller --onefile composeApp/src/desktopMain/resources/executables/nifti_visualize.py
+          mv dist/nifti_visualize nifti_visualize_macos
+          chmod +x nifti_visualize_macos
+      - uses: actions/upload-artifact@v3
+        with:
+          name: nifti_visualize_macos
+          path: nifti_visualize_macos
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install pyinstaller nibabel numpy
+      - run: |
+          pyinstaller --onefile composeApp/src/desktopMain/resources/executables/nifti_visualize.py
+          move dist\nifti_visualize.exe nifti_visualize.exe
+      - uses: actions/upload-artifact@v3
+        with:
+          name: nifti_visualize_windows
+          path: nifti_visualize.exe
