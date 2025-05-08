@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
 
+
 }
 
 kotlin {
@@ -25,16 +26,19 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(compose.materialIconsExtended)
 
-            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
+            //implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
             implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10")
-            implementation("androidx.compose.material3:material3:1.3.1")
+            //implementation("org.jetbrains.compose.material3:material3:1.6.0")
 
 
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
-            implementation("org.jetbrains.compose.ui:ui-desktop:1.6.0")
+            implementation("org.jetbrains.compose.material3:material3:1.7.0")
+
+            //implementation("org.jetbrains.compose.material3:material3:1.6.0")
+
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             implementation("com.squareup.okhttp3:okhttp:4.12.0")
             implementation("org.json:json:20231013")

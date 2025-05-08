@@ -2,7 +2,9 @@ package org.thesis.project.Screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,6 +15,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -45,7 +48,7 @@ fun uploadData(
 
     //Determines if info popout should appear
     val infoMode = interfaceModel.infoMode.collectAsState()
-
+    val density = LocalDensity.current
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) {
@@ -174,11 +177,11 @@ fun uploadData(
                         shape = RoundedCornerShape(16.dp),
                         tonalElevation = 8.dp,
                         modifier = Modifier
-                            .fillMaxWidth(0.9f)
+                            .widthIn(max = 1000.dp)
                             .wrapContentHeight()
                             .padding(16.dp)
                     ) {
-                        Column(Modifier.padding(16.dp)) {
+                        Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState()).fillMaxWidth()) {
 
                             if (!hasFetchedModels){
                                 Text("Fetching generative models...")
@@ -195,16 +198,21 @@ fun uploadData(
                                 val matchingModels = models.filter { model ->
                                     model.inputModality == currentlySelected?.modality
                                 }
+                                val maxCardHeight = remember { mutableStateOf(0.dp) }
+
 
                                 FlowRow(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                                    maxItemsInEachRow = 2
+                                    maxItemsInEachRow = 3,
+
                                 ) {
+                                    println(matchingModels)
                                     matchingModels.forEach { model ->
                                         standardCard(
-                                            modifier = Modifier.width(300.dp),
+                                            modifier = Modifier
+                                                .fillMaxWidth(),
                                             content = {
 
                                                 Text(text = model.title, style = MaterialTheme.typography.titleMedium)

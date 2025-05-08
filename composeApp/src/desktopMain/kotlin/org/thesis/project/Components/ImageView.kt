@@ -233,6 +233,28 @@ fun voxelImageDisplayInd(
     var boxCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var renderedImageSize by remember { mutableStateOf(IntSize.Zero) }
 
+    LaunchedEffect(bitmap) {
+        if (uiState.value.isHovering) {
+            val correctedPos = mapToImageCoordinatesAspectAware(
+                rawPointerPos = uiState.value.cursorPosition,
+                boxSize = renderedImageSize,
+                bitmap = bitmap
+            )
+
+            val voxelData = interfaceModel.imageController.getVoxelInfoInd(
+                position = correctedPos,
+                scaleFactor = 1f,
+                imageWidth = bitmap.width,
+                imageHeight = bitmap.height,
+                voxelSlice = voxelSlice
+            )
+
+            uiState.value = uiState.value.copy(
+                hoverVoxelValue = voxelData?.voxelValue,
+                hoverVoxelPosition = voxelData?.let { Point(it.x, it.y) }
+            )
+        }
+    }
     Box(
         modifier = modifier
             .onGloballyPositioned { boxCoordinates = it }
