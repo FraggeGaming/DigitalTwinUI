@@ -11,29 +11,12 @@ def load_nifti_image(path):
     voxel_spacing = nii_img.header['pixdim'][1:4].tolist()  # [x, y, z] spacing
     return nii_img.get_fdata(), voxel_spacing
 
-def generate_voxel_volume(path):
-    img = load_nifti_image(path)  # Shape: (Z, Y, X)
-
-    # Transpose to (X, Y, Z) so Kotlin can use .get(x,y,z) directly
-    img = np.transpose(img, (2, 1, 0))  # Now: shape = (X, Y, Z)
-
-    shape = img.shape
-    voxel_volume = img.tolist()
-
-    output_data = {
-        "width": shape[0],    # X
-        "height": shape[1],   # Y
-        "depth": shape[2],    # Z
-        "voxel_volume": voxel_volume
-    }
-
-    print(json.dumps(output_data))
-
-
 def generate_voxel_volume_binary_json(path, output_dir):
     img, voxel_spacing = load_nifti_image(path)  # Shape: (Z, Y, X)
-    img = np.transpose(img, (2, 1, 0))  # Transpose to (X, Y, Z)
-    img = np.flip(img, axis=(0, 1))
+    img = np.transpose(img, (2, 1, 0))
+    #img = np.flip(img, axis=(0, 1))
+    #img = np.rot90(img, k=1, axes=(0, 1))
+    #img = np.rot90(img, k=1, axes=(0, 1))
 
     width, height, depth = img.shape
     base_name = os.path.basename(path)
