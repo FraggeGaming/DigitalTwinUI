@@ -22,7 +22,7 @@ jobs:
           mv dist/nifti_visualize nifti_visualize_linux
 
       - name: Upload Linux binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nifti_visualize_linux
           path: nifti_visualize_linux
@@ -44,7 +44,7 @@ jobs:
           chmod +x nifti_visualize_macos
 
       - name: Upload macOS binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nifti_visualize_macos
           path: nifti_visualize_macos
@@ -65,7 +65,7 @@ jobs:
           move dist\nifti_visualize.exe nifti_visualize.exe
 
       - name: Upload Windows binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nifti_visualize_windows
           path: nifti_visualize.exe
