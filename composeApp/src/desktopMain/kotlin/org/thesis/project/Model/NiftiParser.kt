@@ -8,10 +8,19 @@ import java.io.File
 import java.nio.file.Paths
 
 fun runNiftiParser(niftiPath: String, outputDir: String): String {
-    val path = Paths.get("src/desktopMain/resources/executables/nifti_visualize.exe")
+    //val path = Paths.get("src/desktopMain/resources/executables/nifti_visualize.exe")
+
+    val osName = System.getProperty("os.name").lowercase()
+
+    val exePath = when {
+        osName.contains("win") -> Paths.get("src/desktopMain/resources/executables/nifti_visualize.exe")
+        osName.contains("mac") -> Paths.get("src/desktopMain/resources/executables/nifti_visualize_macos")
+        osName.contains("nix") || osName.contains("nux") -> Paths.get("src/desktopMain/resources/executables/nifti_visualize_linux")
+        else -> throw UnsupportedOperationException("Unsupported OS: $osName")
+    }
 
     println("running process")
-    val process = ProcessBuilder(path.toAbsolutePath().toString(), niftiPath, outputDir)
+    val process = ProcessBuilder(exePath.toAbsolutePath().toString(), niftiPath, outputDir)
         .redirectErrorStream(true)
         .start()
 

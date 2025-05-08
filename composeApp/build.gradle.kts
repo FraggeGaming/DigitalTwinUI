@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
 plugins {
     kotlin("plugin.serialization")
@@ -58,4 +59,26 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+tasks.register<Jar>("fatJar") {
+    archiveBaseName.set("composeApp-desktop-fat")
+    manifest {
+        attributes["Main-Class"] = "org.thesis.project.MainKt"
+    }
+
+    val desktopTarget = kotlin.targets.getByName("desktop") as KotlinJvmTarget
+    val compileTask = tasks.named(desktopTarget.compilations["main"].compileKotlinTaskName)
+    dependsOn(compileTask)
+
+    from(desktopTarget.compilations["main"].output)
+
+    val runtimeClasspath = configurations.getByName("desktopRuntimeClasspath")
+    dependsOn(runtimeClasspath)
+
+    from({
+        runtimeClasspath
+            .filter { it.name.endsWith("jar") }
+            .map { zipTree(it) }
+    })
 }
