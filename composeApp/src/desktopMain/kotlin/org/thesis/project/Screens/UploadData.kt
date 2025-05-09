@@ -1,6 +1,7 @@
 package org.thesis.project.Screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
@@ -295,14 +297,15 @@ fun UploadInputCard(
     }
 
     standardCard(
-        modifier = Modifier.width(300.dp),
+        modifier = Modifier.width(300.dp).heightIn(min = 500.dp, max = 700.dp),
         contentAlignment = Alignment.CenterHorizontally,
         content = {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.SpaceEvenly
             ) {
                 Text("File: ${File(metadata.filePath).name}", style = MaterialTheme.typography.bodySmall)
 
@@ -478,62 +481,72 @@ fun previousSavedCards(
     selectedMappings: List<FileMappingFull>,
     interfaceModel: InterfaceModel,
 ) {
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(12.dp)
-            .horizontalScroll(rememberScrollState()),
-
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center)
-        {
-        mappings.forEachIndexed { index, mapping ->
-
-
-            val isSelected = mapping in selectedMappings
-
-            standardCard(
-                modifier = Modifier
-                    .width(200.dp)
-                    .wrapContentHeight()
-                    ,
-                contentAlignment = Alignment.CenterHorizontally,
-                content = {
-                    Text(
-                        text = mapping.title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = {
-
-                            interfaceModel.niftiRepo.jsonMapper.toggleSelectedMapping(mapping)
-
-                            println("Selected mappings: ${selectedMappings.map { it.title }}")
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Select Mapping",
-                                tint = if (isSelected) Color.Green else Color.Black
-                            )
-                        }
-
-                        IconButton(onClick = {
-                            println("Would remove mapping: ${mapping.title}")
-                            interfaceModel.niftiRepo.fullDelete(mapping)
-                        }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete Mapping", tint = Color.Red)
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val delta = event.changes.firstOrNull()?.scrollDelta?.y ?: 0f
+                        if (delta != 0f) {
+                            coroutineScope.launch {
+                                scrollState.scrollBy(delta*10)
+                            }
                         }
                     }
                 }
-            )
+            }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            mappings.forEach { mapping ->
+                val isSelected = mapping in selectedMappings
+
+                standardCard(
+                    modifier = Modifier.width(200.dp),
+                    contentAlignment = Alignment.CenterHorizontally,
+                    content = {
+                        Text(
+                            text = mapping.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = {
+                                interfaceModel.niftiRepo.jsonMapper.toggleSelectedMapping(mapping)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Select Mapping",
+                                    tint = if (isSelected) Color.Green else Color.Black
+                                )
+                            }
+
+                            IconButton(onClick = {
+                                interfaceModel.niftiRepo.fullDelete(mapping)
+                            }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete Mapping", tint = Color.Red)
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 }
