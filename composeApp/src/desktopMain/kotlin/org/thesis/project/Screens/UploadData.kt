@@ -198,7 +198,6 @@ fun uploadData(
                                 val matchingModels = models.filter { model ->
                                     model.inputModality == currentlySelected?.modality
                                 }
-                                val maxCardHeight = remember { mutableStateOf(0.dp) }
 
 
                                 FlowRow(
@@ -296,171 +295,179 @@ fun UploadInputCard(
     }
 
     standardCard(
-        modifier = Modifier.width(300.dp).wrapContentHeight(),
+        modifier = Modifier.width(300.dp),
         contentAlignment = Alignment.CenterHorizontally,
         content = {
-            Text("File: ${File(metadata.filePath).name}", style = MaterialTheme.typography.bodySmall)
-
-            OutlinedTextField(
-                value = metadata.title,
-                onValueChange = {
-                    val updated = metadata.copy(title = it)
-                    interfaceModel.fileUploader.updateMetadata(index, updated)
-                },
-                label = { Text("Title") },
-                isError = false
-            )
-
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                thickness = 1.dp,
-                color = Color.Gray
-            )
-
-            if(metadata.model == null){
-                Text("Only fill out the fields below if the file is to be translated",
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-            }
-
-            dropDownMenuCustom(
-                label = "Modality",
-                selected = metadata.modality,
-                options = interfaceModel.modalities.value,
-                onSelected = {
-                    val updated = metadata.copy(modality = it).copy(model = null)
-                    interfaceModel.fileUploader.updateMetadata(index, updated)
-                }
-            )
-
-            dropDownMenuCustom(
-                label = "Region",
-                selected = metadata.region,
-                options = interfaceModel.regions.value,
-                onSelected = {
-                    val updated = metadata.copy(region = it).copy(model = null)
-                    interfaceModel.fileUploader.updateMetadata(index, updated)
-                }
-            )
-
-            //Model card
-
-            if (metadata.model != null) {
-                standardCard(
-                    modifier = Modifier.width(300.dp),
-                    content = {
-                        Text(text = metadata.model!!.title, style = MaterialTheme.typography.titleMedium)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            "Input Modality: ${metadata.model!!.inputModality}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Text(
-                            "Output Modality: ${metadata.model!!.outputModality}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-
-                        TextButton(onClick = {
-                            onSelect(metadata)
-                            onShowPopup()
-                        }) {
-                            Text("Change Model")
-                        }
-
-                    }
-                )
-            }
-
-            //Select Model
-            else{
-                Button(
-                    onClick = {
-                        val missingField = when {
-                            metadata.modality.isBlank() -> "Modality"
-                            metadata.title.isBlank() -> "Title"
-                            metadata.region.isBlank() -> "Region"
-                            else -> null
-                        }
-                        print(missingField)
-
-                        if (missingField != null) {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Please select a $missingField first.")
-                            }
-                        } else {
-                            onSelect(metadata)
-                            onShowPopup()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = LocalAppColors.current.primaryBlue,
-                        contentColor = LocalAppColors.current.textColor
-                    ),
-                    shape = RoundedCornerShape(4.dp)
-
-                ) {
-                    Text("Select Model" , color = Color.White)
-                }
-            }
-
-            //Add ground truth
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
             ) {
-                if (metadata.groundTruthFilePath.isEmpty()) {
-                    Text("Ground Truth File")
-                    fileUploadCircle(onSelected = {
-                        val updated = metadata.copy(groundTruthFilePath = it)
+                Text("File: ${File(metadata.filePath).name}", style = MaterialTheme.typography.bodySmall)
+
+                OutlinedTextField(
+                    value = metadata.title,
+                    onValueChange = {
+                        val updated = metadata.copy(title = it)
                         interfaceModel.fileUploader.updateMetadata(index, updated)
-                        println(uploadedFiles)
-                    })
-                }
+                    },
+                    label = { Text("Title") },
+                    isError = false
+                )
 
-                else {
 
-                    Text(
-                        text = File(metadata.groundTruthFilePath).name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    thickness = 1.dp,
+                    color = Color.Gray
+                )
+
+                if(metadata.model == null){
+                    Text("Only fill out the fields below if the file is to be translated",
+                        style = MaterialTheme.typography.bodySmall
                     )
 
-                    IconButton(
-                        onClick = {
-                            val updated = metadata.copy(groundTruthFilePath = "")
-                            interfaceModel.fileUploader.updateMetadata(index, updated)
+                }
+
+                dropDownMenuCustom(
+                    label = "Modality",
+                    selected = metadata.modality,
+                    options = interfaceModel.modalities.value,
+                    onSelected = {
+                        val updated = metadata.copy(modality = it).copy(model = null)
+                        interfaceModel.fileUploader.updateMetadata(index, updated)
+                    }
+                )
+
+                dropDownMenuCustom(
+                    label = "Region",
+                    selected = metadata.region,
+                    options = interfaceModel.regions.value,
+                    onSelected = {
+                        val updated = metadata.copy(region = it).copy(model = null)
+                        interfaceModel.fileUploader.updateMetadata(index, updated)
+                    }
+                )
+
+                //Model card
+
+                if (metadata.model != null) {
+                    standardCard(
+                        modifier = Modifier.width(300.dp),
+                        content = {
+                            Text(text = metadata.model!!.title, style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Input Modality: ${metadata.model!!.inputModality}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                "Output Modality: ${metadata.model!!.outputModality}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+
+                            TextButton(onClick = {
+                                onSelect(metadata)
+                                onShowPopup()
+                            }) {
+                                Text("Change Model")
+                            }
+
                         }
+                    )
+                }
+
+                //Select Model
+                else{
+                    Button(
+                        onClick = {
+                            val missingField = when {
+                                metadata.modality.isBlank() -> "Modality"
+                                metadata.title.isBlank() -> "Title"
+                                metadata.region.isBlank() -> "Region"
+                                else -> null
+                            }
+                            print(missingField)
+
+                            if (missingField != null) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Please select a $missingField first.")
+                                }
+                            } else {
+                                onSelect(metadata)
+                                onShowPopup()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = LocalAppColors.current.primaryBlue,
+                            contentColor = LocalAppColors.current.textColor
+                        ),
+                        shape = RoundedCornerShape(4.dp)
+
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = "Remove file",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Text("Select Model" , color = Color.White)
                     }
                 }
 
-            }
+                //Add ground truth
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    if (metadata.groundTruthFilePath.isEmpty()) {
+                        Text("Ground Truth File")
+                        fileUploadCircle(onSelected = {
+                            val updated = metadata.copy(groundTruthFilePath = it)
+                            interfaceModel.fileUploader.updateMetadata(index, updated)
+                            println(uploadedFiles)
+                        })
+                    }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                thickness = 1.dp,
-                color = Color.Gray
-            )
+                    else {
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = { interfaceModel.fileUploader.removeFile(index) }) {
-                    Text("Remove")
+                        Text(
+                            text = File(metadata.groundTruthFilePath).name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(
+                            onClick = {
+                                val updated = metadata.copy(groundTruthFilePath = "")
+                                interfaceModel.fileUploader.updateMetadata(index, updated)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Remove file",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+
+                }
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    thickness = 1.dp,
+                    color = Color.Gray
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { interfaceModel.fileUploader.removeFile(index) }) {
+                        Text("Remove")
+                    }
                 }
             }
+
         }
     )
 }

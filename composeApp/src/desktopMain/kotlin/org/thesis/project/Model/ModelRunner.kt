@@ -275,7 +275,7 @@ class ModelRunner(
     fun cancelJob(jobId: String) {
         if (progressFlows.containsKey(jobId)) {
             cancelRunningInference(jobId, client)
-            //progressKillFlows[jobId] = progressFlows[jobId]!!
+            progressKillFlows[jobId] = progressFlows[jobId]!!
             progressFlows.remove(jobId)
         }
 

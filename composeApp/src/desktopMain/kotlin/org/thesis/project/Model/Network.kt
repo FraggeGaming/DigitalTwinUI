@@ -16,7 +16,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import java.nio.file.Paths
-import java.util.*
 
 suspend fun sendNiftiToServer(
     metadata: UploadFileMetadata,
@@ -101,28 +100,27 @@ fun downloadResult(jobId: String, serverUrl: String, client: OkHttpClient): File
             .url("$serverUrl/download/$jobId")
             .build()
 
-        val downloadResponse = client.newCall(downloadRequest).execute()
-
-        if (!downloadResponse.isSuccessful) {
-            println("Download failed: ${downloadResponse.code}")
-            return null
-        }
-
-        val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
-        outputDir.mkdirs()
-
-        val returnedFileName = "generated_${jobId}.nii.gz"
-        val returnedFile = File(outputDir, returnedFileName)
-
-        downloadResponse.body?.byteStream()?.use { input ->
-            returnedFile.outputStream().use { output ->
-                input.copyTo(output)
+        client.newCall(downloadRequest).execute().use { downloadResponse ->
+            if (!downloadResponse.isSuccessful) {
+                println("Download failed: ${downloadResponse.code}")
+                return null
             }
+
+            val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
+            outputDir.mkdirs()
+
+            val returnedFileName = "generated_${jobId}.nii.gz"
+            val returnedFile = File(outputDir, returnedFileName)
+
+            downloadResponse.body?.byteStream()?.use { input ->
+                returnedFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            println("Saved returned file to: ${returnedFile.absolutePath}")
+            return returnedFile
         }
-
-        println("Saved returned file to: ${returnedFile.absolutePath}")
-
-        return returnedFile
 
     } catch (e: Exception) {
         println("Error downloading result: ${e.localizedMessage}")
@@ -135,10 +133,12 @@ fun cancelRunningInference(jobId: String, client: OkHttpClient) {
     CoroutineScope(Dispatchers.IO).launch {
         val request = Request.Builder()
             .url("${PathStrings.SERVER_IP}/cancel/$jobId")
-            .post("".toRequestBody()) // empty body
+            .post("".toRequestBody())
             .build()
 
-        val response = client.newCall(request).execute()
+        client.newCall(request).execute().use { response ->
+            println(response.body?.string())
+        }
     }
 }
 
@@ -154,20 +154,20 @@ suspend fun fetchAvailableModels(serverUrl: String, metadata: UploadFileMetadata
             .build()
 
         val client = OkHttpClient()
-        val response = client.newCall(request).execute()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                println("Request failed: ${response.code}")
+                return@withContext null
+            }
 
-        if (!response.isSuccessful) {
-            println("Request failed: ${response.code}")
-            return@withContext null
+            val bodyString = response.body?.string()
+            if (bodyString == null) {
+                println("Empty response body.")
+                return@withContext null
+            }
+
+            return@withContext Json.decodeFromString<List<AIModel>>(bodyString)
         }
-
-        val bodyString = response.body?.string()
-        if (bodyString == null) {
-            println("Empty response body.")
-            return@withContext null
-        }
-
-        return@withContext Json.decodeFromString<List<AIModel>>(bodyString)
 
     } catch (e: Exception) {
         println("Error fetching models: ${e.localizedMessage}")
@@ -179,7 +179,7 @@ suspend fun fetchAvailableModels(serverUrl: String, metadata: UploadFileMetadata
 
 
 
-suspend fun fetchAvaliableModalities(serverUrl: String): List<String>? = withContext(Dispatchers.IO) {
+suspend fun fetchAvailableModalities(serverUrl: String): List<String>? = withContext(Dispatchers.IO) {
     try {
         val request = Request.Builder()
             .url("$serverUrl/modalities")
@@ -187,15 +187,15 @@ suspend fun fetchAvaliableModalities(serverUrl: String): List<String>? = withCon
             .build()
 
         val client = OkHttpClient()
-        val response = client.newCall(request).execute()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                println("Request failed: ${response.code}")
+                return@withContext null
+            }
 
-        if (!response.isSuccessful) {
-            println("Request failed: ${response.code}")
-            return@withContext null
+            val bodyString = response.body?.string() ?: return@withContext null
+            return@withContext Json.decodeFromString<List<String>>(bodyString)
         }
-
-        val bodyString = response.body?.string() ?: return@withContext null
-        return@withContext Json.decodeFromString<List<String>>(bodyString)
 
     } catch (e: Exception) {
         println("Error fetching modalities: ${e.localizedMessage}")
@@ -204,7 +204,7 @@ suspend fun fetchAvaliableModalities(serverUrl: String): List<String>? = withCon
     }
 }
 
-suspend fun fetchAvaliableRegions(serverUrl: String): List<String>? = withContext(Dispatchers.IO) {
+suspend fun fetchAvailableRegions(serverUrl: String): List<String>? = withContext(Dispatchers.IO) {
     try {
         val request = Request.Builder()
             .url("$serverUrl/regions")
@@ -212,15 +212,15 @@ suspend fun fetchAvaliableRegions(serverUrl: String): List<String>? = withContex
             .build()
 
         val client = OkHttpClient()
-        val response = client.newCall(request).execute()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                println("Request failed: ${response.code}")
+                return@withContext null
+            }
 
-        if (!response.isSuccessful) {
-            println("Request failed: ${response.code}")
-            return@withContext null
+            val bodyString = response.body?.string() ?: return@withContext null
+            return@withContext Json.decodeFromString<List<String>>(bodyString)
         }
-
-        val bodyString = response.body?.string() ?: return@withContext null
-        return@withContext Json.decodeFromString<List<String>>(bodyString)
 
     } catch (e: Exception) {
         println("Error fetching regions: ${e.localizedMessage}")
@@ -245,9 +245,9 @@ suspend fun pollProgress(
 
     while (true) {
         try {
-            //progressKillFlows[jobId] != null ||
-            if (shouldStop()) {
-                //progressKillFlows.remove(jobId)
+
+            if (progressKillFlows[jobId] != null || shouldStop()) {
+                progressKillFlows.remove(jobId)
                 print(progressKillFlows.values)
                 println("stopping polling progress...")
                 break

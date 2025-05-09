@@ -160,13 +160,13 @@ class InterfaceModel : ViewModel() {
     }
 
     suspend fun fetchRegions() = coroutineScope{
-        val regions = fetchAvaliableRegions(PathStrings.SERVER_IP.toString())
+        val regions = fetchAvailableRegions(PathStrings.SERVER_IP.toString())
         println("regions: $regions")
         _regions.value = regions ?: listOf("Head", "Lung", "Total Body")
     }
 
     suspend fun fetchModalities() = coroutineScope{
-        val modalities = fetchAvaliableModalities(PathStrings.SERVER_IP.toString())
+        val modalities = fetchAvailableModalities(PathStrings.SERVER_IP.toString())
         _modalities.value = modalities ?: listOf("CT", "PET", "MRI")
     }
 
