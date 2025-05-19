@@ -35,7 +35,7 @@ import java.io.File
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun uploadData(
+fun  uploadData(
     interfaceModel: InterfaceModel,
     navController: NavHostController
 ) {

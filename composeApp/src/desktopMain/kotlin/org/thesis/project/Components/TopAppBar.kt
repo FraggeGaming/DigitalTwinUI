@@ -1,12 +1,13 @@
 package org.thesis.project.Components
 
+import Network_intel_node
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +40,7 @@ fun topAppBar(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
-                    imageVector = Icons.Default.Android,
+                    imageVector = Network_intel_node,
                     contentDescription = "App Logo",
                     tint = Color.White
                 )

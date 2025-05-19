@@ -45,7 +45,7 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun voxelImageDisplayInd(
+fun  voxelImageDisplayInd(
     modifier: Modifier = Modifier,
     voxelSlice: INDArray,
     interfaceModel: InterfaceModel,

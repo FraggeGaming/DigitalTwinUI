@@ -8,8 +8,8 @@ import androidx.compose.ui.window.rememberWindowState
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Imaging",
-        state = rememberWindowState(width = 1600.dp, height = 900.dp)
+        title = "DeepTwin",
+        state = rememberWindowState(width = 1920.dp, height = 1080.dp)
 
     ) {
         App()

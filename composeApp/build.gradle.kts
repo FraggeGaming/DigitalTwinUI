@@ -38,6 +38,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.swing)
             implementation("org.jetbrains.compose.material3:material3:1.7.0")
 
+
             //implementation("org.jetbrains.compose.material3:material3:1.6.0")
 
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
