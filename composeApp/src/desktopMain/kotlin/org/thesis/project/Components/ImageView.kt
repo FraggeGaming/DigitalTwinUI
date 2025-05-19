@@ -10,7 +10,11 @@ import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -252,17 +256,29 @@ fun  voxelImageDisplayInd(
                     text = "Distance: ${"%.2f".format(uiState.value.distance)} mm",
                     color = Color.White
                 )
+                Spacer(Modifier.width(4.dp))
 
-                androidx.compose.material3.Button(
-                    onClick = { uiState.value = uiState.value.copy(point1 = null, point2 = null, distance = null) },
-                    //modifier = ,
-                    shape = RoundedCornerShape(4.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = LocalAppColors.current.primaryBlue,
-                        contentColor = LocalAppColors.current.textColor
+                androidx.compose.material3.TextButton(
+                    modifier = Modifier,
+
+                    onClick = {
+                        uiState.value = uiState.value.copy(point1 = null, point2 = null, distance = null)
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = LocalAppColors.current.buttonPressedColor,
+                        contentColor = Color.White
                     ),
-                ){
-                    Text("Clear")
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.wrapContentSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.material3.Text("Clear")
+                        Spacer(Modifier.width(4.dp))
+                        Icon(Icons.Default.Close, contentDescription = "Remove points")
+                    }
                 }
             }
 
