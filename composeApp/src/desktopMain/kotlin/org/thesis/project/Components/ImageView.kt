@@ -6,12 +6,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -38,182 +42,6 @@ import java.awt.Point
 import java.awt.image.BufferedImage
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-fun voxelImageDisplay(
-    modifier: Modifier = Modifier,
-    voxelSlice: Array<Array<Float>>,
-    interfaceModel: InterfaceModel,
-    modality: String,
-    pixelSpacing: Float = 1f,
-    windowing: State<ImageController.WindowingParams>,
-) {
-    val uiState = remember { mutableStateOf(VoxelImageUIState()) }
-    val selectedSettings by interfaceModel.selectedSettings.collectAsState()
-    val bitmap = voxelSliceToBitmap(voxelSlice, windowing.value.center, windowing.value.width)
-
-    var imageLayoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    var boxCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    var renderedImageSize by remember { mutableStateOf(IntSize.Zero) }
-
-    Box(
-        modifier = modifier
-            .onGloballyPositioned { boxCoordinates = it }
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { localPos ->
-                        if (selectedSettings.contains(Settings.MEASUREMENT)) {
-                            val correctedPos = mapToImageCoordinatesAspectAware(
-                                rawPointerPos = localPos,
-                                boxSize = renderedImageSize,
-                                bitmap = bitmap
-                            )
-                            interfaceModel.imageController.calculateDistance(
-                                uiState,
-                                correctedPos,
-                                1f,
-                                bitmap,
-                                pixelSpacing,
-                                voxelSlice
-                            )
-                        }
-                    },
-                    onLongPress = {
-                        uiState.value = uiState.value.copy(point1 = null, point2 = null, distance = null)
-                    }
-                )
-            }
-            .onPointerEvent(PointerEventType.Move) { event ->
-                if (uiState.value.isHovering) {
-                    val localPos = event.changes.first().position
-                    uiState.value = uiState.value.copy(cursorPosition = localPos)
-
-                    val correctedPos = mapToImageCoordinatesAspectAware(
-                        rawPointerPos = localPos,
-                        boxSize = renderedImageSize,
-                        bitmap = bitmap
-                    )
-
-                    val voxelData = interfaceModel.imageController.getVoxelInfo(
-                        position = correctedPos,
-                        scaleFactor = 1f,
-                        imageWidth = bitmap.width,
-                        imageHeight = bitmap.height,
-                        voxelSlice = voxelSlice
-                    )
-
-                    uiState.value = uiState.value.copy(
-                        hoverVoxelValue = voxelData?.voxelValue,
-                        hoverVoxelPosition = voxelData?.let { Point(it.x, it.y) }
-                    )
-                }
-            }
-            .onPointerEvent(PointerEventType.Enter) {
-                uiState.value = uiState.value.copy(isHovering = true)
-            }
-            .onPointerEvent(PointerEventType.Exit) {
-                uiState.value = uiState.value.copy(
-                    isHovering = false,
-                    hoverVoxelValue = null,
-                    hoverVoxelPosition = null
-                )
-            }
-    ) {
-
-        // Compute actual image rendering area
-        val imageAspect = bitmap.width.toFloat() / bitmap.height.toFloat()
-        val boxAspect = renderedImageSize.width.toFloat() / renderedImageSize.height.toFloat()
-
-        val renderWidth: Int
-        val renderHeight: Int
-        val offsetX: Float
-        val offsetY: Float
-
-        if (boxAspect > imageAspect) {
-            renderHeight = renderedImageSize.height
-            renderWidth = (renderHeight * imageAspect).toInt()
-            offsetX = ((renderedImageSize.width - renderWidth) / 2f)
-            offsetY = 0f
-        } else {
-            renderWidth = renderedImageSize.width
-            renderHeight = (renderWidth / imageAspect).toInt()
-            offsetX = 0f
-            offsetY = ((renderedImageSize.height - renderHeight) / 2f)
-        }
-
-
-        Image(
-            bitmap = bitmap,
-            contentDescription = "Voxel image",
-            modifier = Modifier.fillMaxSize() //wrapcontent
-                .onSizeChanged {
-                    renderedImageSize = it
-                }
-                .onGloballyPositioned { imageLayoutCoordinates = it }
-        )
-
-        // Canvas overlay drawn exactly over rendered image
-        Canvas(
-            modifier = Modifier
-                .size(
-                    with(LocalDensity.current) { renderWidth.toDp() },
-                    with(LocalDensity.current) { renderHeight.toDp() })
-                .offset { IntOffset(offsetX.toInt(), offsetY.toInt()) }
-        ) {
-            val scaleX = size.width / bitmap.width
-            val scaleY = size.height / bitmap.height
-
-            uiState.value.point1?.let { p1 ->
-                drawCircle(
-                    color = Color.Green,
-                    radius = 5.dp.toPx(),
-                    center = Offset(p1.x * scaleX, p1.y * scaleY)
-                )
-            }
-
-            uiState.value.point2?.let { p2 ->
-                drawCircle(
-                    color = Color.Green,
-                    radius = 5.dp.toPx(),
-                    center = Offset(p2.x * scaleX, p2.y * scaleY)
-                )
-                uiState.value.point1?.let { p1 ->
-                    drawLine(
-                        color = Color.Yellow,
-                        start = Offset(p1.x * scaleX, p1.y * scaleY),
-                        end = Offset(p2.x * scaleX, p2.y * scaleY),
-                        strokeWidth = 2.dp.toPx()
-                    )
-                }
-            }
-        }
-
-        if (
-            selectedSettings.contains(Settings.PIXEL) &&
-            uiState.value.hoverVoxelValue != null &&
-            uiState.value.hoverVoxelPosition != null &&
-            uiState.value.isHovering
-        ) {
-            HoverPopup(
-                cursorPosition = uiState.value.cursorPosition,
-                hoverPosition = uiState.value.hoverVoxelPosition!!,
-                string = formatVoxelValue(uiState.value.hoverVoxelValue!!, modality)
-            )
-
-        }
-
-        if (selectedSettings.contains(Settings.MEASUREMENT) && uiState.value.distance != null) {
-            Text(
-                text = "Distance: ${"%.2f".format(uiState.value.distance)} mm",
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .padding(8.dp),
-                color = Color.White
-            )
-        }
-    }
-}
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -368,29 +196,33 @@ fun voxelImageDisplayInd(
                 return Offset(rotatedX * scaleX, rotatedY * scaleY)
             }
 
-            uiState.value.point1?.let { p1 ->
-                drawCircle(
-                    color = Color.Green,
-                    radius = 5.dp.toPx(),
-                    center = rotatePoint(p1)
-                )
-            }
+          if  (selectedSettings.contains(Settings.MEASUREMENT)){
+              uiState.value.point1?.let { p1 ->
+                  drawCircle(
+                      color = Color.Green,
+                      radius = 5.dp.toPx(),
+                      center = rotatePoint(p1)
+                  )
+              }
 
-            uiState.value.point2?.let { p2 ->
-                drawCircle(
-                    color = Color.Green,
-                    radius = 5.dp.toPx(),
-                    center = rotatePoint(p2)
-                )
-                uiState.value.point1?.let { p1 ->
-                    drawLine(
-                        color = Color.Yellow,
-                        start = rotatePoint(p1),
-                        end = rotatePoint(p2),
-                        strokeWidth = 2.dp.toPx()
-                    )
-                }
-            }
+              uiState.value.point2?.let { p2 ->
+                  drawCircle(
+                      color = Color.Green,
+                      radius = 5.dp.toPx(),
+                      center = rotatePoint(p2)
+                  )
+                  uiState.value.point1?.let { p1 ->
+                      drawLine(
+                          color = Color.Yellow,
+                          start = rotatePoint(p1),
+                          end = rotatePoint(p2),
+                          strokeWidth = 2.dp.toPx()
+                      )
+                  }
+              }
+          }
+
+
         }
 
         if (
@@ -408,14 +240,32 @@ fun voxelImageDisplayInd(
         }
 
         if (selectedSettings.contains(Settings.MEASUREMENT) && uiState.value.distance != null) {
-            Text(
-                text = "Distance: ${"%.2f".format(uiState.value.distance)} mm",
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .padding(8.dp),
-                color = Color.White
-            )
+            Row( modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .background(Color.Black.copy(alpha = 0.5f))
+                .padding(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                Alignment.CenterVertically
+                ){
+                Text(
+                    text = "Distance: ${"%.2f".format(uiState.value.distance)} mm",
+                    color = Color.White
+                )
+
+                androidx.compose.material3.Button(
+                    onClick = { uiState.value = uiState.value.copy(point1 = null, point2 = null, distance = null) },
+                    //modifier = ,
+                    shape = RoundedCornerShape(4.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = LocalAppColors.current.primaryBlue,
+                        contentColor = LocalAppColors.current.textColor
+                    ),
+                ){
+                    Text("Clear")
+                }
+            }
+
         }
     }
 }
