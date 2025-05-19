@@ -484,6 +484,9 @@ fun previousSavedCards(
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
+    Row(modifier = Modifier.fillMaxWidth().wrapContentHeight(), horizontalArrangement = Arrangement.Center){
+        Text("Previously saved files", style = MaterialTheme.typography.titleSmall)
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()

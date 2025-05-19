@@ -145,8 +145,8 @@ class InterfaceModel : ViewModel() {
     private val _organs = MutableStateFlow(listOf("Liver", "Heart", "Lung", "Kidney", "Brain"))
     val organs: StateFlow<List<String>> = _organs
 
-    private val _selectedDistricts = MutableStateFlow<Set<String>>(setOf())
-    val selectedDistricts: StateFlow<Set<String>> = _selectedDistricts
+//    private val _selectedDistricts = MutableStateFlow<Set<String>>(setOf())
+//    val selectedDistricts: StateFlow<Set<String>> = _selectedDistricts
 
     private val _regions = MutableStateFlow<List<String>>(listOf())
     val regions: StateFlow<List<String>> = _regions
@@ -170,11 +170,11 @@ class InterfaceModel : ViewModel() {
         _modalities.value = modalities ?: listOf("CT", "PET", "MRI")
     }
 
-    fun updateSelectedDistrict(label: String, isSelected: Boolean) {
-        _selectedDistricts.update { currentSet ->
-            if (isSelected) currentSet + label else currentSet - label
-        }
-    }
+//    fun updateSelectedDistrict(label: String, isSelected: Boolean) {
+//        _selectedDistricts.update { currentSet ->
+//            if (isSelected) currentSet + label else currentSet - label
+//        }
+//    }
 
     private val _selectedSettings = MutableStateFlow<Set<Settings>>(setOf())
     val selectedSettings: StateFlow<Set<Settings>> = _selectedSettings

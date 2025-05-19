@@ -1,6 +1,7 @@
 package org.thesis.project.Screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -267,72 +268,151 @@ fun imageGrid(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            selectedData.forEach { id ->
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+
+            if (selectedData.size * selectedViews.size < 4){
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
 
-                        selectedViews.forEach { selectedView ->
-                            val nifti = interfaceModel.niftiRepo.get(id)
-                            if (nifti != null) {
-                                //println("Fetched nifti $nifti, With id : ${id}")
-                                val imageIndices by interfaceModel.imageController.getImageIndicesInd(nifti)
-                                    .collectAsState()
-                                val currentIndex = when (selectedView) {
-                                    NiftiView.AXIAL -> imageIndices.first
-                                    NiftiView.CORONAL -> imageIndices.second
-                                    NiftiView.SAGITTAL -> imageIndices.third
-                                }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            selectedData.forEach { id ->
+                                selectedViews.forEach { selectedView ->
+                                val nifti = interfaceModel.niftiRepo.get(id)
+                                if (nifti != null) {
+                                    //println("Fetched nifti $nifti, With id : ${id}")
+                                    val imageIndices by interfaceModel.imageController.getImageIndicesInd(nifti)
+                                        .collectAsState()
+                                    val currentIndex = when (selectedView) {
+                                        NiftiView.AXIAL -> imageIndices.first
+                                        NiftiView.CORONAL -> imageIndices.second
+                                        NiftiView.SAGITTAL -> imageIndices.third
+                                    }
 
-                                val (slices, spacingPx, modality) = interfaceModel.niftiRepo.getSliceInd(
-                                    selectedView,
-                                    nifti, currentIndex
-                                )
-
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(containerHeight / selectedData.size)
-                                        .padding(8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-
-                                    standardCard(
-                                        modifier = Modifier
-                                            .wrapContentSize()
-                                            .aspectRatio(1f),
-
-                                        contentAlignment = Alignment.CenterHorizontally,
-                                        content = {
-                                            Text(
-                                                text = "${selectedView.displayName} ${nifti.name} - Slice $currentIndex",
-                                                style = MaterialTheme.typography.titleSmall
-                                            )
-                                            voxelImageDisplayInd(
-                                                voxelSlice = slices,
-                                                interfaceModel = interfaceModel,
-                                                modality = modality,
-                                                pixelSpacing = spacingPx,
-                                                windowing = interfaceModel.imageController.getWindowingState(id)
-                                            )
-                                        }
+                                    val (slices, spacingPx, modality) = interfaceModel.niftiRepo.getSliceInd(
+                                        selectedView,
+                                        nifti, currentIndex
                                     )
-                                }
-                            }
 
+
+
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(containerHeight)
+                                            .padding(8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+
+                                        standardCard(
+                                            modifier = Modifier
+                                                .wrapContentSize()
+                                                .aspectRatio(1f),
+
+                                            contentAlignment = Alignment.CenterHorizontally,
+                                            content = {
+                                                Text(
+                                                    text = "${selectedView.displayName} ${nifti.name} - Slice $currentIndex",
+                                                    style = MaterialTheme.typography.titleSmall
+                                                )
+                                                voxelImageDisplayInd(
+                                                    voxelSlice = slices,
+                                                    interfaceModel = interfaceModel,
+                                                    modality = modality,
+                                                    pixelSpacing = spacingPx,
+                                                    windowing = interfaceModel.imageController.getWindowingState(id)
+                                                )
+                                            }
+                                        )
+                                    }
+                                }
+
+                            }
                         }
                     }
                 }
             }
+            else{
+                selectedData.forEach { id ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+
+                            selectedViews.forEach { selectedView ->
+                                val nifti = interfaceModel.niftiRepo.get(id)
+                                if (nifti != null) {
+                                    //println("Fetched nifti $nifti, With id : ${id}")
+                                    val imageIndices by interfaceModel.imageController.getImageIndicesInd(nifti)
+                                        .collectAsState()
+                                    val currentIndex = when (selectedView) {
+                                        NiftiView.AXIAL -> imageIndices.first
+                                        NiftiView.CORONAL -> imageIndices.second
+                                        NiftiView.SAGITTAL -> imageIndices.third
+                                    }
+
+                                    val (slices, spacingPx, modality) = interfaceModel.niftiRepo.getSliceInd(
+                                        selectedView,
+                                        nifti, currentIndex
+                                    )
+
+
+
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(containerHeight / selectedData.size)
+                                            .padding(8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+
+                                        standardCard(
+                                            modifier = Modifier
+                                                .wrapContentSize()
+                                                .aspectRatio(1f),
+
+                                            contentAlignment = Alignment.CenterHorizontally,
+                                            content = {
+                                                Text(
+                                                    text = "${selectedView.displayName} ${nifti.name} - Slice $currentIndex",
+                                                    style = MaterialTheme.typography.titleSmall
+                                                )
+                                                voxelImageDisplayInd(
+                                                    voxelSlice = slices,
+                                                    interfaceModel = interfaceModel,
+                                                    modality = modality,
+                                                    pixelSpacing = spacingPx,
+                                                    windowing = interfaceModel.imageController.getWindowingState(id)
+                                                )
+                                            }
+                                        )
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+
+
+
         }
     }
 }
