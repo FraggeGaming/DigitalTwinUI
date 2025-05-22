@@ -58,23 +58,23 @@ jobs:
           path: gradle.log
 
       # Upload the installer for each OS
-      - name: Upload .deb installer
+      - name: Upload .deb installer (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: deb-installer
-          path: composeApp/build/compose/binaries/main/deb/*.deb
+          path: composeApp/build/compose/binaries/main-release/deb/*.deb
 
-      - name: Upload .dmg installer
+      - name: Upload .dmg installer (macOS)
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: dmg-installer
-          path: composeApp/build/compose/binaries/main/dmg/*.dmg
+          path: composeApp/build/compose/binaries/main-release/dmg/*.dmg
 
-      - name: Upload .msi installer
+      - name: Upload .msi installer (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: msi-installer
-          path: composeApp/build/compose/binaries/main/msi/*.msi
+          path: composeApp/build/compose/binaries/main-release/msi/*.msi
