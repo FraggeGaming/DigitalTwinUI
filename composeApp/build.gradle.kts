@@ -52,7 +52,11 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             implementation("com.squareup.okhttp3:okhttp:4.12.0")
             implementation("org.json:json:20231013")
-            implementation("org.nd4j:nd4j-native-platform:1.0.0-beta7")
+            implementation("org.bytedeco:openblas:0.3.21-1.5.8")
+            implementation("org.nd4j:nd4j-native-platform:1.0.0-M1.1")
+
+            implementation("org.nd4j:nd4j-native:1.0.0-M2.1:macosx-arm64")
+            implementation("org.bytedeco:openblas:0.3.21-1.5.8:macosx-arm64")
         }
     }
 }

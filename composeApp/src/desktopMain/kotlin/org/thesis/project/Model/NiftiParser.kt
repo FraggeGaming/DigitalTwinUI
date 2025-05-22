@@ -39,14 +39,49 @@ fun runNiftiParser(niftiPath: String, outputDir: String, exePath: String): Strin
     return output
 }
 
+fun fastPercentileEstimate(data: FloatArray, lowPercentile: Double = 0.02, highPercentile: Double = 0.98, bins: Int = 100): Pair<Float, Float> {
+    if (data.isEmpty()) return 0f to 1f
+
+    val min = data.minOrNull() ?: return 0f to 1f
+    val max = data.maxOrNull() ?: return 0f to 1f
+    if (min == max) return min to max
+
+    val histogram = IntArray(bins)
+    val binSize = (max - min) / bins
+
+    // Build histogram
+    for (v in data) {
+        val bin = ((v - min) / (max - min) * (bins - 1)).toInt().coerceIn(0, bins - 1)
+        histogram[bin]++
+    }
+
+    // Compute cumulative histogram
+    val cumulative = IntArray(bins)
+    histogram.foldIndexed(0) { i, acc, count ->
+        cumulative[i] = acc + count
+        acc + count
+    }
+
+    val total = cumulative.last()
+    val lowerCount = (lowPercentile * total).toInt()
+    val upperCount = (highPercentile * total).toInt()
+
+    // Find bins that correspond to 2nd and 98th percentiles
+    val pLowBin = cumulative.indexOfFirst { it >= lowerCount }
+    val pHighBin = cumulative.indexOfFirst { it >= upperCount }
+
+    val pLow = min + pLowBin * binSize
+    val pHigh = min + pHighBin * binSize
+
+    return pLow to pHigh
+}
+
 fun parseNiftiImages(meta: NiftiMeta, metaData: UploadFileMetadata): NiftiData {
 
-//    val volume = loadNpyVoxelVolume(meta.npy_path)
     val v = getNpy(meta.npy_path)
-//    val axialVoxel = transformToAxialSlices(volume)
-//    val coronalVoxel = transformToCoronalSlices(volume)
-//    val sagittalVoxel = transformToSagittalSlices(volume)
 
+    val data = v.data().asFloat()
+    val (p2, p98) = fastPercentileEstimate(data)
     return NiftiData(
         width = meta.width,
         height = meta.height,
@@ -55,9 +90,8 @@ fun parseNiftiImages(meta: NiftiMeta, metaData: UploadFileMetadata): NiftiData {
         modality = metaData.modality,
         region = metaData.region,
         voxelVolume_ind = v,
-//        voxelVolume = axialVoxel,
-//        coronalVoxelSlices = coronalVoxel,
-//        sagittalVoxelSlices = sagittalVoxel,
+        intensity_max = p98,
+        intensity_min = p2,
     )
 }
 

@@ -1,7 +1,6 @@
 package org.thesis.project.Screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -343,7 +342,9 @@ fun imageGrid(
                                                     interfaceModel = interfaceModel,
                                                     modality = modality,
                                                     pixelSpacing = spacingPx,
-                                                    windowing = interfaceModel.imageController.getWindowingState(id)
+                                                    windowing = interfaceModel.imageController.getWindowingState(id),
+                                                    minIntensity = nifti.intensity_min,
+                                                    maxIntensity = nifti.intensity_max,
                                                 )
                                             }
                                         )
@@ -412,7 +413,9 @@ fun imageGrid(
                                                     interfaceModel = interfaceModel,
                                                     modality = modality,
                                                     pixelSpacing = spacingPx,
-                                                    windowing = interfaceModel.imageController.getWindowingState(id)
+                                                    windowing = interfaceModel.imageController.getWindowingState(id),
+                                                    minIntensity = nifti.intensity_min,
+                                                    maxIntensity = nifti.intensity_max
                                                 )
                                             }
                                         )
@@ -539,6 +542,15 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
 
     selectedData.forEach { data ->
         var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
+        val nifti = interfaceModel.niftiRepo.get(data)
+        val min = nifti?.intensity_min ?: 0f
+        val max = nifti?.intensity_max ?: 1f
+        val range = max - min
+        val centerRange = 1f..range
+        val widthRange = 1f..range
+
+        val windowingState = interfaceModel.imageController.getWindowingState(data).value
+
 
         standardCard(
             content = {
@@ -555,17 +567,17 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
 
                 scrollWithTitle(
                     title = "Window Center",
-                    value = interfaceModel.imageController.getWindowingState(data).value.center,//windowingState.value.center,
+                    value = windowingState.center,
                     onValueChange = { interfaceModel.imageController.setWindowingCenter(it, data) },
-                    valueRange = -1000f..1000f,
+                    valueRange = centerRange,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 scrollWithTitle(
                     title = "Window Width",
-                    value = interfaceModel.imageController.getWindowingState(data).value.width,
+                    value = windowingState.width,
                     onValueChange = { interfaceModel.imageController.setWindowingWidth(it, data) },
-                    valueRange = 1f..2500f,
+                    valueRange = widthRange,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

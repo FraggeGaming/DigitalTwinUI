@@ -176,7 +176,7 @@ class ImageController(private val scope: CoroutineScope) {
         val outOfBounds = clickX < 0 || clickX >= imageWidth || clickY < 0 || clickY >= imageHeight
         if (outOfBounds) return null
 
-        // 🔥 Undo the 90° counterclockwise rotation:
+        //Undo the 90° counterclockwise rotation:
         val originalX = imageHeight - clickY - 1
         val originalY = clickX
 
@@ -187,68 +187,6 @@ class ImageController(private val scope: CoroutineScope) {
         val voxelValue = voxelSlice.getFloat(originalX.toLong(), originalY.toLong())
 
         return VoxelData(originalX, originalY, position, voxelValue)
-    }
-
-    fun calculateDistance(
-        uiState: MutableState<VoxelImageUIState>,
-        position: Offset,
-        scaleFactor: Float,
-        bitmap: ImageBitmap,
-        pixelSpacing: Float,
-        voxelSlice: Array<Array<Float>>
-    ) {
-        val voxelData = getVoxelInfo(
-            position = position,
-            scaleFactor = scaleFactor,
-            imageWidth = bitmap.width,
-            imageHeight = bitmap.height,
-            voxelSlice = voxelSlice
-        )
-
-
-        voxelData?.let { data ->
-            val newPoint = Point(data.x, data.y)
-
-            // Update points based on current state
-            val updatedState = when {
-                uiState.value.point1 == null -> uiState.value.copy(point1 = newPoint)
-                uiState.value.point2 == null -> uiState.value.copy(point2 = newPoint)
-                else -> uiState.value.copy(point1 = newPoint, point2 = null)
-            }
-
-            // Recalculate distance if both points are set
-            val distance = if (updatedState.point1 != null && updatedState.point2 != null) {
-                calculateVoxelDistance(
-                    updatedState.point1,
-                    updatedState.point2,
-                    pixelSpacing,
-                    pixelSpacing
-                )
-            } else null
-
-            // Update the final state with the distance
-            uiState.value = updatedState.copy(distance = distance)
-        }
-    }
-
-
-    fun getVoxelInfo(
-        position: Offset,
-        scaleFactor: Float,
-        imageWidth: Int,
-        imageHeight: Int,
-        voxelSlice: Array<Array<Float>>
-    ): VoxelData? {
-        val x = floor(position.x / scaleFactor).toInt()
-        val y = floor(position.y / scaleFactor).toInt()
-
-        val outOfBounds = x < 0 || x >= imageWidth || y < 0 || y >= imageHeight
-        if (outOfBounds) return null
-
-        val voxelValue = voxelSlice.getOrNull(y)?.getOrNull(x) ?: 0f
-        //println("Voxel XY: ($x, $y) Value: $voxelValue")
-
-        return VoxelData(x, y, position, voxelValue)
     }
 
     data class VoxelData(val x: Int, val y: Int, val position: Offset, val voxelValue: Float)
@@ -279,7 +217,7 @@ class ImageController(private val scope: CoroutineScope) {
         "CT - Brain" to WindowingParams(40f, 80f),
         "CT - Lung" to WindowingParams(-600f, 1500f),
         "CT - Bone" to WindowingParams(300f, 1500f),
-        "PET SUV" to WindowingParams(2f, 5f)
+        "PET Raw" to WindowingParams(center = 500f, width = 1500f)
     )
 
     data class WindowingParams(

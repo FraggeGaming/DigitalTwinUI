@@ -69,6 +69,43 @@ class ModelRunner(
     }
 
 
+    fun fastPercentileEstimate(data: FloatArray, lowPercentile: Double = 0.02, highPercentile: Double = 0.98, bins: Int = 100): Pair<Float, Float> {
+        if (data.isEmpty()) return 0f to 1f
+
+        val min = data.minOrNull() ?: return 0f to 1f
+        val max = data.maxOrNull() ?: return 0f to 1f
+        if (min == max) return min to max
+
+        val histogram = IntArray(bins)
+        val binSize = (max - min) / bins
+
+        // Build histogram
+        for (v in data) {
+            val bin = ((v - min) / (max - min) * (bins - 1)).toInt().coerceIn(0, bins - 1)
+            histogram[bin]++
+        }
+
+        // Compute cumulative histogram
+        val cumulative = IntArray(bins)
+        histogram.foldIndexed(0) { i, acc, count ->
+            cumulative[i] = acc + count
+            acc + count
+        }
+
+        val total = cumulative.last()
+        val lowerCount = (lowPercentile * total).toInt()
+        val upperCount = (highPercentile * total).toInt()
+
+        // Find bins that correspond to 2nd and 98th percentiles
+        val pLowBin = cumulative.indexOfFirst { it >= lowerCount }
+        val pHighBin = cumulative.indexOfFirst { it >= upperCount }
+
+        val pLow = min + pLowBin * binSize
+        val pHigh = min + pHighBin * binSize
+
+        return pLow to pHigh
+    }
+
 
     fun loadMapping(mapping: List<NiftiDataSlim>): MutableList<String>{
         val data = mutableListOf<String>()
@@ -77,12 +114,10 @@ class ModelRunner(
             println(output)
             println(niftiRepo.get(output.id))
             if (niftiRepo.get(output.id) == null) {
-//                val volume = loadNpyVoxelVolume(output.npy_path)
                 val v = getNpy(output.npy_path)
-//                val axialVoxel = transformToAxialSlices(volume)
-//                val coronalVoxel = transformToCoronalSlices(volume)
-//                val sagittalVoxel = transformToSagittalSlices(volume)
 
+                val datasample = v.data().asFloat()
+                val (p2, p98) = fastPercentileEstimate(datasample)
 
                 val niftiData = NiftiData(
                     id = output.id,
@@ -93,9 +128,9 @@ class ModelRunner(
                     modality = output.modality,
                     region = output.region,
                     voxelVolume_ind = v,
-//                    voxelVolume = axialVoxel,
-//                    coronalVoxelSlices = coronalVoxel,
-//                    sagittalVoxelSlices = sagittalVoxel,
+                    intensity_max = p98,
+                    intensity_min = p2,
+
                     npy_path = output.npy_path,
                     gz_path = output.gz_path,
                     name = output.name,

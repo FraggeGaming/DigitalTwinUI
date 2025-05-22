@@ -6,13 +6,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
@@ -39,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import org.nd4j.linalg.api.ndarray.INDArray
+
 import org.thesis.project.Model.ImageController
 import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.Settings
@@ -56,10 +54,12 @@ fun  voxelImageDisplayInd(
     modality: String,
     pixelSpacing: Float = 1f,
     windowing: State<ImageController.WindowingParams>,
+    minIntensity: Float,
+    maxIntensity: Float,
 ) {
     val uiState = remember { mutableStateOf(VoxelImageUIState()) }
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
-    val bitmap = voxelSliceToBitmapFromINDArray(voxelSlice, windowing.value.center, windowing.value.width)
+    val bitmap = voxelSliceToBitmapFromINDArray(voxelSlice, windowing.value.center, windowing.value.width, minIntensity, maxIntensity, modality)
 
     var imageLayoutCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var boxCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
@@ -302,7 +302,10 @@ data class VoxelImageUIState(
 fun voxelSliceToBitmapFromINDArray(
     voxelSlice: INDArray,
     windowCenter: Float,
-    windowWidth: Float
+    windowWidth: Float,
+    minIntensity: Float,
+    maxIntensity: Float,
+    modality: String
 ): ImageBitmap {
     val shape = voxelSlice.shape()
     val originalWidth = shape[0].toInt()
@@ -312,16 +315,21 @@ fun voxelSliceToBitmapFromINDArray(
     val rotatedHeight = originalWidth
 
     val bufferedImage = BufferedImage(rotatedWidth, rotatedHeight, BufferedImage.TYPE_BYTE_GRAY)
+    val windowMin = windowCenter - windowWidth / 2
+    val windowMax = windowCenter + windowWidth / 2
 
-    val minIntensity = windowCenter - windowWidth / 2
-    val maxIntensity = windowCenter + windowWidth / 2
+    val rawRange = maxIntensity - minIntensity
+    val windowScale = windowWidth / rawRange
+
 
     for (x in 0 until originalWidth) {
         for (y in 0 until originalHeight) {
-            var value = voxelSlice.getFloat(x.toLong(), y.toLong())
+            val raw = voxelSlice.getFloat(x.toLong(), y.toLong())
 
-            value = ((value - minIntensity) / (maxIntensity - minIntensity)).coerceIn(0f, 1f)
-            val pixel = (value * 255).toInt()
+            val normalized = ((raw - windowMin) / (windowMax - windowMin)).coerceIn(0f, 1f)
+
+
+            val pixel = (normalized * 255).toInt()
 
             val rgb = (pixel shl 16) or (pixel shl 8) or pixel
 
@@ -331,48 +339,6 @@ fun voxelSliceToBitmapFromINDArray(
     }
 
     return bufferedImage.toComposeImageBitmap()
-}
-
-fun voxelSliceToBitmap(
-    slice: Array<Array<Float>>,
-    windowCenter: Float,
-    windowWidth: Float
-): ImageBitmap {
-    val height = slice.size
-    val width = slice[0].size
-
-    val windowMin = windowCenter - windowWidth / 2f
-    val windowMax = windowCenter + windowWidth / 2f
-    val windowRange = windowMax - windowMin
-
-    // Flatten and find min/max
-    val allValues = slice.flatten()
-    val min = allValues.minOrNull() ?: 0f
-    val max = allValues.maxOrNull() ?: 1f
-    val range = (max - min).takeIf { it != 0f } ?: 1f
-
-    // Create BufferedImage (grayscale)
-    val image = BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY)
-    val raster = image.raster
-
-    for (y in 0 until height) {
-        for (x in 0 until width) {
-            val pixel = applyWindowing(slice[y][x], windowCenter,windowWidth)
-            raster.setSample(x, y, 0, pixel)
-        }
-    }
-
-    return image.toComposeImageBitmap()
-}
-
-fun applyWindowing(value: Float, center: Float, width: Float): Int {
-    val min = center - width / 2f
-    val max = center + width / 2f
-    return when {
-        value <= min -> 0
-        value >= max -> 255
-        else -> (((value - min) / width) * 255f).roundToInt().coerceIn(0, 255)
-    }
 }
 
 
