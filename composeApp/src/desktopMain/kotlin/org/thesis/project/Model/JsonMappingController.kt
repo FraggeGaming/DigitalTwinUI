@@ -9,7 +9,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
-class JsonMappingController {
+class JsonMappingController(savedMappingPath: File) {
     private val _mappings = MutableStateFlow<List<FileMappingFull>>(emptyList())
     val mappings: StateFlow<List<FileMappingFull>> = _mappings.asStateFlow()
 
@@ -25,7 +25,7 @@ class JsonMappingController {
             }
         }
     }
-    private val mappingFile = File(PathStrings.SAVED_MAPPING.toString())
+    private val mappingFile = savedMappingPath
     private val json = Json { prettyPrint = true }
 
     fun loadMappings() {

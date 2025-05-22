@@ -14,6 +14,7 @@ import java.nio.file.Paths
 import java.util.*
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+import java.io.File
 
 
 enum class NiftiView(val displayName: String) {
@@ -30,14 +31,12 @@ enum class Settings(val settingName: String) {
 
     override fun toString(): String = settingName
 }
-
 enum class PathStrings(val path: String) {
-    OUTPUT_PATH_GZ("src/desktopMain/resources/output_gz"),
-    OUTPUT_PATH_NPY("src/desktopMain/resources/output_npy"),
-    INPUT_PATH_GZ("src/desktopMain/resources/input_gz"),
-    //PREV_VIEWED_PATH("src/desktopMain/resources/prev_view.xml"),
-    SAVED_MAPPING("src/desktopMain/resources/saved_mapping.txt"),
-    SERVER_IP("http://localhost:8000");
+    OUTPUT_PATH_GZ("external/output_gz"),
+    OUTPUT_PATH_NPY("external/output_npy"),
+    INPUT_PATH_GZ("external/input_gz"),
+    SAVED_MAPPING("external/saved_mapping.txt"),
+    CONFIG_FILE("external/config.properties");
 
     override fun toString(): String = path
 }
@@ -131,14 +130,66 @@ data class FileMappingFull(
     val outputs: List<NiftiDataSlim>
 )
 
+object Config {
+    var serverIp: String = "http://localhost:8000" // default
+
+    fun load(baseDir: File) {
+        val configFile = File(baseDir, PathStrings.CONFIG_FILE.path)
+        if (!configFile.exists()) {
+            configFile.parentFile.mkdirs()
+            configFile.writeText(
+                """
+                # App Configuration
+                server_ip=http://localhost:8000
+                """.trimIndent()
+            )
+            println("Created default config at: ${configFile.absolutePath}")
+        }
+
+        val props = Properties()
+        props.load(configFile.inputStream())
+        serverIp = props.getProperty("server_ip") ?: serverIp
+        println("Loaded server IP: $serverIp")
+    }
+}
+
 
 class InterfaceModel : ViewModel() {
+
+    val baseDir: File get() = File(System.getProperty("user.dir"))
+
+    init {
+        resolvePath(PathStrings.OUTPUT_PATH_GZ)
+        resolvePath(PathStrings.OUTPUT_PATH_NPY)
+        resolvePath(PathStrings.INPUT_PATH_GZ)
+        resolvePath(PathStrings.SAVED_MAPPING)
+
+        Config.load(baseDir)
+    }
+
+    fun resolvePath(path: PathStrings): File {
+        val file = File(baseDir, path.path)
+
+        val shouldCreateDir = !file.exists() && !path.path.endsWith(".txt")
+
+        if (shouldCreateDir) {
+            file.mkdirs()
+            println("Created directory: ${file.absolutePath}")
+        } else if (!file.exists() && file.parentFile != null) {
+            file.parentFile.mkdirs()
+            println("Created parent directory: ${file.parentFile.absolutePath}")
+        }
+
+        return file
+    }
+
     val imageController = ImageController(viewModelScope)
-    val niftiRepo = NiftiRepo(imageController)
-    val fileUploader = FileUploadController(niftiRepo)
+    val niftiRepo = NiftiRepo(imageController, resolvePath(PathStrings.SAVED_MAPPING))
+    val fileUploader = FileUploadController(niftiRepo, resolvePath(PathStrings.OUTPUT_PATH_NPY), baseDir)
     val panelLayout = PanelLayoutController()
 
-    val modelRunner = ModelRunner(niftiRepo, fileUploader)
+    val modelRunner = ModelRunner(niftiRepo, fileUploader, resolvePath(PathStrings.OUTPUT_PATH_GZ), resolvePath(PathStrings.INPUT_PATH_GZ))
+
 
 
 
@@ -155,18 +206,21 @@ class InterfaceModel : ViewModel() {
     val modalities: StateFlow<List<String>> = _modalities
 
     fun resetRegionsAndModalities() {
+        Config.load(baseDir)
         _regions.value = listOf()
         _modalities.value = listOf()
     }
 
+
+
     suspend fun fetchRegions() = coroutineScope{
-        val regions = fetchAvailableRegions(PathStrings.SERVER_IP.toString())
+        val regions = fetchAvailableRegions(Config.serverIp)
         println("regions: $regions")
         _regions.value = regions ?: listOf("Head", "Lung", "Total Body")
     }
 
     suspend fun fetchModalities() = coroutineScope{
-        val modalities = fetchAvailableModalities(PathStrings.SERVER_IP.toString())
+        val modalities = fetchAvailableModalities(Config.serverIp)
         _modalities.value = modalities ?: listOf("CT", "PET", "MRI")
     }
 
@@ -185,50 +239,26 @@ class InterfaceModel : ViewModel() {
         }
     }
 
-    private fun establishFolderIntegrity() {
-        PathStrings.entries.forEach { pathString ->
-            val path = pathString.path
-
-            if (path.startsWith("http")) {
-                // Skip server URLs
-                return@forEach
-            }
-
-            val file = Paths.get(path).toFile()
-
-            if (path.endsWith(".txt")) {
-                // It's a text file: ensure parent folder exists, then create empty file if missing
-                file.parentFile?.mkdirs()
-                if (!file.exists()) {
-                    println("Creating missing file: ${file.absolutePath}")
-                    file.createNewFile()
-                }
-            } else {
-                // It's a directory: create directory if missing
-                if (!file.exists()) {
-                    println("Creating missing directory: ${file.absolutePath}")
-                    file.mkdirs()
-                }
-            }
-        }
-    }
-
     private val _shouldRunModel = MutableStateFlow(false)
 
     fun triggerModelRun() {
         _shouldRunModel.value = true
     }
 
-    fun runModelIfTriggered() {
+    fun runModelIfTriggered(): Boolean {
         if (_shouldRunModel.value) {
             _shouldRunModel.value = false
             viewModelScope.launch {
-                establishFolderIntegrity()
+                //establishFolderIntegrity()
                 withContext(Dispatchers.IO) {
                     modelRunner.runModel()
                 }
             }
+
+            return true
         }
+
+        return false
     }
 
     private val _infoMode = MutableStateFlow(false)

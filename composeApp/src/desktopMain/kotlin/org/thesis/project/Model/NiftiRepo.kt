@@ -4,20 +4,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.factory.Nd4j
+import java.io.File
 
-class NiftiRepo(imageController: ImageController) {
+class NiftiRepo(val imageController: ImageController, savedMappingPath: File) {
     //Stores the niftiData by Filename
     private val _niftiImages = MutableStateFlow<Map<String, NiftiData>>(emptyMap())
     val niftiImages: StateFlow<Map<String, NiftiData>> = _niftiImages
-    val jsonMapper = JsonMappingController()
-    val imageController = imageController
+    val jsonMapper = JsonMappingController(savedMappingPath)
 
     fun store(id: String, data: NiftiData) {
         _niftiImages.update { currentMap ->
             currentMap + (id to data)
             //filename to NiftiData
         }
+        imageController.updateSelectedData(id, true)
+
+
     }
     fun get(id: String): NiftiData? {
         val niftiData = _niftiImages.value[id] ?: return null

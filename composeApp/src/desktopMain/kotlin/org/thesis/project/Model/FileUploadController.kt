@@ -9,12 +9,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import parseNiftiImages
 import runNiftiParser
+import java.io.File
 import java.nio.file.Paths
 
 
 
-class FileUploadController(private val niftiRepo: NiftiRepo) {
-
+class FileUploadController(private val niftiRepo: NiftiRepo, resolvePath: File, nifti_parser_base_dir: File) {
+    val output_path_npy = resolvePath
+    val nifti_parser_base_dir = nifti_parser_base_dir
     private val _uploadedFileMetadata = MutableStateFlow<List<UploadFileMetadata>>(emptyList())
     val uploadedFileMetadata: StateFlow<List<UploadFileMetadata>> = _uploadedFileMetadata.asStateFlow()
 
@@ -45,8 +47,17 @@ class FileUploadController(private val niftiRepo: NiftiRepo) {
     private val json = Json { ignoreUnknownKeys = true }
     suspend fun loadNifti(niftiStorage: UploadFileMetadata): NiftiData = withContext(Dispatchers.IO) {
 
-        val outPath_npy = Paths.get(PathStrings.OUTPUT_PATH_NPY.toString())
-        val outputJson = runNiftiParser(niftiStorage.filePath, outPath_npy.toAbsolutePath().toString())
+        val osName = System.getProperty("os.name").lowercase()
+
+
+        val exePath = when {
+            osName.contains("win") -> File(nifti_parser_base_dir, "external/nifti_visualize_windows/nifti_visualize.exe")
+            osName.contains("mac") -> File(nifti_parser_base_dir, "external/nifti_visualize_macos/nifti_visualize_macos")
+            osName.contains("nix") || osName.contains("nux") -> File(nifti_parser_base_dir, "external/nifti_visualize_linux/nifti_visualize_linux")
+            else -> throw UnsupportedOperationException("Unsupported OS: $osName")
+        }
+
+        val outputJson = runNiftiParser(niftiStorage.filePath, output_path_npy.toString(), exePath.toString())
 
         val meta = json.decodeFromString<NiftiMeta>(outputJson)
         val niftiData = parseNiftiImages(meta, niftiStorage)

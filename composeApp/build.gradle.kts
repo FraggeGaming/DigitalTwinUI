@@ -1,5 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
+import org.gradle.internal.os.OperatingSystem
 
 plugins {
     kotlin("plugin.serialization")
@@ -10,8 +11,18 @@ plugins {
 
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 kotlin {
-    jvm("desktop")
+    jvm("desktop") {
+        compilations.all {
+            kotlinOptions.jvmTarget = "17"
+        }
+    }
     
     sourceSets {
         val desktopMain by getting
@@ -56,30 +67,74 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.thesis.project"
+            packageName = "DeepTwin"
             packageVersion = "1.0.0"
         }
     }
 }
 
 tasks.register<Jar>("fatJar") {
+    group = "build"
+    description = "Assembles a fat JAR for the Compose Desktop application."
+
     archiveBaseName.set("composeApp-desktop-fat")
+    archiveVersion.set("1.0.0")
     manifest {
         attributes["Main-Class"] = "org.thesis.project.MainKt"
     }
 
-    val desktopTarget = kotlin.targets.getByName("desktop") as KotlinJvmTarget
-    val compileTask = tasks.named(desktopTarget.compilations["main"].compileKotlinTaskName)
-    dependsOn(compileTask)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    from(desktopTarget.compilations["main"].output)
+    val desktopMain = kotlin.targets.getByName("desktop") as KotlinJvmTarget
+    from(desktopMain.compilations["main"].output)
 
     val runtimeClasspath = configurations.getByName("desktopRuntimeClasspath")
-    dependsOn(runtimeClasspath)
-
     from({
-        runtimeClasspath
-            .filter { it.name.endsWith("jar") }
-            .map { zipTree(it) }
+        runtimeClasspath.filter { it.name.endsWith("jar") }.map { zipTree(it) }
     })
+
+    dependsOn("desktopMainClasses")
 }
+
+
+val os = OperatingSystem.current()
+
+val platformFolder = when {
+    os.isWindows -> "nifti_visualize_windows"
+    os.isLinux -> "nifti_visualize_linux"
+    os.isMacOsX -> "nifti_visualize_macos"
+    else -> throw GradleException("Unsupported OS: ${os.name}")
+}
+
+tasks.register<Copy>("copyExecutablesToJarDir") {
+    from("${project.projectDir}/external/$platformFolder")
+    into("$buildDir/compose/jars/external/$platformFolder")
+}
+
+afterEvaluate {
+    listOf(
+        "packageUberJarForCurrentOS",
+        "packageReleaseUberJarForCurrentOS",
+        "packageReleaseMsi",
+        "packageReleaseDmg",
+        "packageReleaseDeb"
+    ).forEach { taskName ->
+        tasks.findByName(taskName)?.dependsOn("copyExecutablesToJarDir")
+    }
+}
+
+tasks.register("packageAll") {
+    dependsOn(
+        "packageReleaseDmg",
+        "packageReleaseMsi",
+        "packageReleaseDeb"
+    )
+}
+
+
+
+
+
+
+
+

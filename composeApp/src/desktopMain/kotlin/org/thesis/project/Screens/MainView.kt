@@ -28,6 +28,7 @@ import org.thesis.project.Model.Settings
 import org.thesis.project.TooltipManager
 import androidx.compose.material3.LinearProgressIndicator
 import cardMenu2
+import kotlinx.coroutines.launch
 
 @Composable
 fun imageViewer(
@@ -42,111 +43,125 @@ fun imageViewer(
     val selectedSettings by interfaceModel.selectedSettings.collectAsState()
     val fileMapping by interfaceModel.niftiRepo.fileMapping.collectAsState()
     val infoMode = interfaceModel.infoMode.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
 
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) {
 
-    LaunchedEffect(Unit) {
-        interfaceModel.runModelIfTriggered()
-        interfaceModel.setInfoMode(false)
-        TooltipManager.clearAll()
-        interfaceModel.imageController.updateSelectedViews(NiftiView.AXIAL, true)
-    }
+        LaunchedEffect(Unit) {
 
-    MainPanelLayout(
-        leftPanelWidth = leftPanelWidth,
-        leftPanelExpanded = leftPanelExpanded,
-        rightPanelWidth = rightPanelWidth,
-        rightPanelExpanded = rightPanelExpanded,
-        toggleLeftPanel = { interfaceModel.panelLayout.toggleLeftPanelExpanded() },
-        toggleRightPanel = { interfaceModel.panelLayout.toggleRightPanelExpanded() },
-        interfaceModel = interfaceModel,
+            interfaceModel.setInfoMode(false)
+            TooltipManager.clearAll()
 
-        leftContent = {
-
-            ComponentInfoBox(
-                id = "cardMenu",
-                infoMode,
-                infoText =
-                    "This section displays the loaded NIfTI files. Use the checkboxes to pick what files to visualize",
-                content = {
-                    cardMenu2(
-                        fileKeys = fileMapping.keys.toList(),
-                        selectedData = selectedData,
-                        getFileMapping = interfaceModel.niftiRepo::getFileMapping,
-                        onCheckboxChanged = { label, isChecked ->
-                            interfaceModel.imageController.updateSelectedData(label, isChecked)
-                        },
-                        interfaceModel = interfaceModel
-                    )
-                },
-                enabled = true,
-                arrowDirection = TooltipArrowDirection.Left
-            )
-
-            runningModelsList(
-                interfaceModel
-            )
-        },
-        centerContent = {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    val event = awaitPointerEvent()
-                                    if (event.type == PointerEventType.Scroll) {
-                                        val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
-                                        if (scrollDelta.y > 0f) {
-                                            interfaceModel.imageController.decrementScrollPosition()
-                                        } else if (scrollDelta.y < 0f) {
-                                            interfaceModel.imageController.incrementScrollPosition()
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-
-                    imageGrid(selectedData, selectedViews, interfaceModel)
+            val shouldInformState = interfaceModel.runModelIfTriggered()
+            if (shouldInformState){
+                scope.launch {
+                    snackbarHostState.showSnackbar("Loading images... Please wait")
                 }
+            }
+
+            interfaceModel.imageController.updateSelectedViews(NiftiView.AXIAL, true)
+        }
+
+        MainPanelLayout(
+            leftPanelWidth = leftPanelWidth,
+            leftPanelExpanded = leftPanelExpanded,
+            rightPanelWidth = rightPanelWidth,
+            rightPanelExpanded = rightPanelExpanded,
+            toggleLeftPanel = { interfaceModel.panelLayout.toggleLeftPanelExpanded() },
+            toggleRightPanel = { interfaceModel.panelLayout.toggleRightPanelExpanded() },
+            interfaceModel = interfaceModel,
+
+            leftContent = {
 
                 ComponentInfoBox(
-                    id = "menuCard",
+                    id = "cardMenu",
                     infoMode,
                     infoText =
-                        "This is the menu toolbar, where you can pick what axis to view and measure lesions and se pixel values",
+                        "This section displays the loaded NIfTI files. Use the checkboxes to pick what files to visualize",
                     content = {
-                        menuCard(
-                            selectedViews = selectedViews,
-                            interfaceModel = interfaceModel,
-                            selectedSettings = selectedSettings,
+                        cardMenu2(
+                            fileKeys = fileMapping.keys.toList(),
+                            selectedData = selectedData,
+                            getFileMapping = interfaceModel.niftiRepo::getFileMapping,
+                            onCheckboxChanged = { label, isChecked ->
+                                interfaceModel.imageController.updateSelectedData(label, isChecked)
+                            },
+                            interfaceModel = interfaceModel
                         )
                     },
                     enabled = true,
-                    arrowDirection = TooltipArrowDirection.Bottom
+                    arrowDirection = TooltipArrowDirection.Left
                 )
 
+                runningModelsList(
+                    interfaceModel
+                )
+            },
+            centerContent = {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val event = awaitPointerEvent()
+                                        if (event.type == PointerEventType.Scroll) {
+                                            val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
+                                            if (scrollDelta.y > 0f) {
+                                                interfaceModel.imageController.decrementScrollPosition()
+                                            } else if (scrollDelta.y < 0f) {
+                                                interfaceModel.imageController.incrementScrollPosition()
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        imageGrid(selectedData, selectedViews, interfaceModel)
+                    }
+
+                    ComponentInfoBox(
+                        id = "menuCard",
+                        infoMode,
+                        infoText =
+                            "This is the menu toolbar, where you can pick what axis to view and measure lesions and se pixel values",
+                        content = {
+                            menuCard(
+                                selectedViews = selectedViews,
+                                interfaceModel = interfaceModel,
+                                selectedSettings = selectedSettings,
+                            )
+                        },
+                        enabled = true,
+                        arrowDirection = TooltipArrowDirection.Bottom
+                    )
+
+                }
+            },
+            rightContent = {
+                scrollSlider(
+                    selectedData = interfaceModel.imageController.selectedData,
+                    scrollStep = interfaceModel.imageController.scrollStep,
+                    maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
+                    onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } //fix this bug
+                )
+
+                windowControls(selectedData, interfaceModel)
+
             }
-        },
-        rightContent = {
-            scrollSlider(
-                selectedData = interfaceModel.imageController.selectedData,
-                scrollStep = interfaceModel.imageController.scrollStep,
-                maxIndexMap = interfaceModel.imageController.maxSelectedImageIndex,
-                onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } //fix this bug
-            )
-
-            windowControls(selectedData, interfaceModel)
-
-        }
-    )
+        )
+    }
 }
 
 @Composable
@@ -270,21 +285,21 @@ fun imageGrid(
         ) {
 
 
-            if (selectedData.size * selectedViews.size < 4){
+            if (selectedData.size * selectedViews.size < 4) {
 
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            selectedData.forEach { id ->
-                                selectedViews.forEach { selectedView ->
+                        selectedData.forEach { id ->
+                            selectedViews.forEach { selectedView ->
                                 val nifti = interfaceModel.niftiRepo.get(id)
                                 if (nifti != null) {
                                     //println("Fetched nifti $nifti, With id : ${id}")
@@ -339,8 +354,7 @@ fun imageGrid(
                         }
                     }
                 }
-            }
-            else{
+            } else {
                 selectedData.forEach { id ->
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -410,7 +424,6 @@ fun imageGrid(
                     }
                 }
             }
-
 
 
         }
@@ -526,7 +539,6 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
 
     selectedData.forEach { data ->
         var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
-        val windowingState = interfaceModel.imageController.getWindowingState(data)
 
         standardCard(
             content = {

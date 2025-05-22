@@ -291,13 +291,13 @@ class ImageController(private val scope: CoroutineScope) {
 
     fun getWindowingState(data: String): State<WindowingParams> {
         return windowingMap.getOrPut(data) {
-            mutableStateOf(WindowingParams(40f, 80f))
+            mutableStateOf(WindowingParams(40f, 1000f))
         }
     }
 
     private fun getWindowingMutableState(data: String): MutableState<WindowingParams> {
         return windowingMap.getOrPut(data) {
-            mutableStateOf(WindowingParams(40f, 80f))
+            mutableStateOf(WindowingParams(40f, 1000f))
         }
     }
 

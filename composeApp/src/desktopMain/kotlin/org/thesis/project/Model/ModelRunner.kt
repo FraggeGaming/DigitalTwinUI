@@ -23,7 +23,9 @@ import java.util.concurrent.TimeUnit
 
 class ModelRunner(
     private val niftiRepo: NiftiRepo,
-    private val fileUploader: FileUploadController
+    private val fileUploader: FileUploadController,
+    private val output_path_gz: File,
+    private val input_path_gz: File,
 ) {
 
     val client = OkHttpClient.Builder()
@@ -55,9 +57,11 @@ class ModelRunner(
 //        progressFlows["dummy_job"] = dummyProgressFlow
 //    }
 
+
+
     suspend fun fetchMLModels(metadata: UploadFileMetadata) = coroutineScope {
         _hasFetchedModels.value = false
-        val models = fetchAvailableModels(PathStrings.SERVER_IP.toString(), metadata)
+        val models = fetchAvailableModels(Config.serverIp, metadata)
         if (models != null) {
             _mLModels.value = models
             _hasFetchedModels.value = true
@@ -114,6 +118,7 @@ class ModelRunner(
     }
 
     suspend fun runModel() = coroutineScope {
+
 
         val mappings = niftiRepo.jsonMapper.selectedMappings.value.toList()
 
@@ -205,7 +210,7 @@ class ModelRunner(
                     )
                     progressFlows[title] = newProgressFlow
 
-                    val returnedNifti = sendNiftiToServer(file, PathStrings.SERVER_IP.toString(), newProgressFlow, client, progressKillFlows)
+                    val returnedNifti = sendNiftiToServer(file, Config.serverIp, newProgressFlow, client, progressKillFlows, output_path_gz )
                     println(progressFlows[title])
                     returnedNifti?.let {
 
@@ -292,10 +297,10 @@ class ModelRunner(
             fileName + "_$name"
         }
 
-        val targetDir = Paths.get(PathStrings.INPUT_PATH_GZ.path)
-        Files.createDirectories(targetDir)
+        Files.createDirectories(input_path_gz.toPath())
 
-        val newPath = targetDir.resolve(newFileName)
+
+        val newPath = input_path_gz.toPath().resolve(newFileName)
 
         return try {
             Files.copy(path, newPath, StandardCopyOption.REPLACE_EXISTING)

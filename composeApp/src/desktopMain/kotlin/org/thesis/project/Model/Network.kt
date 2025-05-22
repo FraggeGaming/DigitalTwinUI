@@ -22,9 +22,12 @@ suspend fun sendNiftiToServer(
     serverUrl: String,
     progressFlow: MutableStateFlow<Progress>,
     client: OkHttpClient,
-    progressKillFlows: SnapshotStateMap<String, MutableStateFlow<Progress>>
+    progressKillFlows: SnapshotStateMap<String, MutableStateFlow<Progress>>,
+    outPutDir: File
 ): File? = withContext(Dispatchers.IO) {
     try {
+
+
         val niftiFile = File(metadata.filePath)
         val jsonMetadata = Json.encodeToString(metadata)
 
@@ -72,7 +75,7 @@ suspend fun sendNiftiToServer(
                 println("Updated progress: $updated")
                 if (updated.finished) {
                     println("Model finished, downloading output...")
-                    nifti = downloadResult(metadata.title, serverUrl, client)
+                    nifti = downloadResult(metadata.title, serverUrl, client, outPutDir)
                     finished = true
                 }
                 else if (updated.error){
@@ -93,7 +96,7 @@ suspend fun sendNiftiToServer(
     }
 }
 
-fun downloadResult(jobId: String, serverUrl: String, client: OkHttpClient): File? {
+fun downloadResult(jobId: String, serverUrl: String, client: OkHttpClient, outPutDir: File): File? {
     try {
 
         val downloadRequest = Request.Builder()
@@ -106,11 +109,13 @@ fun downloadResult(jobId: String, serverUrl: String, client: OkHttpClient): File
                 return null
             }
 
-            val outputDir = Paths.get(PathStrings.OUTPUT_PATH_GZ.toString()).toFile()
-            outputDir.mkdirs()
+
+
+
+            if (!outPutDir.exists()) outPutDir.mkdirs()
 
             val returnedFileName = "generated_${jobId}.nii.gz"
-            val returnedFile = File(outputDir, returnedFileName)
+            val returnedFile = File(outPutDir, returnedFileName)
 
             downloadResponse.body?.byteStream()?.use { input ->
                 returnedFile.outputStream().use { output ->
@@ -132,7 +137,7 @@ fun downloadResult(jobId: String, serverUrl: String, client: OkHttpClient): File
 fun cancelRunningInference(jobId: String, client: OkHttpClient) {
     CoroutineScope(Dispatchers.IO).launch {
         val request = Request.Builder()
-            .url("${PathStrings.SERVER_IP}/cancel/$jobId")
+            .url("${Config.serverIp}/cancel/$jobId")
             .post("".toRequestBody())
             .build()
 
