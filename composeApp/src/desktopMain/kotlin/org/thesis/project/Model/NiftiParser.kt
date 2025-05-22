@@ -16,11 +16,21 @@ fun runNiftiParser(niftiPath: String, outputDir: String, exePath: String): Strin
     println("Input NIfTI: $niftiPath")
     println("Output Dir: $outputDir")
 
-
-
+    if (!System.getProperty("os.name").startsWith("Windows")) {
+        val chmodProcess = ProcessBuilder("chmod", "+x", exePath)
+            .inheritIO()
+            .start()
+        val chmodExit = chmodProcess.waitFor()
+        if (chmodExit != 0) {
+            throw RuntimeException("chmod +x failed on $exePath")
+        }
+    }
     val process = ProcessBuilder(exePath.toString(), niftiPath, outputDir)
         .redirectErrorStream(true)
         .start()
+
+
+
 
     val output = process.inputStream.bufferedReader().readText()
     val exitCode = process.waitFor()
