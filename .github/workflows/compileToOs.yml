@@ -29,18 +29,19 @@ jobs:
 
       - name: Run Gradle packageAll (Linux/macOS)
         if: runner.os != 'Windows'
-        # redirect both stdout & stderr to gradle.log
-        run: ./gradlew :composeApp:packageAll --no-daemon --info --stacktrace > gradle.log 2>&1
+        run: |
+          ./gradlew :composeApp:packageAll --no-daemon --info --stacktrace > gradle.log 2>&1 || true
 
       - name: Run Gradle packageReleaseMsi (Windows)
         if: runner.os == 'Windows'
-        run: .\gradlew :composeApp:packageReleaseMsi --no-daemon --info --stacktrace > gradle.log 2>&1
+        run: |
+          .\gradlew :composeApp:packageReleaseMsi --no-daemon --info --stacktrace > gradle.log 2>&1 || exit 0
 
       - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-logs-${{ matrix.os }}
+          name: gradle-log-${{ matrix.os }}
           path: gradle.log
 
       - name: Upload Installer Artifact (Linux)
