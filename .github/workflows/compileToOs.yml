@@ -44,9 +44,10 @@ jobs:
       # Package for Windows (.msi)
       - name: Package .msi (Windows)
         if: runner.os == 'Windows'
+        shell: bash
         run: |
-          .\gradlew :composeApp:packageReleaseMsi \
-            --no-daemon --info --stacktrace > gradle.log 2>&1 || exit 0
+          ./gradlew :composeApp:packageReleaseMsi --no-daemon --info --stacktrace > gradle.log 2>&1 || true
+
 
       # Always upload the Gradle log
       - name: Upload build logs
