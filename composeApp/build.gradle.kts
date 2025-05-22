@@ -1,14 +1,12 @@
+import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
-import org.gradle.internal.os.OperatingSystem
 
 plugins {
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.compose")
+    kotlin("multiplatform")
     kotlin("plugin.serialization")
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
-
-
 }
 
 java {
@@ -47,8 +45,7 @@ kotlin {
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
-            implementation("org.jetbrains.compose.material3:material3:1.7.0")
-
+            implementation(compose.material3)
 
             //implementation("org.jetbrains.compose.material3:material3:1.6.0")
 

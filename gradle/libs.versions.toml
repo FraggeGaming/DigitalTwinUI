@@ -1,27 +1,14 @@
 [versions]
-androidx-lifecycle = "2.8.4"
-compose-multiplatform = "1.7.0"
-junit = "4.13.2"
 kotlin = "2.1.0"
+compose-multiplatform = "1.8.1"
 kotlinx-coroutines = "1.10.1"
-ui-graphics-android = "1.7.8"
-foundation-android = "1.7.8"
-ui-unit-android = "1.7.8"
-compose-testing = "1.0.0-alpha03"
+androidx-lifecycle = "2.8.4"
 
 [libraries]
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
-junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
-androidx-ui-graphics-android = { group = "androidx.compose.ui", name = "ui-graphics-android", version.ref = "ui-graphics-android" }
-androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundation-android" }
-androidx-ui-unit-android = { group = "androidx.compose.ui", name = "ui-unit-android", version.ref = "ui-unit-android" }
-androidx-compose-testing = { group = "androidx.xr.compose", name = "compose-testing", version.ref = "compose-testing" }
 
 [plugins]
-composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
-composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
