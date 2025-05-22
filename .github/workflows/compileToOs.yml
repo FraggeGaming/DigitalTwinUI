@@ -37,21 +37,21 @@ jobs:
 
       - name: Upload Installer Artifact (Linux)
         if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: deb-installer
           path: composeApp/build/compose/binaries/main/deb/*.deb
 
       - name: Upload Installer Artifact (macOS)
         if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dmg-installer
           path: composeApp/build/compose/binaries/main/dmg/*.dmg
 
       - name: Upload Installer Artifact (Windows)
         if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: msi-installer
           path: composeApp/build/compose/binaries/main/msi/*.msi
