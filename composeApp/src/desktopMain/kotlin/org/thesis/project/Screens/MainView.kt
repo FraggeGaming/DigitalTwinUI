@@ -546,8 +546,9 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
         val min = nifti?.intensity_min ?: 0f
         val max = nifti?.intensity_max ?: 1f
         val range = max - min
-        val centerRange = 1f..range
-        val widthRange = 1f..range
+        val centerRange = min..range
+        val widthRange = min..range
+
 
         val windowingState = interfaceModel.imageController.getWindowingState(data).value
 

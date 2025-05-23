@@ -39,7 +39,7 @@ fun runNiftiParser(niftiPath: String, outputDir: String, exePath: String): Strin
     return output
 }
 
-fun fastPercentileEstimate(data: FloatArray, lowPercentile: Double = 0.02, highPercentile: Double = 0.98, bins: Int = 100): Pair<Float, Float> {
+fun fastPercentileEstimate(data: FloatArray, lowPercentile: Double = 0.02, highPercentile: Double = 0.98, bins: Int = 300): Pair<Float, Float> {
     if (data.isEmpty()) return 0f to 1f
 
     val min = data.minOrNull() ?: return 0f to 1f
@@ -80,8 +80,11 @@ fun parseNiftiImages(meta: NiftiMeta, metaData: UploadFileMetadata): NiftiData {
 
     val v = getNpy(meta.npy_path)
 
-    val data = v.data().asFloat()
-    val (p2, p98) = fastPercentileEstimate(data)
+//    val data = v.data().asFloat()
+//    val sampled = data.toList().shuffled().take(100_000).sorted()
+//    val minVal = sampled[(0.02 * sampled.size).toInt()]
+//    val maxVal = sampled[(0.98 * sampled.size).toInt()]
+    //val (p2, p98) = fastPercentileEstimate(data)
     return NiftiData(
         width = meta.width,
         height = meta.height,
@@ -90,8 +93,8 @@ fun parseNiftiImages(meta: NiftiMeta, metaData: UploadFileMetadata): NiftiData {
         modality = metaData.modality,
         region = metaData.region,
         voxelVolume_ind = v,
-        intensity_max = p98,
-        intensity_min = p2,
+        intensity_max = v.maxNumber().toFloat(),
+        intensity_min = v.minNumber().toFloat(),
     )
 }
 

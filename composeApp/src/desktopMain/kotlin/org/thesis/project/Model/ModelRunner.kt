@@ -116,8 +116,9 @@ class ModelRunner(
             if (niftiRepo.get(output.id) == null) {
                 val v = getNpy(output.npy_path)
 
-                val datasample = v.data().asFloat()
-                val (p2, p98) = fastPercentileEstimate(datasample)
+//                val datasample = v.data().asFloat()
+//                val (p2, p98) = fastPercentileEstimate(datasample)
+
 
                 val niftiData = NiftiData(
                     id = output.id,
@@ -128,8 +129,8 @@ class ModelRunner(
                     modality = output.modality,
                     region = output.region,
                     voxelVolume_ind = v,
-                    intensity_max = p98,
-                    intensity_min = p2,
+                    intensity_max = v.maxNumber().toFloat(),
+                    intensity_min = v.minNumber().toFloat(),
 
                     npy_path = output.npy_path,
                     gz_path = output.gz_path,
