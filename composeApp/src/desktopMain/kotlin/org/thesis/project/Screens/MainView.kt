@@ -29,6 +29,9 @@ import androidx.compose.material3.LinearProgressIndicator
 import cardMenu2
 import kotlinx.coroutines.launch
 
+/**
+ * Main component for displaying the nifti files
+ * */
 @Composable
 fun imageViewer(
     interfaceModel: InterfaceModel
@@ -45,13 +48,13 @@ fun imageViewer(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-
+    //for popup updates
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) {
 
+        //When rendered
         LaunchedEffect(Unit) {
-
             interfaceModel.setInfoMode(false)
             TooltipManager.clearAll()
 
@@ -61,7 +64,7 @@ fun imageViewer(
                     snackbarHostState.showSnackbar("Loading images... Please wait")
                 }
             }
-
+            //Set axial as true
             interfaceModel.imageController.updateSelectedViews(NiftiView.AXIAL, true)
         }
 
@@ -96,6 +99,7 @@ fun imageViewer(
                     arrowDirection = TooltipArrowDirection.Left
                 )
 
+                //Displays the running jobs if any
                 runningModelsList(
                     interfaceModel
                 )
@@ -105,6 +109,7 @@ fun imageViewer(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    //Box in order to keep track of the user scrolls, so the image indexes can be adjusted
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -126,7 +131,7 @@ fun imageViewer(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-
+                        //Displays the images
                         imageGrid(selectedData, selectedViews, interfaceModel)
                     }
 
@@ -149,6 +154,7 @@ fun imageViewer(
                 }
             },
             rightContent = {
+                //Image index scroller
                 scrollSlider(
                     selectedData = interfaceModel.imageController.selectedData,
                     scrollStep = interfaceModel.imageController.scrollStep,
@@ -156,6 +162,7 @@ fun imageViewer(
                     onUpdate = { value -> interfaceModel.imageController.setScrollPosition(value) } //fix this bug
                 )
 
+                //Scroller for windowing, i.e clipping
                 windowControls(selectedData, interfaceModel)
 
             }
@@ -163,6 +170,7 @@ fun imageViewer(
     }
 }
 
+//Displays the running inferences in a list of cards
 @Composable
 fun runningModelsList(interfaceModel: InterfaceModel) {
     val jobs = interfaceModel.modelRunner.progressFlows.entries.toList()
@@ -228,11 +236,6 @@ fun runningModelsList(interfaceModel: InterfaceModel) {
                     }
                 }
 
-
-
-
-
-
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (!jobProgress.finished && !jobProgress.error) {
@@ -265,6 +268,9 @@ fun runningModelsList(interfaceModel: InterfaceModel) {
 }
 
 
+/**
+ * The grid of images, based on the selected images
+ * */
 @Composable
 fun imageGrid(
     selectedData: Set<String>,
@@ -283,7 +289,7 @@ fun imageGrid(
             modifier = Modifier.fillMaxSize()
         ) {
 
-
+            //If only a few is selected, display them in a row
             if (selectedData.size * selectedViews.size < 4) {
 
                 Column(
@@ -337,6 +343,8 @@ fun imageGrid(
                                                     text = "${selectedView.displayName} ${nifti.name} - Slice $currentIndex",
                                                     style = MaterialTheme.typography.titleSmall
                                                 )
+
+                                                //The actual bitmap image
                                                 voxelImageDisplayInd(
                                                     voxelSlice = slices,
                                                     interfaceModel = interfaceModel,
@@ -386,8 +394,6 @@ fun imageGrid(
                                         nifti, currentIndex
                                     )
 
-
-
                                     Column(
                                         modifier = Modifier
                                             .weight(1f)
@@ -427,13 +433,13 @@ fun imageGrid(
                     }
                 }
             }
-
-
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * The bottom - app - bar menu
+ * */
 @Composable
 fun menuCard(
     modifier: Modifier = Modifier,
@@ -536,9 +542,11 @@ fun menuCard(
     }
 }
 
+/**
+ * Creates a card for each selected data that change the windowing center and width
+ * */
 @Composable
 fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
-
 
     selectedData.forEach { data ->
         var selectedPresetLabel by remember { mutableStateOf<String?>(null) }
@@ -584,6 +592,4 @@ fun windowControls(selectedData: Set<String>, interfaceModel: InterfaceModel) {
             }
         )
     }
-
-
 }

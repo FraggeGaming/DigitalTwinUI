@@ -9,18 +9,17 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-//import loadNpyVoxelVolume
 import okhttp3.OkHttpClient
 import removeNiiExtension
-import transformToAxialSlices
-import transformToCoronalSlices
-import transformToSagittalSlices
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.TimeUnit
 
+/**
+ * Class to run the nifti parsing
+ * */
 class ModelRunner(
     private val niftiRepo: NiftiRepo,
     private val fileUploader: FileUploadController,
@@ -40,24 +39,9 @@ class ModelRunner(
     private val _hasFetchedModels = MutableStateFlow(false)
     val hasFetchedModels: StateFlow<Boolean> = _hasFetchedModels
 
+    //Stateflows for the polling process
     val progressFlows = mutableStateMapOf<String, MutableStateFlow<Progress>>()
     val progressKillFlows = mutableStateMapOf<String, MutableStateFlow<Progress>>()
-
-//    init {
-//        val dummyProgress = Progress(
-//            step = 0,
-//            total = 10,
-//            percent = 0.0,
-//            jobId = "dummy_job",
-//            finished = false
-//        )
-//
-//        val dummyProgressFlow = MutableStateFlow(dummyProgress)
-//
-//        progressFlows["dummy_job"] = dummyProgressFlow
-//    }
-
-
 
     suspend fun fetchMLModels(metadata: UploadFileMetadata) = coroutineScope {
         _hasFetchedModels.value = false
@@ -68,45 +52,7 @@ class ModelRunner(
         }
     }
 
-
-    fun fastPercentileEstimate(data: FloatArray, lowPercentile: Double = 0.02, highPercentile: Double = 0.98, bins: Int = 100): Pair<Float, Float> {
-        if (data.isEmpty()) return 0f to 1f
-
-        val min = data.minOrNull() ?: return 0f to 1f
-        val max = data.maxOrNull() ?: return 0f to 1f
-        if (min == max) return min to max
-
-        val histogram = IntArray(bins)
-        val binSize = (max - min) / bins
-
-        // Build histogram
-        for (v in data) {
-            val bin = ((v - min) / (max - min) * (bins - 1)).toInt().coerceIn(0, bins - 1)
-            histogram[bin]++
-        }
-
-        // Compute cumulative histogram
-        val cumulative = IntArray(bins)
-        histogram.foldIndexed(0) { i, acc, count ->
-            cumulative[i] = acc + count
-            acc + count
-        }
-
-        val total = cumulative.last()
-        val lowerCount = (lowPercentile * total).toInt()
-        val upperCount = (highPercentile * total).toInt()
-
-        // Find bins that correspond to 2nd and 98th percentiles
-        val pLowBin = cumulative.indexOfFirst { it >= lowerCount }
-        val pHighBin = cumulative.indexOfFirst { it >= upperCount }
-
-        val pLow = min + pLowBin * binSize
-        val pHigh = min + pHighBin * binSize
-
-        return pLow to pHigh
-    }
-
-
+    //Load data from the jsonMappings if they are selected by the user
     fun loadMapping(mapping: List<NiftiDataSlim>): MutableList<String>{
         val data = mutableListOf<String>()
 
@@ -114,11 +60,8 @@ class ModelRunner(
             println(output)
             println(niftiRepo.get(output.id))
             if (niftiRepo.get(output.id) == null) {
+                //Get nifti volume
                 val v = getNpy(output.npy_path)
-
-//                val datasample = v.data().asFloat()
-//                val (p2, p98) = fastPercentileEstimate(datasample)
-
 
                 val niftiData = NiftiData(
                     id = output.id,
@@ -131,7 +74,6 @@ class ModelRunner(
                     voxelVolume_ind = v,
                     intensity_max = v.maxNumber().toFloat(),
                     intensity_min = v.minNumber().toFloat(),
-
                     npy_path = output.npy_path,
                     gz_path = output.gz_path,
                     name = output.name,
@@ -158,6 +100,7 @@ class ModelRunner(
 
         val mappings = niftiRepo.jsonMapper.selectedMappings.value.toList()
 
+        //Load the files from the mappings, i.e already parsed data
         mappings.forEach { mapping ->
             val title = mapping.title
             if (niftiRepo.hasFileMapping(title)) {
@@ -176,6 +119,7 @@ class ModelRunner(
 
         fileUploader.clear()
 
+        //Load the new files the user has uploaded in a separate thread
         uploadedFiles.forEach { file ->
             async(Dispatchers.IO) {
                 println("Uploading $file")
@@ -240,6 +184,7 @@ class ModelRunner(
 
                 niftiRepo.updateFileMappingInput(title, input)
 
+                //If user has selected a AI model, send it to the server and update polling progress untill finished
                 if (file.model != null){
                     val newProgressFlow = MutableStateFlow(
                         Progress(step = 0, total = 1, jobId = title, finished = false, status = "Sending job", error = false)
@@ -292,18 +237,8 @@ class ModelRunner(
                 )
 
                 niftiRepo.jsonMapper.addMappingAndSave(mapping)
-
-//                if (progressFlows.containsKey(title)) {
-//                    if (progressFlows[title]?.value?.error == false)
-//                        progressFlows.remove(title)
-//                }
             }
-
         }
-
-
-
-
     }
 
     fun removeJob(jobId: String){
@@ -322,6 +257,7 @@ class ModelRunner(
 
     }
 
+    //Copies the appended file and puts in the input_gz folder, and changes the name
     fun copyAndChangeName(name: String, filePath: String): String? {
         val path = Paths.get(filePath)
         val fileName = path.fileName.toString()
@@ -334,8 +270,6 @@ class ModelRunner(
         }
 
         Files.createDirectories(input_path_gz.toPath())
-
-
         val newPath = input_path_gz.toPath().resolve(newFileName)
 
         return try {

@@ -33,6 +33,11 @@ import org.thesis.project.Model.UploadFileMetadata
 import org.thesis.project.TooltipManager
 import java.io.File
 
+/**
+ * The main entry point of the application
+ *
+ * Responsible for uploading data, parsing the information into a compatible way for the server and the model
+ * */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun  uploadData(
@@ -268,6 +273,9 @@ fun  uploadData(
 
 }
 
+/**
+ * Form for adding data to the uploaded file
+ * */
 @Composable
 fun UploadInputCard(
     metadata: UploadFileMetadata,
@@ -475,6 +483,9 @@ fun UploadInputCard(
     )
 }
 
+/**
+ * Shows the previous saved generations/uploads and displays them in a row
+ * */
 @Composable
 fun previousSavedCards(
     mappings: List<FileMappingFull>,
@@ -557,6 +568,10 @@ fun previousSavedCards(
     }
 }
 
+
+/**
+ * Popup box that overlays info text on top of content if enabled
+ * */
 @Composable
 fun ComponentInfoBox(
     id: String,
@@ -585,7 +600,6 @@ fun ComponentInfoBox(
 
     val arrowPadding = 70f
 
-    //TODO move to interfacemodel
     //Determine where to place the tooltip based on direction
     val tooltipOffset = when (arrowDirection) {
         TooltipArrowDirection.Left -> Offset(

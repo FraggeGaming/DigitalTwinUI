@@ -17,6 +17,12 @@ import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import java.nio.file.Paths
 
+/**
+ * Functions to talk with the server
+ * */
+
+
+//Sends the nifti to the server, and starts a progress flow fetch
 suspend fun sendNiftiToServer(
     metadata: UploadFileMetadata,
     serverUrl: String,
@@ -96,6 +102,7 @@ suspend fun sendNiftiToServer(
     }
 }
 
+//Download the nifti with the said jobID form the server, puts it in the outputDir
 fun downloadResult(jobId: String, serverUrl: String, client: OkHttpClient, outPutDir: File): File? {
     try {
 
@@ -134,6 +141,7 @@ fun downloadResult(jobId: String, serverUrl: String, client: OkHttpClient, outPu
     }
 }
 
+//Cancels the job for the said jobId in the server
 fun cancelRunningInference(jobId: String, client: OkHttpClient) {
     CoroutineScope(Dispatchers.IO).launch {
         val request = Request.Builder()
@@ -147,7 +155,7 @@ fun cancelRunningInference(jobId: String, client: OkHttpClient) {
     }
 }
 
-
+//Fetches all available models from the server
 suspend fun fetchAvailableModels(serverUrl: String, metadata: UploadFileMetadata): List<AIModel>? = withContext(Dispatchers.IO) {
     try {
         val json = Json.encodeToString(mapOf("modality" to metadata.modality, "region" to metadata.region))
@@ -183,7 +191,7 @@ suspend fun fetchAvailableModels(serverUrl: String, metadata: UploadFileMetadata
 }
 
 
-
+//Fetches all available modalities from the server
 suspend fun fetchAvailableModalities(serverUrl: String): List<String>? = withContext(Dispatchers.IO) {
     try {
         val request = Request.Builder()
@@ -209,6 +217,7 @@ suspend fun fetchAvailableModalities(serverUrl: String): List<String>? = withCon
     }
 }
 
+//Fetches all available regions from the server
 suspend fun fetchAvailableRegions(serverUrl: String): List<String>? = withContext(Dispatchers.IO) {
     try {
         val request = Request.Builder()
@@ -234,10 +243,11 @@ suspend fun fetchAvailableRegions(serverUrl: String): List<String>? = withContex
     }
 }
 
-
+//Polling progress dataclass
 @Serializable
 data class Progress(val step: Int = 1, val total: Int = 1, @SerialName("job_id") val jobId: String, val finished: Boolean = false, val status: String ,val error: Boolean = false)
 
+//Every two seconds, poll for a progress update and get a json indicating the state, if done, break
 suspend fun pollProgress(
     jobId: String,
     serverUrl: String,

@@ -9,6 +9,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
+//Class to load, save and store the nifti files, i.e the input, output and title
 class JsonMappingController(savedMappingPath: File) {
     private val _mappings = MutableStateFlow<List<FileMappingFull>>(emptyList())
     val mappings: StateFlow<List<FileMappingFull>> = _mappings.asStateFlow()

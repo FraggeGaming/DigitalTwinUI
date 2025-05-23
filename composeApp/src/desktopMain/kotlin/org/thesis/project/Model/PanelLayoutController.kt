@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.thesis.project.TooltipManager
 
+/**
+ * Controller for keeping track of the panel sizes
+* */
 class PanelLayoutController {
     // Define initial values as constants or properties
     private val initialLeftPanelWidth: Dp = 350.dp

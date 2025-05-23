@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.update
 import org.nd4j.linalg.api.ndarray.INDArray
 import java.io.File
 
+/**
+ * Class that stores the nifti images, and is responsible for the volume and their slices
+ * */
 class NiftiRepo(val imageController: ImageController, savedMappingPath: File) {
     //Stores the niftiData by Filename
     private val _niftiImages = MutableStateFlow<Map<String, NiftiData>>(emptyMap())

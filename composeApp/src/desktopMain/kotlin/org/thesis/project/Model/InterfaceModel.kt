@@ -17,6 +17,7 @@ import org.nd4j.linalg.factory.Nd4j
 import java.io.File
 
 
+//Definitions of the different views, used in the UI and for logic
 enum class NiftiView(val displayName: String) {
     AXIAL("Axial"),
     CORONAL("Coronal"),
@@ -25,12 +26,15 @@ enum class NiftiView(val displayName: String) {
     override fun toString(): String = displayName
 }
 
+//Definition of the user settings, used in UI and in logic
 enum class Settings(val settingName: String) {
     PIXEL("Pixel Value"),
     MEASUREMENT("Measurement");
 
     override fun toString(): String = settingName
 }
+
+//Definitions of paths
 enum class PathStrings(val path: String) {
     OUTPUT_PATH_GZ("external/output_gz"),
     OUTPUT_PATH_NPY("external/output_npy"),
@@ -40,6 +44,8 @@ enum class PathStrings(val path: String) {
 
     override fun toString(): String = path
 }
+
+//Dataclass for the upload of files, used for parsing and is sent to the server
 @Serializable
 data class UploadFileMetadata(
     var filePath: String,
@@ -50,9 +56,11 @@ data class UploadFileMetadata(
     val groundTruthFilePath: String,
 )
 
+//Dataclass for the AI model object that gets returned from the server
 @Serializable
 data class AIModel(val id: Int, val title: String, val description: String, val inputModality: String, val outputModality: String, val region: String)
 
+//NIfTI data main class. Used across the application. This is class that has the path to the file, and also contains metadata
 data class NiftiData(
     val id: String = UUID.randomUUID().toString(),
     val width: Int,
@@ -68,6 +76,7 @@ data class NiftiData(
     var gz_path: String = "",
     var name: String = "",
 ) {
+    //Slim nifti for storage in json
     fun toSlim(): NiftiDataSlim {
         return NiftiDataSlim(
             id = this.id,
@@ -84,6 +93,7 @@ data class NiftiData(
         )
     }
 
+    //Manually clear the voxelvolume on destruction
     fun clearData() {
         try {
             voxelVolume_ind.close()
@@ -98,6 +108,7 @@ data class NiftiData(
     }
 }
 
+//Metadata class for nifti
 @Serializable
 data class NiftiMeta(
     val width: Int,
@@ -107,6 +118,7 @@ data class NiftiMeta(
     val npy_path: String
 )
 
+//Definition of the slim nifti dataclass for storage
 @Serializable
 data class NiftiDataSlim(
     val id: String = "",
@@ -122,6 +134,8 @@ data class NiftiDataSlim(
 
 )
 
+
+//Contains the template to store the loaded images, and to load, and remove
 @Serializable
 data class FileMappingFull(
     val title: String,
@@ -129,6 +143,7 @@ data class FileMappingFull(
     val outputs: List<NiftiDataSlim>
 )
 
+//Object to configure the config.properties file, and set a default value
 object Config {
     var serverIp: String = "http://localhost:8000" // default
 
@@ -152,11 +167,14 @@ object Config {
     }
 }
 
-
+/**
+ * The main model class, inherited from viewmodel. Holds all the other models
+ * */
 class InterfaceModel : ViewModel() {
 
     val baseDir: File get() = File(System.getProperty("user.dir"))
 
+    //Make sure directories and folders exist
     init {
         resolvePath(PathStrings.OUTPUT_PATH_GZ)
         resolvePath(PathStrings.OUTPUT_PATH_NPY)
@@ -182,21 +200,13 @@ class InterfaceModel : ViewModel() {
         return file
     }
 
+    //Decleration of the models
     val imageController = ImageController(viewModelScope)
     val niftiRepo = NiftiRepo(imageController, resolvePath(PathStrings.SAVED_MAPPING))
     val fileUploader = FileUploadController(niftiRepo, resolvePath(PathStrings.OUTPUT_PATH_NPY), baseDir)
     val panelLayout = PanelLayoutController()
-
     val modelRunner = ModelRunner(niftiRepo, fileUploader, resolvePath(PathStrings.OUTPUT_PATH_GZ), resolvePath(PathStrings.INPUT_PATH_GZ))
 
-
-
-
-    private val _organs = MutableStateFlow(listOf("Liver", "Heart", "Lung", "Kidney", "Brain"))
-    val organs: StateFlow<List<String>> = _organs
-
-//    private val _selectedDistricts = MutableStateFlow<Set<String>>(setOf())
-//    val selectedDistricts: StateFlow<Set<String>> = _selectedDistricts
 
     private val _regions = MutableStateFlow<List<String>>(listOf())
     val regions: StateFlow<List<String>> = _regions
@@ -210,24 +220,18 @@ class InterfaceModel : ViewModel() {
         _modalities.value = listOf()
     }
 
-
-
+    //Get regions from server
     suspend fun fetchRegions() = coroutineScope{
         val regions = fetchAvailableRegions(Config.serverIp)
         println("regions: $regions")
-        _regions.value = regions ?: listOf("Head", "Lung", "Total Body")
+        _regions.value = regions ?: listOf("Head", "Lung", "Brain", "Liver", "Total Body")
     }
 
+    //Get modalities from server
     suspend fun fetchModalities() = coroutineScope{
         val modalities = fetchAvailableModalities(Config.serverIp)
         _modalities.value = modalities ?: listOf("CT", "PET", "MRI")
     }
-
-//    fun updateSelectedDistrict(label: String, isSelected: Boolean) {
-//        _selectedDistricts.update { currentSet ->
-//            if (isSelected) currentSet + label else currentSet - label
-//        }
-//    }
 
     private val _selectedSettings = MutableStateFlow<Set<Settings>>(setOf())
     val selectedSettings: StateFlow<Set<Settings>> = _selectedSettings
@@ -240,6 +244,7 @@ class InterfaceModel : ViewModel() {
 
     private val _shouldRunModel = MutableStateFlow(false)
 
+    //Trigger the modelrunner to run if new data has been appended
     fun triggerModelRun() {
         _shouldRunModel.value = true
     }
@@ -260,6 +265,7 @@ class InterfaceModel : ViewModel() {
         return false
     }
 
+    //Toggle if the info buttons should show in the UI
     private val _infoMode = MutableStateFlow(false)
     val infoMode: StateFlow<Boolean> = _infoMode
 
@@ -270,7 +276,4 @@ class InterfaceModel : ViewModel() {
     fun setInfoMode(state: Boolean) {
         _infoMode.update { state }
     }
-
-
-
 }
