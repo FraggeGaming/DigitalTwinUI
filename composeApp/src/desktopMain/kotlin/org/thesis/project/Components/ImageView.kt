@@ -45,6 +45,11 @@ import java.awt.image.BufferedImage
 import kotlin.math.roundToInt
 
 
+/**
+ * Used to create a bitmap, and the associative tools such as measure distance and see pixel values
+ * **/
+
+
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun  voxelImageDisplayInd(

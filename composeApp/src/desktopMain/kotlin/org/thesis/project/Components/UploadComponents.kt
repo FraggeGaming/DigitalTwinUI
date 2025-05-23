@@ -20,6 +20,9 @@ import androidx.compose.ui.unit.dp
 import java.awt.FileDialog
 import java.awt.Frame
 
+/**
+ * File for the upload component - goes to the explorer and copies the selected file
+ * **/
 fun selectFilesMultipleAWT(): List<String> {
     val dialog = FileDialog(null as Frame?, "Select Files", FileDialog.LOAD)
     dialog.isMultipleMode = true

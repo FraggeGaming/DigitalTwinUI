@@ -31,7 +31,9 @@ import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Screens.ComponentInfoBox
 import java.awt.Cursor
 
-
+/**
+ * The main view consists of a three panel layout, this defines it
+ * **/
 @Composable
 fun MainPanelLayout(
     leftContent: @Composable () -> Unit,

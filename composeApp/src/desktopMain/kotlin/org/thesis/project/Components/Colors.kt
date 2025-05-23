@@ -18,6 +18,9 @@ import androidx.compose.material3.MaterialTheme as Material3Theme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.Shapes
 
+/**
+ * This class has the colors used across the UI
+ * **/
 data class MyColor(val hex: Long)
 
 @Immutable

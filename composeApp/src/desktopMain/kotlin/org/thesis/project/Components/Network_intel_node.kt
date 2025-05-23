@@ -11,6 +11,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
+/**
+ * Generated for converging icon to imageVector
+ * **/
+
 public val Network_intel_node: ImageVector
 	get() {
 		if (_Network_intel_node != null) {

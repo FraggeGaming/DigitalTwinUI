@@ -19,6 +19,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 
+/**
+ *
+ * This file has the components necessary to overlay info boxes on top of components
+ * **/
 @Composable
 fun InfoBox(
     text: String,

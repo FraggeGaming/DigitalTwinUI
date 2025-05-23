@@ -1,7 +1,5 @@
 package org.thesis.project.Components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -12,8 +10,6 @@ import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
@@ -21,6 +17,9 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 
 
+/**
+ * The dropdown menu used across the UI
+ * **/
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun dropDownMenuCustom(
@@ -55,12 +54,10 @@ fun dropDownMenuCustom(
             onDismissRequest = { expanded = false },
             modifier = Modifier
                 .width(180.dp)
-                //.background(LocalAppColors.current.thirdlyBlue, RoundedCornerShape(12.dp))
             , containerColor = LocalAppColors.current.thirdlyBlue
         ) {
             options.forEach { option ->
                 var isHovered by remember { mutableStateOf(false) }
-                val isSelected = option == selected
 
                 DropdownMenuItem(
                     text = { Text(option) },
@@ -70,13 +67,6 @@ fun dropDownMenuCustom(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-//                        .background(
-//                            when {
-//                                isSelected -> LocalAppColors.current.thirdlyBlue.copy(alpha = 0.8f)
-//                                isHovered -> LocalAppColors.current.thirdlyBlue.copy(alpha = 0.7f)
-//                                else -> LocalAppColors.current.thirdlyBlue
-//                            }
-//                        )
                         .onPointerEvent(PointerEventType.Enter) { isHovered = true }
                         .onPointerEvent(PointerEventType.Exit) { isHovered = false }
                         .padding(horizontal = 12.dp, vertical = 8.dp)

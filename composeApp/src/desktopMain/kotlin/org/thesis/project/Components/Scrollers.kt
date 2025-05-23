@@ -20,6 +20,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import org.thesis.project.Model.NiftiData
 
+/**
+ *
+ * Has the components with scrollers, such as changing the slice value or image clipping
+ * **/
 @Composable
 fun scrollSlider(
     selectedData: StateFlow<Set<String>>,
