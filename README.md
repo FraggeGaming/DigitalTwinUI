@@ -24,8 +24,8 @@ To run the project in intellij:
 - Make sure that the project also has an compatible SDK. Go to Settings - Project Structure - Project: Set SDK and Language Level to >= 17.
 - When starting the application for the first time, the executable (`external`) scripts might be flagged by the OS. In order to use the application, allow the scripts to run if flagged.
 
-*To run the image-to-image translation the app must be running aswell as the server.
--Go to the (`external`) folder - Locate (`config.properties`) - If there is no such file, start the application one time for it to appear. There exists an server IP which one can change to the disired path.
+* To run the image-to-image translation the app must be running aswell as the server.
+- Go to the (`external`) folder - Locate (`config.properties`) - If there is no such file, start the application one time for it to appear. There exists an server IP which one can change to the disired path.
 
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
