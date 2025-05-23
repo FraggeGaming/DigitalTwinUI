@@ -1,5 +1,7 @@
 This project is a part of a Master Thesis in Interaction Technology and Design. The application is the frontend for viewing and translating NIfTI files (medical images) from one domain to another (CT to PET), done on a backend server (HTTP). The application works as a standalone without the server if one dont want to translate files.
 
+Server is located in https://github.com/FraggeGaming/ThesisInferenceServer/tree/main
+
 This is a Kotlin Multiplatform project targeting Desktop (Kotlin 2.1.0) (Compose 1.8.1) (Gradle 8.9) (Java 17).
 
 * `/composeApp` is for code that will be shared across your Compose Multiplatform applications.
