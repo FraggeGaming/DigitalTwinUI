@@ -23,35 +23,58 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Make Gradle Wrapper executable (Linux/macOS)
+      - name: Make Gradle Wrapper executable
         if: runner.os != 'Windows'
         run: chmod +x ./gradlew
 
-      - name: Run Gradle packageAll (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: ./gradlew :composeApp:packageAll --no-daemon
+      # Package for Linux (.deb)
+      - name: Package .deb (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          ./gradlew :composeApp:packageReleaseDeb \
+            --no-daemon --info --stacktrace > gradle.log 2>&1 || true
 
-      - name: Run Gradle packageReleaseMsi (Windows)
+      # Package for macOS (.dmg)
+      - name: Package .dmg (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          ./gradlew :composeApp:packageReleaseDmg \
+            --no-daemon --info --stacktrace > gradle.log 2>&1 || true
+
+      # Package for Windows (.msi)
+      - name: Package .msi (Windows)
         if: runner.os == 'Windows'
-        run: .\gradlew :composeApp:packageReleaseMsi --no-daemon
+        shell: bash
+        run: |
+          ./gradlew :composeApp:packageReleaseMsi --no-daemon --info --stacktrace > gradle.log 2>&1 || true
 
-      - name: Upload Installer Artifact (Linux)
+
+      # Always upload the Gradle log
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-log-${{ matrix.os }}
+          path: gradle.log
+
+      # Upload the installer for each OS
+      - name: Upload .deb installer (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: deb-installer
-          path: composeApp/build/compose/binaries/main/deb/*.deb
+          path: composeApp/build/compose/binaries/**/deb/*.deb
 
-      - name: Upload Installer Artifact (macOS)
+      - name: Upload .dmg installer (macOS)
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: dmg-installer
-          path: composeApp/build/compose/binaries/main/dmg/*.dmg
+          path: composeApp/build/compose/binaries/**/dmg/*.dmg
 
-      - name: Upload Installer Artifact (Windows)
+      - name: Upload .msi installer (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: msi-installer
-          path: composeApp/build/compose/binaries/main/msi/*.msi
+          path: composeApp/build/compose/binaries/**/msi/*.msi

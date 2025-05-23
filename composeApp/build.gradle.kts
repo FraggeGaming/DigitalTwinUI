@@ -1,6 +1,7 @@
 import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     id("org.jetbrains.kotlin.plugin.compose")
@@ -9,13 +10,9 @@ plugins {
     kotlin("plugin.serialization")
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
-
 kotlin {
+
+
     jvm("desktop") {
         compilations.all {
             kotlinOptions.jvmTarget = "17"
@@ -67,6 +64,15 @@ compose.desktop {
         mainClass = "org.thesis.project.MainKt"
 
         nativeDistributions {
+
+            buildTypes {
+                release {
+                    proguard {
+                        isEnabled.set(false)   // disable ProGuard pass
+                        obfuscate.set(false)   // disable name obfuscation
+                    }
+                }
+            }
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "DeepTwin"
             packageVersion = "1.0.0"
