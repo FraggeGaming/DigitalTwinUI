@@ -14,6 +14,15 @@ import java.nio.file.Paths
 
 
 
+/**
+ * Model for handling uploaded data by the user and can parse NIfTI
+ *
+ *  - platform-specific in terms of what executable to use
+ *
+ * @param resolvePath path (file) to the output_npy folder
+ * @param nifti_parser_base_dir  path (file) to the nifti parsers directory (external)
+ * @since    1.0.0
+ */
 class FileUploadController(private val niftiRepo: NiftiRepo, resolvePath: File, nifti_parser_base_dir: File) {
     val output_path_npy = resolvePath
     val nifti_parser_base_dir = nifti_parser_base_dir

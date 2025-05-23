@@ -14,38 +14,23 @@ import androidx.compose.runtime.State
 import org.nd4j.linalg.api.ndarray.INDArray
 import kotlin.math.roundToInt
 
-
+/**
+ * Model for handling image modifications, such as scrolling through the image, clipping, and fetching pixel values
+ *
+ *
+ * @param CoroutineScope for parallel executions
+ * @since    1.0.0
+ */
 class ImageController(private val scope: CoroutineScope) {
 
+    //Used to keep track of the scroll, or index of the image
     private val _scrollStep = MutableStateFlow(0f)
     val scrollStep: StateFlow<Float> = _scrollStep
 
     private val _maxSelectedImageIndex = MutableStateFlow<Map<String, Float>>(emptyMap())
     val maxSelectedImageIndex: StateFlow<Map<String, Float>> = _maxSelectedImageIndex
 
-
-//    fun getImageIndices(data: NiftiData): StateFlow<Triple<Int, Int, Int>> {
-//        return scrollStep.map { step ->
-//
-//            val axialSize = data.voxelVolume.size
-//            val coronalSize = data.coronalVoxelSlices.size
-//            val sagittalSize = data.sagittalVoxelSlices.size
-//
-//            val maxLength = listOf(axialSize, coronalSize, sagittalSize).maxOrNull() ?: 1
-//
-//            _maxSelectedImageIndex.update { currentMap ->
-//                currentMap.toMutableMap().apply { put(data.id, maxLength.toFloat()) }
-//            }
-//
-//            val axialIndex = ((step * axialSize) / maxLength).toInt().coerceIn(0, axialSize - 1)
-//            val coronalIndex = ((step * coronalSize) / maxLength).toInt().coerceIn(0, coronalSize - 1)
-//            val sagittalIndex = ((step * sagittalSize) / maxLength).toInt().coerceIn(0, sagittalSize - 1)
-//
-//            Triple(axialIndex, coronalIndex, sagittalIndex)
-//
-//        }.stateIn(scope, SharingStarted.Lazily, Triple(0, 0, 0))
-//    }
-
+    //makes it possible to scroll all images at ones with different max indexes
     fun getImageIndicesInd(data: NiftiData): StateFlow<Triple<Int, Int, Int>> {
         return scrollStep.map { step ->
 
@@ -71,11 +56,6 @@ class ImageController(private val scope: CoroutineScope) {
     }
 
 
-
-
-
-
-
     fun incrementScrollPosition() {
         _scrollStep.update { it + 1f }
     }
@@ -90,7 +70,7 @@ class ImageController(private val scope: CoroutineScope) {
         _scrollStep.update { (it - 1f).coerceAtLeast(0f) }
     }
 
-
+    //handles the current selected views, such as axial, coronal and sagittal
     private val _selectedViews = MutableStateFlow<Set<NiftiView>>(setOf())
     val selectedViews: StateFlow<Set<NiftiView>> = _selectedViews
 
@@ -100,7 +80,7 @@ class ImageController(private val scope: CoroutineScope) {
         }
     }
 
-    //Currently selected niftiData by name
+    //Currently selected niftiData by ID
     private val _selectedData = MutableStateFlow<Set<String>>(setOf())
     val selectedData: StateFlow<Set<String>> = _selectedData
 
@@ -125,13 +105,14 @@ class ImageController(private val scope: CoroutineScope) {
         }
     }
 
+    //Calculates physical distance between two points in the image based on the pixelspacing
     fun calculateDistanceInd(
         uiState: MutableState<VoxelImageUIState>,
         position: Offset,
         scaleFactor: Float,
         bitmap: ImageBitmap,
         pixelSpacing: Float,
-        voxelSlice: INDArray // <-- CHANGED
+        voxelSlice: INDArray
     ) {
         val voxelData = getVoxelInfoInd(
             position = position,
@@ -163,6 +144,7 @@ class ImageController(private val scope: CoroutineScope) {
         }
     }
 
+    //Get the pixel at the said position, have to rotate because the parsed data is at first rotated, so we rotate and calculate
     fun getVoxelInfoInd(
         position: Offset,
         scaleFactor: Float,
@@ -181,7 +163,7 @@ class ImageController(private val scope: CoroutineScope) {
         val originalY = clickX
 
         if (originalX !in 0 until voxelSlice.shape()[0] || originalY !in 0 until voxelSlice.shape()[1]) {
-            return null  // prevent crash if out of bounds
+            return null  //prevent crash if out of bounds
         }
 
         val voxelValue = voxelSlice.getFloat(originalX.toLong(), originalY.toLong())
@@ -213,11 +195,14 @@ class ImageController(private val scope: CoroutineScope) {
     }
 
 
+    //Following functions and variables are for image clipping, so clip intensity values in the image
+
     val windowPresets = mapOf(
         "CT - Brain" to WindowingParams(40f, 80f),
         "CT - Lung" to WindowingParams(-600f, 1500f),
         "CT - Bone" to WindowingParams(300f, 1500f),
-        "PET Raw" to WindowingParams(center = 500f, width = 1500f)
+        "PET Raw" to WindowingParams(center = 500f, width = 1500f),
+        "PET SUV" to WindowingParams(center = 0f, width = 20f)
     )
 
     data class WindowingParams(
