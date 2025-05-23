@@ -122,7 +122,7 @@ fun cardMenu2(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp)
+                   // modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
                         text = "Select files to view",
