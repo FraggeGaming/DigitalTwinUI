@@ -1,7 +1,6 @@
 import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     id("org.jetbrains.kotlin.plugin.compose")
@@ -54,6 +53,8 @@ kotlin {
 
             implementation("org.nd4j:nd4j-native:1.0.0-M2.1:macosx-arm64")
             implementation("org.bytedeco:openblas:0.3.21-1.5.8:macosx-arm64")
+            implementation("org.slf4j:slf4j-simple:1.7.36")
+
         }
     }
 }
