@@ -39,7 +39,7 @@ fun App() {
                     Column(modifier = Modifier.fillMaxSize()) {
 
                         topAppBar(
-                            title = "DeepTwin",
+                            title = "DeepTwin-X",
                             navMenu = { navigationButtons(navController, "upload") },
                             extraContent = { extraContent(interfaceModel, "upload") }
                         )
@@ -56,7 +56,7 @@ fun App() {
                     Column(modifier = Modifier.fillMaxSize()) {
 
                         topAppBar(
-                            title = "DeepTwin",
+                            title = "DeepTwin-X",
                             navMenu = { navigationButtons(navController, "main") },
                             extraContent = { extraContent(interfaceModel, "main") }
                         )
