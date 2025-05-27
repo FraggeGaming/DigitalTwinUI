@@ -1,7 +1,6 @@
 import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     id("org.jetbrains.kotlin.plugin.compose")
