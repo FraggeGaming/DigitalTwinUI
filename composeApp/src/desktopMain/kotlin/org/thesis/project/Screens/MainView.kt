@@ -120,11 +120,14 @@ fun imageViewer(
                                         val event = awaitPointerEvent()
                                         if (event.type == PointerEventType.Scroll) {
                                             val scrollDelta = event.changes.firstOrNull()?.scrollDelta ?: Offset.Zero
-                                            if (scrollDelta.y > 0f) {
-                                                interfaceModel.imageController.decrementScrollPosition()
-                                            } else if (scrollDelta.y < 0f) {
-                                                interfaceModel.imageController.incrementScrollPosition()
+                                            if (selectedData.isNotEmpty()){
+                                                if (scrollDelta.y > 0f) {
+                                                    interfaceModel.imageController.decrementScrollPosition()
+                                                } else if (scrollDelta.y < 0f) {
+                                                    interfaceModel.imageController.incrementScrollPosition()
+                                                }
                                             }
+
                                         }
                                     }
                                 }
