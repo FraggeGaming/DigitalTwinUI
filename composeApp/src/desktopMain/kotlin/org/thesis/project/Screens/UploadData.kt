@@ -1,6 +1,5 @@
 package org.thesis.project.Screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -32,6 +31,21 @@ import org.thesis.project.Model.InterfaceModel
 import org.thesis.project.Model.UploadFileMetadata
 import org.thesis.project.TooltipManager
 import java.io.File
+
+/*
+ * This file is part of [DeepTwin-X]
+ * Copyright (C) 2025 [Fardis Nazemroaya Sedeh]
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
 
 /**
  * The main entry point of the application
