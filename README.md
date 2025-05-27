@@ -31,3 +31,12 @@ To run the project in intellij:
 
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 (GPLv3).  
+You are free to use, modify, and distribute this software under the same license terms.  
+See the [LICENSE](LICENSE) file for full license text and conditions.
+
+© 2025 [Fardis Nazemroaya Sedeh]
